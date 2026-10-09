@@ -1,4 +1,4 @@
-"""Live Bridge smoke against a reachable remote Octop (opt-in).
+"""Live Bridge smoke against a reachable remote zcagent (opt-in).
 
 Run::
 

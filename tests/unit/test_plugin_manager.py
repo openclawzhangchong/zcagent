@@ -1,4 +1,4 @@
-"""Unit tests for Octop plugin manager."""
+"""Unit tests for zcagent plugin manager."""
 
 from __future__ import annotations
 

@@ -23,8 +23,12 @@ from octop.infra.utils.paths import PathLayout
 logger = logging.getLogger(__name__)
 
 _PACKAGE_NAME = "octop"
-_PYPI_URL = f"https://pypi.org/pypi/{_PACKAGE_NAME}/json"
-_PYPI_SIMPLE = "https://pypi.org/simple"
+# OEM: point the update check at a private index (devpi serves the same
+# /pypi/<name>/json shape). The distribution name stays `octop` because it is
+# also the pip upgrade target and the installed-dist lookup.
+_PYPI_HOST = os.environ.get("OCTOP_UPDATE_INDEX_URL", "https://pypi.org").rstrip("/")
+_PYPI_URL = f"{_PYPI_HOST}/pypi/{_PACKAGE_NAME}/json"
+_PYPI_SIMPLE = f"{_PYPI_HOST}/simple"
 _PYPI_UA = {"User-Agent": f"{_PACKAGE_NAME}-updater/1.0"}
 _GREEN_PACKAGES_ENV = "OCTOP_GREEN_PACKAGES"
 _STASH_SUFFIX = ".octop-old"
@@ -190,7 +194,7 @@ def _pypi_json_url(version: str | None = None) -> str:
     if not version:
         return _PYPI_URL
     encoded = urllib.parse.quote(version, safe="")
-    return f"https://pypi.org/pypi/{_PACKAGE_NAME}/{encoded}/json"
+    return f"{_PYPI_HOST}/pypi/{_PACKAGE_NAME}/{encoded}/json"
 
 
 def _load_pypi_json(url: str, timeout: int) -> dict[str, Any]:
@@ -247,7 +251,7 @@ def fetch_pypi_info(timeout: int = 10) -> PyPIInfo | None:
             version=latest_any,
             latest_stable=latest_stable,
             description=description,
-            source="pypi.org",
+            source=index_label(_PYPI_HOST),
         )
     except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError) as exc:
         logger.warning("failed to fetch PyPI info: %s", exc)
@@ -904,7 +908,7 @@ def _run_managed_upgrade(
         if cmd is None:
             return UpgradeResult(
                 success=False,
-                error="pip is not available for the Octop virtual environment.",
+                error="pip is not available for the zcagent virtual environment.",
                 mirror_errors=mirror_errors,
             )
         rc, err_snippet = _run_install_cmd(

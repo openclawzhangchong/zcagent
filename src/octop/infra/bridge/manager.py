@@ -658,7 +658,7 @@ class BridgeManager:
                 if "403" in detail or "404" in detail or "rejected websocket" in low:
                     detail = (
                         f"{detail}; peer may not support Bridge yet "
-                        "(needs Octop with /api/bridge/ws)"
+                        "(needs zcagent with /api/bridge/ws)"
                     )
                 failures = self._reconnect_failures.get(connection_id, 0) + 1
                 self._reconnect_failures[connection_id] = failures
@@ -953,7 +953,7 @@ class BridgeManager:
         if not is_tunnel_path_allowed(method, path):
             raise OctopError(
                 ErrorCode.BRIDGE_REMOTE_UNSUPPORTED,
-                "This action is not available through the remote bridge. Manage it on the peer Octop.",
+                "This action is not available through the remote bridge. Manage it on the peer zcagent.",
             )
         sess = self.require_session(connection_id)
         result = await sess.tunnel_request(
@@ -968,7 +968,7 @@ class BridgeManager:
             if code_raw == ErrorCode.BRIDGE_REMOTE_UNSUPPORTED.value:
                 raise OctopError(
                     ErrorCode.BRIDGE_REMOTE_UNSUPPORTED,
-                    "This action is not available through the remote bridge. Manage it on the peer Octop.",
+                    "This action is not available through the remote bridge. Manage it on the peer zcagent.",
                 )
             raise OctopError(
                 ErrorCode.BRIDGE_TUNNEL_FAILED,

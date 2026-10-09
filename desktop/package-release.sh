@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build one native Octop desktop release: Dashboard → portable runtime → Wails package.
+# Build one native zcagent desktop release: Dashboard → portable runtime → Wails package.
 # Run once per native platform; the GitHub Actions matrix runs all six variants.
 set -euo pipefail
 

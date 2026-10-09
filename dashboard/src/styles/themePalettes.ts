@@ -25,8 +25,8 @@ export const VALID_PALETTES: ThemePalette[] = [
 /** Curated palettes only — "custom" is handled separately via a hex value. */
 export const CURATED_PALETTES: ThemePalette[] = [...VALID_PALETTES];
 
-export const DEFAULT_PALETTE: ThemePalette = "rose";
-export const DEFAULT_CUSTOM_COLOR = "#4B74FA";
+export const DEFAULT_PALETTE: ThemePalette = "custom";
+export const DEFAULT_CUSTOM_COLOR = "#3D5A80";
 
 /** True when the value is one of the curated palette keys (not "custom"/hex). */
 export function isCuratedPalette(value: string): value is ThemePalette {

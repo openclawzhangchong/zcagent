@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-rem Octop green portable launcher (Windows)
+rem zcagent green portable launcher (Windows)
 rem Usage:
 rem   start.bat
 rem   start.bat --home D:\octop-data
@@ -54,7 +54,7 @@ shift
 goto parse
 
 :help
-echo Octop green portable launcher
+echo zcagent green portable launcher
 echo.
 echo Usage: start.bat [--home DIR] [--host HOST] [--port PORT] [octop run args...]
 echo.

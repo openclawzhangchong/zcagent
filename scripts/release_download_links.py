@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-GITHUB_REPO = "TencentCloud/Octop"
+GITHUB_REPO = "openclawzhangchong/zcagent"
 DOWNLOAD_BASE = f"https://github.com/{GITHUB_REPO}/releases/download"
 
 
@@ -95,7 +95,7 @@ def render_download_section(raw_version: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Print Octop GitHub Release download markdown.")
+    parser = argparse.ArgumentParser(description="Print zcagent GitHub Release download markdown.")
     parser.add_argument("version", help="Package version, with or without a leading v")
     args = parser.parse_args(argv)
     sys.stdout.write(render_download_section(args.version))

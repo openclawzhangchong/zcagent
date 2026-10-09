@@ -13,7 +13,7 @@ from typing import Any
 
 _INSTALL_TIMEOUT_S = 300.0
 _VERSION_RE = re.compile(r"(\d+\.\d+\.\d+(?:[-+][\w.]+)?)")
-# fnOS / 容器里 Octop 常以非 root 用户运行，npm 全局目录（/usr/local）不可写，
+# fnOS / 容器里 zcagent 常以非 root 用户运行，npm 全局目录（/usr/local）不可写，
 # 此时降级到用户级目录安装，目录名沿用 npm 官方推荐的 ~/.npm-global。
 _NPM_USER_PREFIX_NAME = ".npm-global"
 
@@ -111,7 +111,7 @@ def _prefix_writable(prefix: str) -> bool:
 def ensure_cli_path() -> str:
     """Prepend the user-level npm global bin dir to the in-process PATH.
 
-    Octop 在 fnOS 上常以非 root 用户运行，``/usr/local`` 下的 npm 全局目录
+    zcagent 在 fnOS 上常以非 root 用户运行，``/usr/local`` 下的 npm 全局目录
     不可写，安装会降级到用户级目录（~/.npm-global）。这里确保该 bin 目录
     进入进程 PATH，使 ``shutil.which`` 与后续 CLI 子进程调用都能找到命令。
     目录不存在时不做任何修改，返回 bin 目录（可能为空串）。
@@ -158,7 +158,7 @@ def install_connector_cli(kind: str) -> dict[str, Any]:
     if not npm:
         return _fail(
             status,
-            f"未找到 npm，请先在 Octop 主机安装 Node.js，然后执行：{status['install_command']}",
+            f"未找到 npm，请先在 zcagent 主机安装 Node.js，然后执行：{status['install_command']}",
         )
 
     # npm 全局目录（默认 /usr/local）不可写时（fnOS/容器内非 root 用户），

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stamp the Octop version into Wails desktop metadata copies."""
+"""Stamp the zcagent version into Wails desktop metadata copies."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 _MANIFEST_IDENTITY = re.compile(
-    r'(<assemblyIdentity\b[^>]*\bname="com\.tencent\.octop"[^>]*\bversion=")[^"]+(")',
+    r'(<assemblyIdentity\b[^>]*\bname="cn\.jiuyeke\.zcagent"[^>]*\bversion=")[^"]+(")',
     re.IGNORECASE,
 )
 

@@ -22,6 +22,7 @@ import OctopSpinner from "./components/OctopSpinner";
 import { AntdAppProvider } from "./components/AntdAppProvider";
 import GlobalErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { branding, brandingName } from "./branding/runtime";
 import { AgentProvider } from "./context/AgentContext";
 import { LayoutModeProvider } from "./context/LayoutModeContext";
 import { VoiceOutputProvider } from "./context/VoiceOutputContext";
@@ -46,7 +47,13 @@ function ThemedApp() {
   const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
   const desktopChrome = useDesktopChrome();
-  const brandTokens = brandTokensFor(palette, isDark, customColor);
+  const brand = branding();
+  // A deployment-level accent wins over the user's own palette choice.
+  const brandTokens = brandTokensFor(
+    brand.color ? "custom" : palette,
+    isDark,
+    brand.color ?? customColor,
+  );
   // Make antd built-ins (Popconfirm OK/Cancel, Modal default footer, Empty,
   // Pagination, DatePicker, Table… ) follow the current UI language.
   // DatePicker month/weekday labels come from dayjs — keep it in sync too.
@@ -58,10 +65,10 @@ function ThemedApp() {
 
   useEffect(() => installDesktopExternalLinks(), []);
 
-  // Set document title based on current language
+  // Set document title based on current language (deployment brand wins).
   useEffect(() => {
-    document.title = t("app.pageTitle");
-  }, [t]);
+    document.title = brandingName(i18n.language) ?? t("app.pageTitle");
+  }, [t, i18n.language]);
 
   const themeConfig = {
     algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,

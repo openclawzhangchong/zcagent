@@ -1,4 +1,4 @@
-"""Materialize lark-cli config for headless Octop connector instances."""
+"""Materialize lark-cli config for headless zcagent connector instances."""
 
 from __future__ import annotations
 

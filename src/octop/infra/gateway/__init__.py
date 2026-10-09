@@ -1,1 +1,1 @@
-"""Octop Gateway — global AI interaction entry point."""
+"""zcagent Gateway — global AI interaction entry point."""

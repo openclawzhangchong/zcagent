@@ -1,4 +1,4 @@
-"""Portraits for users and roles, stored as files under the Octop home."""
+"""Portraits for users and roles, stored as files under the zcagent home."""
 
 from __future__ import annotations
 

@@ -6,6 +6,7 @@ import "./pwa-prompt";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { initI18n } from "./i18n";
+import { loadBranding } from "./branding/runtime";
 import {
   clearChunkReloadFlag,
   installChunkLoadRecovery,
@@ -59,7 +60,10 @@ if (typeof window !== "undefined") {
 }
 
 void initI18n()
-  .then(() => {
+  .then(async () => {
+    // Fetch deployment branding before the first paint so the title, accent
+    // colour and logo never flash the built-in values.
+    await loadBranding();
     createRoot(document.getElementById("root")!).render(<App />);
     // Delay clearing the one-shot reload guard until after first paint / lazy
     // chunks settle. Clearing immediately let Firefox modulepreload noise and

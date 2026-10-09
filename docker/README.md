@@ -1,8 +1,8 @@
-# Octop Docker Deployment
+# zcagent Docker Deployment
 
 ---
 
-This directory contains the Docker build and deployment assets for Octop.
+This directory contains the Docker build and deployment assets for zcagent.
 
 ### Files
 
@@ -13,7 +13,7 @@ This directory contains the Docker build and deployment assets for Octop.
 | `docker_build.sh` | Build image from source (BuildKit cache enabled by default) |
 | `docker-compose.yml` | One-command local / self-hosted deployment |
 | `docker-compose.postgres.yml` | PostgreSQL (+ pgvector) for dual-backend dev/tests |
-| `postgres/init-vector.sql` | Instance-level `CREATE EXTENSION vector` (initdb.d; **not** Octop migrations) |
+| `postgres/init-vector.sql` | Instance-level `CREATE EXTENSION vector` (initdb.d; **not** zcagent migrations) |
 | `docker-entrypoint.sh` | Container entrypoint: first-run init + start server |
 
 ### Quick start

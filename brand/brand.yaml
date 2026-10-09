@@ -1,0 +1,84 @@
+# OEM 品牌清单 —— 改这份文件，然后 `python scripts/rebrand.py --apply`。
+# 只换"显示层"。标识符一律保留（改了会断数据兼容）：
+#   Python 包名 octop / src/octop、OCTOP_HOME 与 ~/.octop、.octop 工作区目录、
+#   X-Octop-* 请求头、AntD prefixCls="octop"、octop:* localStorage key、
+#   侧边栏 19 个 nav key、infra/db/migrations 编号、小写 octop 命令与文件名。
+
+id: zcagent
+
+name:
+  en: zcagent          # 非 locale 文件与英文 locale 用这个
+  zh: 智策              # zh locale 文件用这个
+
+# 整串替换，先于 token 规则执行（token 规则处理不了的固定说法）
+phrases:
+  - { from: "Octop 助手", to: "智策助手" }
+  - { from: "Octop Assistant", to: "zcagent Assistant" }
+
+identity:
+  # 字面量替换（不含大写 Octop，token 规则碰不到）
+  literals:
+    - { from: "com.tencent.octop", to: "cn.jiuyeke.zcagent" }
+    # 上游仓库 slug 出现在安装脚本、镜像标签、"查看更新"链接里；
+    # 不写这条，token 规则会把它改成不存在的 TencentCloud/zcagent。
+    - { from: "TencentCloud/Octop", to: "openclawzhangchong/zcagent" }
+
+colors:
+  brand: "#3D5A80"     # 智策默认主色（钢蓝，配牧羊犬的深灰蓝+米白）
+  upstream_hex: "#e85d75"  # 上游 rose，用于替换 CSS 兜底色与启动屏；预设色板里的 rose 保留
+
+assets:
+  icon: brand/assets/icon-1024.png
+  key_background: true    # 抠掉四角采到的实底背景，logo 变透明底
+
+text:
+  - glob: src/octop/**/*.py
+  - glob: src/octop/i18n/*.json
+  - glob: dashboard/index.html
+  - glob: dashboard/public/manifest.json
+  - glob: dashboard/src/**/*.{ts,tsx,json,less}
+  - glob: tests/**/*.py
+  - glob: scripts/**/*.{py,sh,ps1,bat}
+  - glob: desktop/**/*.{go,yml,json,nsi,plist,sh,bat,py,mod}
+  - glob: desktop/**/*.manifest
+  - glob: fnos/**/*
+  - glob: docker/**/*
+
+# 清扫排除项。前两条是"发给外部系统的身份串"，换了对端可能拒绝或归错来源；
+# 后两条分别是数据库迁移（永远不动）和前端构建产物（rebuild 会覆盖）。
+exclude:
+  - scripts/rebrand.py          # 工具自身含品牌正则，扫它会自我改写
+  - brand/**
+  - src/octop/infra/connectors/gateway/adapters/fliggy.py
+  - src/octop/infra/connectors/gateway/adapters/qq_mail.py
+  - src/octop/infra/db/migrations/**
+  - src/octop/dashboard/**
+  - .github/**
+
+# 图标产物：源图 → 上游钉死的文件名（文件名不能改，12 处 TSX + vite includeAssets 引用它）
+asset_map:
+  dashboard/public/pwa-512.png: { size: 512, keep_bg: true }
+  dashboard/public/pwa-192.png: { size: 192, keep_bg: true }
+  dashboard/public/apple-touch-icon.png: { size: 180, keep_bg: true }
+  dashboard/public/favico.svg: { size: 64, svg: true }
+  dashboard/public/logo_horizontal_dark.png: { box: [280, 72], lockup: dark }
+  dashboard/public/logo_horizontal_white.png: { box: [280, 72], lockup: light }
+  dashboard/public/logo_vertical_dark.svg: { size: 128, svg: true }
+  dashboard/public/logo_vertical_white.svg: { size: 128, svg: true }
+
+# 吉祥物。OEM 换形象 = 换这三张姿势图，动画由工具生成（代码只用 .webp，.webm 无人引用）
+poses:
+  - out: dashboard/public/octop-mascot-empty.png
+    src: brand/assets/mascot-empty.png
+    size: 2048
+  - out: dashboard/public/octop-mascot-peek.webp
+    src: brand/assets/mascot-peek.png
+    box: [352, 320]
+    animate: { frames: 30, mode: bob, amplitude: 12, duration: 60 }
+  - out: dashboard/public/octop-mascot-type.webp
+    src: brand/assets/mascot-typing.png
+    box: [856, 812]
+    animate: { frames: 24, mode: nod, amplitude: 3, duration: 80 }
+
+# 字标字体（留空则按平台自动找：Windows 雅黑 / macOS 苹方 / Linux Noto CJK）
+fonts: {}
