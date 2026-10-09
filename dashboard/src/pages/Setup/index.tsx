@@ -1,3 +1,4 @@
+import AppLogo from "../../branding/AppLogo";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Segmented, Steps, Typography } from "antd";
@@ -256,7 +257,7 @@ export default function SetupPage() {
         <div className={styles.wizardHeader}>
           <div className={styles.wizardHeaderTop}>
             <div className={styles.wizardHeaderBrand}>
-              <img
+              <AppLogo
                 src={
                   isDark
                     ? "/logo_horizontal_white.png"

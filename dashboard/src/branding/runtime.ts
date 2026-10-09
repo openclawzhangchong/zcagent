@@ -17,6 +17,15 @@ export type Branding = {
 
 let current: Branding = {};
 
+function applyFavicon(logoUrl: string | null | undefined) {
+  if (!logoUrl) return;
+  for (const rel of ["icon", "apple-touch-icon"]) {
+    for (const link of document.querySelectorAll(`link[rel~="${rel}"]`)) {
+      link.setAttribute("href", logoUrl);
+    }
+  }
+}
+
 export async function loadBranding(): Promise<Branding> {
   try {
     // Plain fetch, not api/request.ts: the endpoint is auth-exempt and a 401
@@ -26,6 +35,7 @@ export async function loadBranding(): Promise<Branding> {
   } catch {
     current = {}; // offline / server still booting -- keep the built-in brand
   }
+  applyFavicon(current.logo_url);
   return current;
 }
 

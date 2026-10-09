@@ -1,3 +1,4 @@
+import AppLogo from "../../branding/AppLogo";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Input, Button, Checkbox } from "antd";
@@ -269,7 +270,7 @@ export default function LoginPage() {
           margin: "0 16px",
         }}
       >
-        <img
+        <AppLogo
           src={
             isDark ? "/logo_horizontal_white.png" : "/logo_horizontal_dark.png"
           }

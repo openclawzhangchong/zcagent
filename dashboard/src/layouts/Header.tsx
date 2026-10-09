@@ -1,3 +1,4 @@
+import AppLogo from "../branding/AppLogo";
 import { Layout } from "antd";
 import { Menu as MenuIcon } from "lucide-react";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
@@ -77,7 +78,7 @@ export default function Header({ onToggle, isMobile }: HeaderProps) {
             <MenuIcon size={20} strokeWidth={1.8} />
           </button>
         )}
-        <img
+        <AppLogo
           src={mobileLogoSrc}
           alt="octop"
           style={{

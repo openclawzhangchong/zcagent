@@ -1,3 +1,4 @@
+import AppLogo from "../branding/AppLogo";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -491,7 +492,7 @@ export default function Sidebar({
 
   const brandInner = (
     <>
-      <img
+      <AppLogo
         src={isRailCollapsed ? "/pwa-192.png" : wordmarkSrc}
         alt="zcagent"
         style={{

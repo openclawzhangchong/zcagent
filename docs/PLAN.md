@@ -26,8 +26,10 @@ P5 的桌面与镜像产物**不能在本机做**（本机没有 `go` / `wails3`
 | 任务 | 出口条件 | 粗估 | 上游冲突面 |
 |---|---|---|---|
 | **P2-0 凭据存储**：Agent 侧写入的凭据一律走 `connectors` 的加密 `secrets`；工具输出禁止声称"未落盘" | 该要求有回归测试锁住 | 3–5 人日 | ~4 文件（`infra/agents/`、`infra/connectors/`） |
-| P2-1 共享 `<AppLogo>` 组件 + 接入 12 处 logo 调用点 | `PUT /api/branding` 换 logo 立即生效，无需重建 | 2 人日 | **12 文件**，每处只改 import 与标签名 |
-| P2-2 管理页"品牌"编辑区（名字 / 标语 / 主色 / 上传 logo） | 非开发角色能自助换皮 | 2–3 人日 | 新增页 + `routes`/`sidebarNav`/`permissions` 各 1 行 |
+| ~~P2-1~~ | 共享 `<AppLogo>` + logo 调用点接入 | —— | —— | **已完成，并入 P1b**。实际只有 4 处调用点（Header / Sidebar / Login / Setup），先前"12 处"把吉祥物引用也算了进去 |
+| ~~P2-2~~ | 管理页"品牌"编辑区 | —— | —— | **已完成，并入 P1b**。做成 `/admin/advanced` 的一个 tab，因此只碰了 `index.tsx` + `permissions.ts` 各几行，没有新增路由 |
+
+P2 剩余净工作量因此降到 **7–11 人日**。
 | P2-3 信息架构重排：导航分组按客户场景收敛，隐藏本版本不交付的上游入口（远程手机、fnOS 专属项等） | 新导航走通；冲突面积 ≤ 基线 + 4 文件 | 3–4 人日 | `routes/index.tsx`(63 条)、`layouts/sidebarNav.tsx`(19 key)、`utils/permissions.ts`、`locales/{en,zh}.json`(6488 行) |
 | P2-4 登录页 / 欢迎页重做（自有视觉，复用上游表单与验证码逻辑） | 首屏无上游视觉痕迹 | 2 人日 | `pages/Login`、`pages/Chat/components/WelcomeScreen` |
 | P2-5 划"禁改区"并写进仓库约定 | `pages/Chat`(43504 行 / 223 文件)、`pages/Experts`、`pages/Agent/Personalization` 只读 | 0.2 人日 | 0 |
