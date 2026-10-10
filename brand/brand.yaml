@@ -26,7 +26,17 @@ identity:
     # token 规则因为要保护 X-Octop-* 这类头名而跳过后接连字符的情况，所以必须
     # 单独列这条：NSIS 的产物名来自 productName（已是 zcagent），生成器与
     # workflow 的 glob 必须一起改，否则上传步骤 if-no-files-found: error。
-    - { from: "Octop-", to: "zcagent-" }
+    # 必须带左边界：`X-Octop-Agent-Id` / `X-Octop-Access-Token` 是**线上协议头**，
+    # 对端可能是上游实例或照上游文档写的客户端，纯字面量把它们改成 X-zcagent-* 会
+    # 直接断掉云端协同（z01 就这么发出去过，靠 tests/unit/scripts 的转换测试抓回）。
+    - pattern: '(?<![A-Za-z0-9_-])Octop-'
+      to: "zcagent-"
+    # 侧栏「帮助与反馈」指向上游官网（dashboard/src/components/AvatarDropdown.tsx）。
+    # 用 pattern 而不是 from：`https://octop.cloud` 是通道服务地址
+    # `https://octop.cloud.tencent.com` 的前缀，纯字面量替换会把腾讯的 OctoBot
+    # 端点一起改坏。OEM 交付时把 to 换成客户自己的文档/工单入口。
+    - pattern: 'https://octop\.cloud(?!\.tencent)'
+      to: "https://github.com/openclawzhangchong/zcagent"
 
 colors:
   brand: "#3D5A80"     # 智策默认主色（钢蓝，配牧羊犬的深灰蓝+米白）
@@ -39,12 +49,25 @@ assets:
 text:
   - glob: src/octop/**/*.py
   - glob: src/octop/i18n/*.json
+  # 专家模板与随产品分发的脚本：SOUL.md / SKILL.md 会进系统提示词，
+  # offline.html 是断网时用户唯一看得见的页面，install.sh 是运维读的注释。
+  # 这些以前不在清扫范围内，`--check` 的守卫也看不见它们（只扫 5 种扩展名）。
+  - glob: src/octop/**/*.md
+  - glob: src/octop/**/*.sh
+  - glob: src/octop/**/*.js
+  - glob: src/octop/**/*.json
   - glob: dashboard/index.html
   - glob: dashboard/public/manifest.json
-  - glob: dashboard/src/**/*.{ts,tsx,json,less}
+  - glob: dashboard/public/*.html
+  - glob: dashboard/src/**/*.{ts,tsx,json,less,css}
   - glob: tests/**/*.py
-  - glob: scripts/**/*.{py,sh,ps1,bat}
-  - glob: desktop/**/*.{go,yml,json,nsi,plist,sh,bat,py,mod}
+  - glob: scripts/**/*.{py,sh,ps1,bat,md}
+  - glob: desktop/**/*.{go,yml,json,nsi,plist,sh,bat,py,mod,md,txt}
+  # 桌面壳自己的 HTML（窗口标题、托盘设置窗、"显示 Octop" 按钮）与 NSIS 的
+  # INFO_PRODUCTNAME / COMPANYNAME / COPYRIGHT —— 装完后"应用和功能"里显示的
+  # 名称与发行商就来自这里。
+  - glob: desktop/**/*.html
+  - glob: desktop/**/*.nsh
   - glob: desktop/**/*.manifest
   - glob: fnos/**/*
   - glob: docker/**/*

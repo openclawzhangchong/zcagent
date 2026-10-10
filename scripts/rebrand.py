@@ -48,7 +48,15 @@ def transform(text: str, brand: dict, lang: str) -> str:
     for phrase in brand.get("phrases") or []:
         text = text.replace(phrase["from"], phrase["to"])
     for lit in (brand.get("identity") or {}).get("literals") or []:
-        src, dst = lit["from"], lit["to"]
+        dst = lit["to"]
+        pattern = lit.get("pattern")
+        if pattern:
+            # A literal that collides with a longer string that must survive --
+            # `https://octop.cloud` is a prefix of the upstream channel endpoint
+            # `https://octop.cloud.tencent.com`, so it needs a boundary.
+            text = re.sub(pattern, lambda _m: dst, text)
+            continue
+        src = lit["from"]
         text = text.replace(src, dst)
         if "." in src:
             # Same identity written inside a regex needs its dots escaped.
@@ -101,17 +109,28 @@ def uncovered_hits(brand: dict) -> list[str]:
     """Files in the sweep roots that still hold the brand but are NOT targeted.
 
     Guards against a silently empty glob -- a check that scans only the target
-    list is vacuously green when the target list is wrong.
+    list is vacuously green when the target list is wrong. It has to read every
+    file type, not a whitelist of extensions: the first version only looked at
+    .py/.ts/.tsx/.json/.less, and `desktop/portable/templates/README.txt` -- the
+    first thing a customer sees after unzipping the portable package -- shipped
+    with four occurrences of the old name while `--check` reported all clear.
     """
     covered = {p.relative_to(ROOT).as_posix() for p, _ in text_targets(brand)}
     excludes = brand.get("exclude") or []
     hits: list[str] = []
-    for root in ("src/octop", "dashboard/src", "tests", "scripts", "desktop", "fnos", "docker"):
+    for root in ("src/octop", "dashboard", "tests", "scripts", "desktop", "fnos", "docker"):
         for path in sorted((ROOT / root).rglob("*")):
-            if not path.is_file() or path.suffix not in {".py", ".ts", ".tsx", ".json", ".less"}:
+            if not path.is_file():
                 continue
             rel = path.relative_to(ROOT).as_posix()
+            if "/node_modules/" in f"/{rel}" or "/dist/" in f"/{rel}":
+                continue
             if rel in covered or _excluded(rel, excludes):
+                continue
+            try:
+                if path.stat().st_size > 2_000_000:
+                    continue
+            except OSError:
                 continue
             text = _read(path)
             if text and TOKEN_RE.search(text):

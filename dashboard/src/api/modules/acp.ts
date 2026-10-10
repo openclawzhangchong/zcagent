@@ -10,7 +10,7 @@ function optionalAgentHeaders(
 ): HeadersInit | undefined {
   const id = (agentId ?? "").trim();
   if (!id) return undefined;
-  return { "X-zcagent-Agent-Id": id };
+  return { "X-Octop-Agent-Id": id };
 }
 
 export const acpApi = {

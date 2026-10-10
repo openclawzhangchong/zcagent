@@ -96,7 +96,7 @@ def resolve_tunnel_target(
     path: str,
     agent_header: str | None = None,
 ) -> TunnelTarget | None:
-    """Return a tunnel target when ``path`` / ``X-zcagent-Agent-Id`` names a Bridge agent."""
+    """Return a tunnel target when ``path`` / ``X-Octop-Agent-Id`` names a Bridge agent."""
     raw = (path or "").split("?", 1)[0] or "/"
 
     match = _BRIDGE_AGENT_PATH.match(raw)
@@ -198,7 +198,7 @@ def _forward_headers(request: Request, remote_agent_id: str) -> dict[str, str]:
             rewritten = True
             break
     if not rewritten:
-        headers["X-zcagent-Agent-Id"] = remote_agent_id
+        headers["X-Octop-Agent-Id"] = remote_agent_id
     return headers
 
 

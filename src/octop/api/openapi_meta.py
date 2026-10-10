@@ -26,7 +26,7 @@ Most endpoints require a JWT bearer token:
 
 Access tokens use sliding renewal: when less than one-third of
 `access_token_ttl_seconds` remains, authenticated responses may include a fresh
-token in the `X-zcagent-Access-Token` header. Clients should replace the stored
+token in the `X-Octop-Access-Token` header. Clients should replace the stored
 token when present.
 
 Public endpoints (no token): `/api/docs`, `/api/openapi.json`, `/api/health`,

@@ -8,7 +8,7 @@ import type {
 
 function agentHeaders(agentId?: string): HeadersInit | undefined {
   if (!agentId) return undefined;
-  return { "X-zcagent-Agent-Id": agentId };
+  return { "X-Octop-Agent-Id": agentId };
 }
 
 export const mbtiApi = {

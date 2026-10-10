@@ -57,7 +57,7 @@ import {
 import styles from "./AvatarDropdown.module.less";
 
 const GITHUB_URL = "https://github.com/openclawzhangchong/zcagent";
-const HELP_FEEDBACK_URL = "https://octop.cloud";
+const HELP_FEEDBACK_URL = "https://github.com/openclawzhangchong/zcagent";
 const APP_OAUTH_KINDS = new Set(["feishu", "dingtalk", "wecom"]);
 
 const PASSWORD_FIELD_ICON_PROPS = {

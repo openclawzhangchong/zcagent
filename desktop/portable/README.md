@@ -1,6 +1,6 @@
-# Octop 绿色便携包（多平台）
+# zcagent 绿色便携包（多平台）
 
-解压即用：内置便携 CPython + Octop 及依赖，通过 `start.sh` / `start.bat` 启动。  
+解压即用：内置便携 CPython + zcagent 及依赖，通过 `start.sh` / `start.bat` 启动。  
 **不依赖**系统 Python，也**不包含** Wails / 桌面壳——用浏览器打开 Dashboard。  
 首启走上游正常 setup wizard（本目录**不含** OOB / UI 裁剪）。
 
@@ -29,12 +29,12 @@ make -f desktop/portable/Makefile green
 
 ## 产物布局
 
-公开文件名：`Octop-portable-<plat>-<version>.zip`。zip 内目录仍是：
+公开文件名：`zcagent-portable-<plat>-<version>.zip`。zip 内目录仍是：
 
 ```
-Octop-<plat>/
+zcagent-<plat>/
   runtime/       # python-build-standalone
-  packages/      # Octop + 依赖（site-packages，可搬迁）
+  packages/      # zcagent + 依赖（site-packages，可搬迁）
   launch.py      # 启动引导（site.addsitedir / Windows pywin32）
   start.sh       # macOS / Linux
   start.bat      # Windows
@@ -114,5 +114,5 @@ Actions 使用 GitHub 上游 PBS（`PBS_BASE_URL`），本机构建默认 npmmir
 
 ## Electron 壳
 
-壳只消费 `Octop-portable-<plat>-<version>.zip`（zip 内仍是 `Octop-<plat>/`），不要把绿包编进 asar。步骤见
+壳只消费 `zcagent-portable-<plat>-<version>.zip`（zip 内仍是 `zcagent-<plat>/`），不要把绿包编进 asar。步骤见
 [`AGENT_ELECTRON_INTEGRATION.md`](AGENT_ELECTRON_INTEGRATION.md)。

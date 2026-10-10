@@ -2,7 +2,7 @@
 
 zcagent is multi-agent: the MBTI code lives on ``agents.persona_mbti`` /
 ``config_json["persona"]`` and is rendered into workspace ``SOUL.md`` on
-agent reload.  The active agent is selected via ``X-zcagent-Agent-Id``.
+agent reload.  The active agent is selected via ``X-Octop-Agent-Id``.
 """
 
 from __future__ import annotations
@@ -150,7 +150,7 @@ class CurrentMBTIResponse(BaseModel):
 
 @router.get("/current", response_model=CurrentMBTIResponse)
 async def get_current_mbti(
-    x_octop_agent_id: str = Header(..., alias="X-zcagent-Agent-Id"),
+    x_octop_agent_id: str = Header(..., alias="X-Octop-Agent-Id"),
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
 ) -> CurrentMBTIResponse:
@@ -676,7 +676,7 @@ def _score_answers(answers: dict[str, str]) -> tuple[str, dict[str, Any]]:
 @router.post("/test/submit", response_model=TestResultResponse)
 async def submit_test(
     req: TestSubmitRequest,
-    x_octop_agent_id: str | None = Header(None, alias="X-zcagent-Agent-Id"),
+    x_octop_agent_id: str | None = Header(None, alias="X-Octop-Agent-Id"),
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
 ) -> TestResultResponse:
@@ -698,7 +698,7 @@ async def submit_test(
         if not x_octop_agent_id:
             raise HTTPException(
                 status_code=400,
-                detail="X-zcagent-Agent-Id header required when auto_apply is true",
+                detail="X-Octop-Agent-Id header required when auto_apply is true",
             )
         row = _resolve_agent_row(server, user, x_octop_agent_id)
         try:
@@ -742,7 +742,7 @@ class ApplyResponse(BaseModel):
 @router.post("/apply", response_model=ApplyResponse)
 async def apply_type(
     req: ApplyRequest,
-    x_octop_agent_id: str = Header(..., alias="X-zcagent-Agent-Id"),
+    x_octop_agent_id: str = Header(..., alias="X-Octop-Agent-Id"),
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
 ) -> ApplyResponse:
