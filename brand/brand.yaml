@@ -96,6 +96,12 @@ asset_map:
   dashboard/public/logo_horizontal_white.png: { box: [280, 72], lockup: light }
   dashboard/public/logo_vertical_dark.svg: { size: 128, svg: true }
   dashboard/public/logo_vertical_white.svg: { size: 128, svg: true }
+  # 桌面客户端图标。`wails3 generate icons -input appicon.png -windowsfilename
+  # windows/icon.ico` 在构建时生成 .ico（仓库里没有 .ico），再由 syso 嵌进 exe，
+  # 所以换这张 = 同时换文件图标 / 任务栏 / 开始菜单。托盘图标是另一张运行时资源。
+  desktop/src/build/appicon.png: { size: 512, keep_bg: true }
+  desktop/src/build/appicon-macos.png: { size: 1024, keep_bg: true }
+  desktop/src/assets/tray-icon.png: { size: 96, keep_bg: true }
 
 # 吉祥物。OEM 换形象 = 换这三张姿势图，动画由工具生成（代码只用 .webp，.webm 无人引用）
 poses:
