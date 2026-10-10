@@ -94,6 +94,9 @@
 | 前端 vitest 全量（改名后，空闲） | 8 / 6 个用例失败 |
 | 前端 vitest 全量（干净上游基线，两次） | 8 / 8 个用例失败 |
 | 结论 | 改名与改色造成的确定性失败 **0**；该套件在本机 ±2 抖动（`pool: "threads"` + testing-library 1000ms 异步超时），CPU 争用时会升到 9–10 |
+| 前端 ESLint（`npx eslint .`） | 0 error / 68 warning（上游树上原有 2 error，已修；warning 不阻塞，`eslint .` 无 `--max-warnings`） |
+| 前端 Prettier（`prettier --check .`） | 本地与 CI 均通过；CI 只报 9 个文件，本地一度报 1082 个 —— 差额是 `core.autocrlf` 的换行噪声，已由 `.gitattributes` 消除 |
+| 前端 `npm run build`（= `tsc -b` + vite + PWA） | 通过 |
 | 标识符未被误改 | `X-Octop-*`、`prefixCls="octop"`、`OCTOP_HOME`、`octop-harness` 依赖名、i18n key 均已核对原样 |
 | 运行期冒烟 | 登录 → 建专家 → 真实对话（OpenAI 兼容 provider）→ 工具调用写文件并落盘核对，全通过 |
 
@@ -101,10 +104,32 @@
 
 - `.github/workflows/frontend.yml`：lint + prettier check + `tsc -b`/build + vitest 汇总。**vitest 暂不阻塞**——上游 CI 从不跑它，干净上游树在本机已红 6–10 个，先让 CI 建立自己的基线再转阻塞。
 - `.github/workflows/sync-attempt.yml` + `scripts/sync_check.py`：每周一试 merge 最新 stable tag（不提交不推送），报告"上游领先多少 / 哪些文件冲突 / 是否踩了我们的规矩"，冲突或违规时退出码非零。含两条守卫：不许私自新增编号 migration；工作树有未提交改动时拒绝试 merge（回滚用 `reset --hard`）。
-- `scripts/classify_owned.py`：用真实管线量冲突面积——在基线的临时 worktree 里跑一次 `--apply`，再逐文件字节比对，得出 `brand/owned-files.txt`：**285 个改动文件里 260 个是纯生成物（冲突可机械处理），25 个承载手工改动（真实冲突面）**。先前按"是否落在清扫 glob 内"分类会把 P1b 的运行时代码误判成生成物，故改用字节比对。
+- `scripts/classify_owned.py`：用真实管线量冲突面积——在基线的临时 worktree 里跑一次 `--apply`，再逐文件比对 git 存储的内容，得出 `brand/owned-files.txt`。首轮读数是 285 个改动文件 / 260 个纯生成物 / 25 个手工改动；格式化进入管线后重新测量为 334 / 282 / 25 + 27 个新增，见下一节。先前按"是否落在清扫 glob 内"分类会把 P1b 的运行时代码误判成生成物，故改用内容比对。
 - 验证：用从基线分叉、在同一位置插入不同行的合成分支实测 `sync_check.py`，正确报出 1 个冲突、退出码非零、且工作树完整还原。真实 upstream 试 merge 因本机 `github.com:443` 中断未跑成，留给首次 CI。
 
-### 已知问题（待 P2 处理）
+### 首轮 CI：门禁确实会红，红的是我们
+
+`Frontend` workflow 上线后第一次跑就给出三个可核对的事实：
+
+- **ESLint 红 2 个错误，且都在我们从未改过的文件里**（`chatStore.ts:1217` 多余的 `Boolean()`、`constants.test.ts:5` 未使用的 import）。用 `git diff --name-only upstream-main..HEAD` 证明这两处与 fork 无关 —— 上游前端**不过自己的 ESLint**，因为它的 CI 里没有 Node job。已修，不靠 disable：门禁必须能为我们关心的原因失败。
+- **Prettier 红 9 个文件，全部由我们造成**：逐个用 `prettier --stdin-filepath` 比对基线版本与当前版本，基线 9 个文件里 6 个本来是干净的。根因是替换品牌词会改变字符串长度，于是 prettier 要求重新换行；`#3D5A80` 写成大写十六进制也被判为未格式化。
+- **因此格式化进了 `--apply` 管线**（`format_written()`）：只对本工具刚重写的 dashboard 文件跑 prettier，且当它跑在临时 worktree 里时借用主检出那份 prettier，保证两边字节一致。若把这一步写成"记得手工跑 `npm run format`"，第一次追版之后就会静默变红，而没人能追溯到原因。
+- 新增 `.gitattributes` 为前端文本固定 `eol=lf`。仓库里**没有任何文本 blob 带 CRLF**，所以这行对 Linux/CI 零影响；它只解决 Windows 检出（`core.autocrlf=true`）下 `format:check` 把 1000+ 个干净文件报成脏的假阳性——那是纯换行差异，不是代码问题。
+
+### 变更：冲突面积重新测量（334 / 282 / 25 / 27）
+
+`scripts/classify_owned.py` 原先硬编码了一个已不存在的仓库路径、用 `read_bytes()` 逐字节比对、并且把"我们新增的文件"和"上游也拥有的文件"混在一张表里。修正后：从所在检出自动取仓库根、解释器与基线 revision，比对**git 存储的内容**（忽略本机换行），并区分三类：
+
+| 类别 | 数量 | 合并时怎么处理 |
+|---|---|---|
+| 相对基线改动的文件 | 334 | — |
+| 与 `--apply` 再生成结果一致 | **282** | 机械处理：取上游，重跑 `--apply` |
+| 承载手工改动（上游也拥有该文件） | **25** | 真实冲突面，逐条列在 `brand/owned-files.txt` |
+| 我们新增（无上游 counterpart） | **27** | 不会撞，除非上游以后新增同路径文件 |
+
+先前的"25"结果碰巧还对，但理由是错的：换行差异会让分类器把约 230 个生成物误判成手工改动，格式化一进管线就会立刻暴露。
+
+### 已知问题
 
 - **凭据存储：决定不改为强制加密（2026-10-09）。** Agent 可在工作区 `.octop/.env` 写入凭据，曾提议强制走 `connectors` 的加密 `secrets`，已否决：普通用户接自己的 MCP 就是靠直接编辑这个文件，加密会把主路径变成工单。这是权衡后的接受项，不要重做；详见 `docs/HANDOVER.md` 第 6 节。保留的底线只有一条：不许在任何文案或提示词里声称"密钥不落盘"。
 - Windows 下 `工作台 / 终端` 不可用（上游按设计禁用，见 `src/octop/api/routers/terminal.py`）。

@@ -1,6 +1,6 @@
 # 交接说明
 
-> 状态快照，截至 **2026-10-09**。不是教程：工作流看 [`README.md`](../README.md)，逐版本改动看 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 状态快照，截至 **2026-10-10**（`v1.0.2b6-z1` 已发版）。不是教程：工作流看 [`README.md`](../README.md)，逐版本改动看 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 1. 这个项目在判断什么
 
@@ -20,30 +20,39 @@
 | P1a 构建期品牌 | 完成 | `rebrand.py --check` 覆盖 2347 文件无残留；标识符逐项核对未误改 |
 | P1c 吉祥物 | 完成 | 三姿势生成动画 WebP，帧级校验（24 帧中 23/24 帧不同），404 页实景确认 |
 | P1b 运行时 OEM | 完成 | 名称/标语/主色/logo 四项均可在装完后改；对照实验：塞入一张明显不同的测试 logo，登录页与侧栏同步替换且未重新构建 |
-| P4 追版度量 | 完成（首次追版待网络） | `frontend.yml` + `sync-attempt.yml` + `scripts/sync_check.py`；合成冲突分支实测能识别冲突、非零退出、并完整还原工作树 |
-| P2 换壳与信息架构 | 未开始（4–6 人日） | P2-1 / P2-2 已并入 P1b 完成；P2-0 凭据加密**已否决，不重做**（见第 6 节） |
-| P5 自有产物链 | 未开始 | — |
+| P2 换壳与信息架构 | 完成 | 导航渐进式披露：默认 14 项，开关打开 19 项，无头驱动真实点击验证；P2-1 / P2-2 已并入 P1b；P2-0 凭据加密**已否决，不重做**（见第 6 节） |
+| P3 首个自有能力 | 完成（遵循度受模型档位限制） | `plugins/zcagent-decision-log/` 走 `octop plugin install` → `loaded: True` → `skills list` 里 `enabled=True`；实测模型会绕开技能，见第 5 节 |
+| P4 追版度量 | 完成（首次真实追版待做） | `frontend.yml` + `sync-attempt.yml` + `scripts/sync_check.py`；合成冲突分支实测能识别冲突、非零退出、并完整还原工作树 |
+| P5 自有产物链 | 完成 | Windows 桌面产物 `zcagent-desktop-windows-amd64-1.0.2b6+z1.exe` + 便携 zip 由自有 workflow 产出并挂到 GitHub Release；未签名（刻意的，上游也不签） |
 
 ### 冲突面积的真实测量（重要）
 
-我们分支相对基线一共动了 **285 个已有文件**，但按"是否在 `rebrand.py --apply` 的再生成范围内"分类后：
+我们分支相对基线一共动了 **334 个文件**，按"是否在 `rebrand.py --apply` 的再生成范围内"分类后：
 
 | 类别 | 数量 | 合并时怎么处理 |
 |---|---|---|
-| 纯工具生成（与再生成结果**逐字节相同**） | **260** | 机械处理：取上游版本，然后重跑 `--apply` |
-| 承载手工改动 | **25** | 真正需要人看的冲突面，逐条列在 `brand/owned-files.txt` |
+| 纯工具生成（与再生成结果内容一致） | **282** | 机械处理：取上游版本，然后重跑 `--apply` |
+| 承载手工改动（上游也拥有该文件） | **25** | 真正需要人看的冲突面，逐条列在 `brand/owned-files.txt` |
+| 我们新增（无上游 counterpart） | **27** | 不会撞，除非上游以后新增同路径文件 |
 
-这 25 个就是 P1b 运行时层（`App.tsx`、`main.tsx`、`branding` 路由与模块、`AdvancedSettings`、4 处 logo 调用点、两份 locale、`permissions.ts`）+ `self_update.py` 的索引可配 + 一处测试修正 + 我们的文档。
+那 25 个就是 P1b 运行时层（`App.tsx`、`main.tsx`、`branding` 路由与模块、`AdvancedSettings`、4 处 logo 调用点、两份 locale、`permissions.ts`）+ `self_update.py` 的索引可配 + `update.py` 默认关闭 + 两处上游 lint 修正 + 版本号与我们的文档。
 
-测量方法本身也值得记一笔：先前用"是否落在清扫 glob 里"来分类是**错的**（`dashboard/src/**` 既是清扫范围也包含手工写的运行时代码，会把 P1b 全算成生成物）。`scripts/classify_owned.py` 改成跑真实管线——在基线的临时 worktree 里执行一次 `--apply`，再逐文件字节比对——这才是地面真值。
+测量方法本身也值得记一笔，先后踩过两个坑：
+
+1. 用"是否落在清扫 glob 里"分类是**错的**（`dashboard/src/**` 既是清扫范围也包含手工写的运行时代码，会把 P1b 全算成生成物）。改成跑真实管线——在基线的临时 worktree 里执行一次 `--apply`，再比对内容——才是地面真值。
+2. 比对**逐字节**也是错的：Windows 工作树是 CRLF，而 `--apply` 现在会调 prettier（写 LF），于是约 230 个生成物会被误判成手工改动。现在比的是 git 实际存储的内容。`format_written()` 借用主检出的 prettier，正是为了让 worktree 与主检出两边字节一致。
 
 
 
 ## 3. 下一步
 
-排期、出口条件与人力估算在 [`PLAN.md`](./PLAN.md)，已按四个已定决策展开（P2 做换壳+信息架构、更新索引自建 devpi、代码签名列为可选后置、Windows 优先）。
+P0–P5 都已收尾，`v1.0.2b6-z1` 已发版。接下来真正有价值的是这三件事，都不在代码里：
 
-一句话原则：**P4 排在 P2 之前**——P2 每多改一个上游文件，追版成本就永久上升，度量装置必须先就位。P4 已完成，P2 现在只剩 4–6 人日的换壳与信息架构工作。
+1. **首次真实追版**：等上游出 stable（`v1.0.2` 或 `v1.1.0`），跑 `scripts/sync_check.py` 看试 merge 报告，再按 SOP 解冲突。度量装置已经证明自己能红，第一次真跑大概率会暴露"上游也改了 locale / `App.tsx`"这类日常——面积已经量化到 25 个文件，不再是未知数。
+2. **干净机器上的安装验收**：产物目前只在本机构建机上验过启动。要在一台没装过 Python / Node 的 Windows 机器上跑一遍安装版和便携版，确认内嵌运行时、数据目录迁移、SmartScreen 提示的话术，以及卸载不留垃圾。
+3. **内网更新源**：`OCTOP_UPDATE_INDEX_URL` 已可配，但要真起一个 devpi 并把 `1.0.2b6+z1` 的 wheel 传上去，`/admin/advanced?tab=updates` 才会显示我们自己的版本而不是什么都不做。
+
+排期与出口条件在 [`PLAN.md`](./PLAN.md)。一句话原则仍然成立：**每多手改一个上游文件，追版成本就永久上升**——所以能放进 `brand/brand.yaml` 的不要写进源码，能用运行时覆盖的不要构建期硬改，能加新文件的不要改旧文件。
 
 ## 4. 这次真踩过的坑（别重复踩）
 
@@ -55,6 +64,11 @@
 - **测试里有大量写死的品牌断言**（约 388 处），所以 `tests/**` 必须和源码同一规则一起扫，否则改一半必红。
 - **颜色有三个真源**：`themePalettes.ts`、`theme-vars.css`、以及 `index.html` 里 JS 之前的启动屏硬编码。只改一处会不一致或闪色。
 - **`i18n` 的 key 不能动**（如 `askOctopHint`），只改 value；改 key 会破前后端 key 奇偶校验测试。
+- **上游前端不过自己的 lint**：`npx eslint .` 在**我们没碰过的文件里**有 2 个 error（`chatStore.ts` 里多余的 `Boolean()`、`constants.test.ts` 里未使用的 import），因为上游 CI 没有 Node job。已修；`eslint .` 不带 `--max-warnings`，68 个 warning 不阻塞。
+- **`prettier --check` 的红要信 CI，别信本地**：CI 报 9 个文件，本机同一棵树报 1082 个 —— 差额全是 `core.autocrlf=true` 的 CRLF 噪声（仓库里没有任何文本 blob 带 CRLF）。`.gitattributes` 已为前端文本固定 `eol=lf`。那 9 个文件在基线版本里 6 个本来干净：替换品牌词改变字符串长度 → 换行变，加上 `#3D5A80` 写成大写十六进制；所以格式化进了 `--apply`，而不是写在 README 里靠人记。
+- **`gh` 会把这个 fork 解析成上游仓库**：`gh repo view` / `gh run list` 默认返回 `TencentCloud/Octop` 的数据。查自己的 Actions / Release 必须显式 `--repo openclawzhangchong/zcagent` 或写全 `owner/repo`，否则读到的是腾讯的流水线。
+- **`git ls-remote origin <branch> <sha>` 不是"推送成功"的判据**：带 SHA 的 pattern 匹配不到任何 ref，而 branch 名总能匹配，于是这个检查恒真。我因此误报过一次推送成功。要比对 `git ls-remote origin refs/heads/<branch>` 的输出与本地 HEAD。
+- **别在验证命令里顺手写 `git checkout -- .`**：它会把刚做好的格式化与换行转换整体清掉（踩过一次，代价是重跑 prettier）。看状态请用 `git status` / `git diff`。
 
 ## 5. 验证基线（别去追的鬼）
 

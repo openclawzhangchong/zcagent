@@ -381,4 +381,7 @@ jobs:
           files: release-assets/*
           fail_on_unmatched_files: true
           # Upsert: works whether Release workflow already created the release.
+          # v2 defaults to *refusing* to replace an existing asset name, so a
+          # re-run against a moved tag would die on the identical .exe/.zip.
+          overwrite_files: true
           generate_release_notes: false

@@ -95,3 +95,10 @@ OCTOP_UPDATE_INDEX_URL=https://devpi.internal.example.com   # 默认 https://pyp
 .venv/bin/python -m pytest -m "not live" -q          # 全量很慢，改品牌时用 --status 找受影响文件
 cd dashboard && npx vitest run
 ```
+
+本仓库的 `Frontend` workflow（PR 与 `product/main` push）执行 `npm ci` → `npm run lint` → `npm run format:check` → `npm run build`（含 `tsc -b`）→ vitest 汇总（vitest 暂不阻塞，先建立基线）。
+
+两条与门禁相关的约定：
+
+- **格式化属于 `--apply`**：替换品牌词会改变字符串长度，prettier 于是要求重新换行；`scripts/rebrand.py` 在重写完之后对本工具刚碰过的 dashboard 文件跑 prettier。别把它当成"记得手工 `npm run format`"——第一次追版之后就会静默变红。
+- **换行由 `.gitattributes` 固定为 LF**：仓库里所有文本 blob 都是 LF，但 Windows 检出配合 `core.autocrlf=true` 会给出 CRLF 工作树，`format:check` 便把上千个干净文件报成脏。遇到这种情况先信 CI，别急着 `prettier --write .`。
