@@ -62,3 +62,4 @@ tests/unit/infra/setup/test_self_update.py
 # scripts/sync_check.py
 # src/octop/api/routers/branding.py
 # tests/unit/api/test_branding_router.py
+# tests/unit/scripts/test_rebrand_transform.py
