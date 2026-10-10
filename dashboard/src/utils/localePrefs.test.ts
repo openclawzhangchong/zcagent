@@ -30,7 +30,7 @@ describe("localePrefs", () => {
     expect(detectBrowserLocale()).toBe("en");
   });
 
-  it("resolveInitialLocale uses stored preference over browser", () => {
+  it("resolveInitialLocale uses stored preference over the default", () => {
     vi.stubGlobal("navigator", {
       language: "en-US",
       languages: ["en-US"],
@@ -39,6 +39,14 @@ describe("localePrefs", () => {
     expect(resolveInitialLocale()).toBe("zh");
     expect(readStoredUiLocale()).toBe("zh");
     localStorage.removeItem(UI_LOCALE_STORAGE_KEY);
+    // No preference means Chinese, even though the browser says en-US: this is
+    // the desktop shell's WebView2 on a Chinese Windows.
+    expect(resolveInitialLocale()).toBe("zh");
+  });
+
+  it("an explicit English choice still survives", () => {
+    vi.stubGlobal("navigator", { language: "zh-CN", languages: ["zh-CN"] });
+    storeUiLocale("en");
     expect(resolveInitialLocale()).toBe("en");
   });
 

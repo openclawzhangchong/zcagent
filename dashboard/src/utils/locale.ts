@@ -32,10 +32,13 @@ export async function applyUserLocale(
   return lang;
 }
 
-/** Guest surfaces (login / post-logout): stored preference or browser locale. */
+/**
+ * Guest surfaces (login / post-logout): stored preference, else the default.
+ * Not persisted -- an auto-chosen locale is not a user choice, and writing it
+ * made a wrong guess permanent on first visit.
+ */
 export async function applyGuestLocale(): Promise<UiLocale> {
   const lang = resolveInitialLocale();
-  storeUiLocale(lang);
   await ensureLocaleBundle(lang);
   if (i18n.language !== lang) {
     await i18n.changeLanguage(lang);

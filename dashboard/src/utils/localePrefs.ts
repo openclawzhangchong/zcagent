@@ -47,9 +47,17 @@ export function storeUiLocale(locale: UiLocale): void {
   }
 }
 
-/** Stored user preference wins; otherwise follow the browser. */
+/**
+ * Stored preference wins; otherwise Chinese.
+ *
+ * Deliberately not "whatever the browser claims": WebView2 inside the desktop
+ * shell reports en-US on a Chinese Windows, so browser detection opened every
+ * installed client in English -- and `applyGuestLocale` used to persist that
+ * guess, which made it stick. `detectBrowserLocale` is kept for surfaces that
+ * genuinely want the browser's opinion.
+ */
 export function resolveInitialLocale(): UiLocale {
-  return readStoredUiLocale() ?? detectBrowserLocale();
+  return readStoredUiLocale() ?? "zh";
 }
 
 export function syncDocumentLang(locale: UiLocale): void {
