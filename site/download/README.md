@@ -9,7 +9,7 @@ site/download/
 ├── release.json      # 唯一的数字来源：版本、tag、每个产物的名字/字节数/SHA256/链接
 ├── build.py          # 渲染 dist/，并能直接从 GitHub Release API 刷新 release.json
 ├── src/              # 模板与静态资源（index.html 里是 {{token}}）
-└── dist/             # 生成物，也是发布出去的站点（签入仓库，便于直接托管）
+└── dist/             # 生成物 = 发布的站点。不签入（仓库根 .gitignore 忽略 dist/），发布前先 build
 ```
 
 ## 发版后更新这一页
@@ -36,6 +36,5 @@ python site/download/build.py --check
 
 ## 页面内容边界
 
-只写**已实测**的事：便携版跑通过首启向导（解压约 658 MiB、内嵌 CPython、`start.bat` 起服务）；
-安装版需要 WebView2 这条来自 NSIS 脚本 `!insertmacro wails.webview2runtime`，未在新机器上实跑。
-新增声明前先补实测，否则宁可写进「已知限制」。
+只写**已实测**的事，实测记录在同目录 [`VERIFICATION.md`](./VERIFICATION.md)：安装版已静默安装/启动/卸载
+过一轮（含 SHA256 与内嵌元数据核对），便携版跑通过首启向导。新增声明前先补实测，否则宁可写进「已知限制」。
