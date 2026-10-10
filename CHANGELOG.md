@@ -65,9 +65,20 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 下载 `zcagent-portable-windows-amd64-1.0.2b6+z01.zip`（196,531,087 B，逐字节核对；`gh release download` 曾在只落 72 MB 的情况下返回成功）→ 解压 658 MB → `start.bat --port 8090`：内嵌 CPython 3.12.12 直接起来，打印一次性首启口令 → 走完向导（验证密码 → 数据库默认 SQLite → 建管理员 → 模型可跳过）→ 登录进 `/chat`。实测：标题「智策 - 懂你、帮你、陪你成长的智能伙伴」、`--fn-color-brand = #3d5a80`、版本角标 `v1.0.2b6+z01`、侧栏默认 14 项、可见文案里**没有** "Octop"。唯一读回来的不符项就是上面那个帮助链接 `https://octop.cloud/`，本版修掉。
 
-### 验证
+### 发布与验证
 
-`rebrand.py --check` 3258 文件无残留；`tests/unit/scripts` 5 passed；`tests/unit/api` + `tests/unit/agents` **1009 passed / 13 skipped**；前端 `prettier --check` 与 `eslint`（0 error）通过；`request.authToken.test.ts` 6 passed（这条直接读头名）。
+| 项 | 值 |
+|---|---|
+| tag | `v1.0.2b6-z02` → commit `cb2d1d6`（其后的提交只有本段发布记录） |
+| Release | <https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z02>（prerelease） |
+| 产物 | `zcagent-desktop-windows-amd64-1.0.2b6+z02.exe` 192,376,329 B；`zcagent-portable-windows-amd64-1.0.2b6+z02.zip` 196,531,309 B |
+| `Frontend` 门禁 | tag 之前在该提交上跑绿：Lint / Format check / Typecheck and build / Unit tests 全 success |
+| **产物内实检** | 下载 CI 产出的 `dashboard-dist` 直接 grep 打包后的 JS：`https://octop.cloud` 只剩通道端点 `octop.cloud.tencent.com` 一处；我们的仓库地址在 `assets/index.*.js` 里；头名是 `X-Octop-Agent-Id`（9 处）与 `X-Octop-Access-Token`（1 处），**没有** `X-zcagent-*`；主色 `3d5a80` 在包内，JS 里已无 `e85d75` |
+| 旧版处置 | `v1.0.2b6-z01` 未删除，改标题为「⚠️ 已废弃 · 请勿安装」并在说明首段写明它带着哪两处缺陷——留证比抹掉有用，但必须挡住误装 |
+| 冲突面积 | 350 = 295 纯生成 + **26 手工改动（不变）** + 29 新增。清扫覆盖面从 2356 提到 3257 个文件，手工面一个都没涨 |
+
+`rebrand.py --check` 3257 文件无残留；`tests/unit/scripts` 5 passed；`tests/unit/api` + `tests/unit/agents` **1009 passed / 13 skipped**；前端 `prettier --check` 与 `eslint`（0 error）通过；`request.authToken.test.ts` 6 passed（这条直接读头名）。
+
 
 ---
 
