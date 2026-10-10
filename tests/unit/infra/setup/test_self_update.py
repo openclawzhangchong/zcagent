@@ -521,3 +521,41 @@ def test_private_index_never_offers_public_mirrors(monkeypatch: pytest.MonkeyPat
     assert seen == ["http://devpi.internal/root/dev/+simple/"]
     assert ordered == [("http://devpi.internal/root/dev/+simple/", "devpi.internal")]
     assert skip_errors == []
+
+
+def _clear_update_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in (
+        "OCTOP_UPDATE_CHECK",
+        "OCTOP_UPDATE_INDEX_URL",
+        "OCTOP_UPDATE_JSON_URL",
+        "OCTOP_UPDATE_SIMPLE_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
+@pytest.mark.parametrize(
+    ("env", "expected"),
+    [
+        ({}, False),  # nothing configured: a fork that publishes nothing must not
+        # advertise "a new version is ready", because clicking it installs
+        # somebody else's `octop` build onto an internal machine.
+        ({"OCTOP_UPDATE_INDEX_URL": "https://devpi.internal"}, True),
+        ({"OCTOP_UPDATE_JSON_URL": "http://devpi.internal/z/prod/{name}/"}, True),
+        ({"OCTOP_UPDATE_SIMPLE_URL": "http://devpi.internal/z/prod/+simple/"}, True),
+        ({"OCTOP_UPDATE_CHECK": "1"}, True),
+        ({"OCTOP_UPDATE_CHECK": "0"}, False),
+        ({"OCTOP_UPDATE_CHECK": "off"}, False),
+        ({"OCTOP_UPDATE_CHECK": "", "OCTOP_UPDATE_INDEX_URL": "https://x"}, False),
+    ],
+)
+def test_update_check_is_off_until_an_operator_points_it_at_an_index_they_own(
+    monkeypatch: pytest.MonkeyPatch,
+    env: dict[str, str],
+    expected: bool,
+) -> None:
+    from octop.infra.setup import self_update
+
+    _clear_update_env(monkeypatch)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    assert self_update.update_check_enabled() is expected
