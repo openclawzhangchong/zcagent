@@ -308,7 +308,7 @@ def format_written() -> int:
         print(f"  format  FAILED: {(proc.stderr or proc.stdout).strip()[:300]}")
         return 0
     wrote = len([line for line in proc.stdout.splitlines() if line.strip()])
-    print(f"  format  prettier checked {len(targets)} rewritten file(s), reformatted {wrote}")
+    print(f"  format  prettier ran over {wrote} rewritten dashboard file(s)")
     return wrote
 
 
