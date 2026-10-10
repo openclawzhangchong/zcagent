@@ -12,9 +12,22 @@
 
 ---
 
-## [1.0.2b6+z1] — 2026-10-09
+## [1.0.2b6+z1] — 2026-10-10
 
 基于上游 `v1.0.2b6`（commit `0c5a46a`，2026-10-08）。首个自有品牌版本。
+
+### 发布记录
+
+| 项 | 值 |
+|---|---|
+| tag | `v1.0.2b6-z1` → commit `5dbff1b`（其后的提交均为纯文档） |
+| GitHub Release | <https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z1>，标记 **prerelease**（基线本身是上游 beta） |
+| 产物 | `zcagent-desktop-windows-amd64-1.0.2b6+z1.exe`（192 MB）、`zcagent-portable-windows-amd64-1.0.2b6+z1.zip`（197 MB），由 `zcagent Desktop Package` 作业产出并挂到 Release |
+| `Frontend` 门禁 | 绿：ESLint 0 error、`prettier --check` 通过、`tsc -b` + vite build 通过 |
+| vitest 基线（CI，非阻塞） | 6 failed / 1147 passed，218 文件，92.7s。这 6 个失败所在的测试文件与其被测模块相对上游基线**零改动**，故不属品牌改动引入；本机在干净上游树上稳定红 6–8 个 |
+| 签名 | 未签名（刻意，见 `docs/PLAN.md` P5-4） |
+| tag 重打说明 | 首次构建（run `38019377417`）成功但对应 tag 落在门禁变绿之前，故把 tag 移到 `5dbff1b` 重打一次，让**产物 = 被测过的提交**；`Attach zips` 作业靠 `overwrite_files: true` 原地替换同名产物 |
+
 
 ### 新增：OEM 品牌层
 
