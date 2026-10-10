@@ -88,6 +88,8 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 配了自有索引后，安装候选只包含该索引，不会回落公共镜像或 pypi.org。更新检查默认**关闭**：`OCTOP_UPDATE_CHECK=1` 显式打开，或配置上述任一变量时自动打开。
 
+> 私有 index 要 `bases=root/pypi` 建，否则一键升级解析不到依赖。实测到的部分：`probe_index` 在我们的 `root/dev/+simple/` 上返回 `has_version`，`rank_install_indexes` 只返回这一个候选；**没有**实测真正的"点一下装完"（本机 devpi 的 `root/pypi` 镜像取不到外网包，`+simple/waitress/` 返回"project does not exist"）。
+
 版本号规则是 `<上游基线>+z<两位序号>`（例：`1.0.2b6+z01`）。**序号必须零填充**：PEP 440 对字母数字 local 段按字符串比较，`+z10` 会排在 `+z9` 下面，不填充就等于给 pip 一个降级包。
 
 分发名仍是 `octop`（它同时是 pip 升级目标和已安装发行版查询名），所以本仓库目前**不发布** PyPI 包；PEP 440 local version 本来也上不了 PyPI，内网索引正合适。
