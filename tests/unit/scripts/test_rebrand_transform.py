@@ -75,8 +75,8 @@ def test_artifact_prefix_still_rewritten_with_the_header_boundary(rebrand, brand
 
 
 def test_zh_locale_uses_the_chinese_name_and_en_uses_the_latin_one(rebrand, brand: dict) -> None:
-    assert rebrand.transform("欢迎使用 zcagent", brand, "zh") == "欢迎使用 智策"
-    assert rebrand.transform("Welcome to zcagent", brand, "en") == "Welcome to zcagent"
+    assert rebrand.transform("欢迎使用 Octop", brand, "zh") == "欢迎使用 智策"
+    assert rebrand.transform("Welcome to Octop", brand, "en") == "Welcome to zcagent"
 
 
 def test_pattern_literals_are_optional(rebrand) -> None:

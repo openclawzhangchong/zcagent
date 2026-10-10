@@ -76,6 +76,9 @@ text:
 # 后两条分别是数据库迁移（永远不动）和前端构建产物（rebuild 会覆盖）。
 exclude:
   - scripts/rebrand.py          # 工具自身含品牌正则，扫它会自我改写
+  - tests/unit/scripts/**       # 测的就是这套替换规则：输入串必须是**改名之前**的样子，
+                                # 扫过去会把 "Welcome to Octop" 和它的期望值一起改掉，
+                                # 断言变成恒真（实测被扫过一次，边界测试全绿但已失效）
   - brand/**
   - src/octop/infra/connectors/gateway/adapters/fliggy.py
   - src/octop/infra/connectors/gateway/adapters/qq_mail.py
