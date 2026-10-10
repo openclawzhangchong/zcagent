@@ -39,9 +39,9 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 | 项 | 值 |
 |---|---|
-| tag | `v1.0.2b6-z01`（其后的提交均为纯文档） |
+| tag | `v1.0.2b6-z01` → commit `6b68ad3`；其后的提交只有测试与文档，不影响产物 |
 | GitHub Release | <https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z01>，标记 **prerelease**（基线本身是上游 beta） |
-| 产物 | `zcagent-desktop-windows-amd64-1.0.2b6+z01.exe`（约 192 MB）、`zcagent-portable-windows-amd64-1.0.2b6+z01.zip`（约 197 MB），由 `zcagent Desktop Package` 作业产出并挂到 Release |
+| 产物 | `zcagent-desktop-windows-amd64-1.0.2b6+z01.exe`（192,374,876 B）、`zcagent-portable-windows-amd64-1.0.2b6+z01.zip`（196,531,087 B），由 `zcagent Desktop Package` 作业产出并挂到 Release |
 | 为什么重切版本号 | 首版按 `+z1` 发布；实测 PEP 440 对 local 段按字符串比较，`+z10 < +z9`，即第 10 次自有发布会被判为降级。序号从 `z01` 起零填充是代价最小的修法（改 4 个文件的版本串 + 重打一次 tag 重跑一次构建），比让比较器去"比 pip 聪明"安全 |
 | `Frontend` 门禁 | 绿：ESLint 0 error、`prettier --check` 通过、`tsc -b` + vite build 通过 |
 | vitest 基线（CI，非阻塞） | 6 failed / 1147 passed，218 文件，92.7s。这 6 个失败所在的测试文件与其被测模块相对上游基线**零改动**，故不属品牌改动引入；本机在干净上游树上稳定红 6–8 个 |
@@ -151,6 +151,8 @@ is_newer("1.0.2b6+z9", "1.0.2b6+z1") -> False     # 修复前
 | 前端 `npm run build`（= `tsc -b` + vite + PWA） | 通过 |
 | 标识符未被误改 | `X-Octop-*`、`prefixCls="octop"`、`OCTOP_HOME`、`octop-harness` 依赖名、i18n key 均已核对原样 |
 | 运行期冒烟 | 登录 → 建专家 → 真实对话（OpenAI 兼容 provider）→ 工具调用写文件并落盘核对，全通过 |
+| 更新链路端到端 | 用本仓库构建的 `octop-1.0.2b6+z01-py3-none-any.whl` 装进**全新 venv**、以**全新数据目录** `octop init` 起服务：登录成功、侧栏显示 `v1.0.2b6+z01`、`is_editable:false`；在真实 devpi 私有 index 放一个更高版本后点「检查更新」→ `has_update:true`、`latest_version:1.0.2b6+z9`、`source:127.0.0.1`。源码 editable 安装则正确拒绝自更新并提示 `git pull` |
+| 本轮新增测试 | `tests/unit/api/test_branding_router.py` 20 例（含 `logo_url` 白名单与 300KB 上限）；`test_self_update.py` 增加 devpi 形状、`+z` 判序、默认关闭守卫共 12 例 |
 
 ### 新增：P4 追版度量
 
