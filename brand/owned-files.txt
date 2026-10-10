@@ -30,6 +30,7 @@ src/octop/api/deps.py
 src/octop/api/routers/update.py
 src/octop/infra/setup/self_update.py
 tests/unit/api/test_update_router.py
+tests/unit/infra/setup/test_self_update.py
 
 # Files we added, so there is no upstream side to conflict with. Listed for
 # completeness; sync_check.py ignores comment lines like these.
@@ -60,3 +61,4 @@ tests/unit/api/test_update_router.py
 # scripts/rebrand.py
 # scripts/sync_check.py
 # src/octop/api/routers/branding.py
+# tests/unit/api/test_branding_router.py
