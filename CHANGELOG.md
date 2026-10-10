@@ -31,6 +31,46 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z02] — 2026-10-10
+
+修的是**已经发出去的 z01 产物里**的两处品牌缺陷，以及一处指向错误的外链。触发点很朴素：你指出侧栏「帮助与反馈」不该指向上游官网。
+
+### 修复：协议头被产物名规则改名（z01 已带病发布）
+
+`Octop-` → `zcagent-` 这条字面量是为**发布产物名**写的，但字面量没有边界，于是它顺手改掉了线上协议头：`X-Octop-Agent-Id` → `X-zcagent-Agent-Id`、`X-Octop-Access-Token` 同理，共 13 个文件（API、中间件、前端请求层）。**所有冒烟测试都过**，因为一条链路的两端都在我们树里；真正会断的是边界上那头——对端是上游实例，或照上游文档写的客户端。而 `README.md` 的"绝对不要改的标识符"表里第一条就是它。
+
+- 规则改为带左边界的 pattern：`(?<![A-Za-z0-9_-])Octop-`，产物名照改、`X-Octop-*` 不动。
+- 13 个文件里的头名全部还原。
+- `tests/unit/scripts/test_rebrand_transform.py` 5 例锁住两侧：产物前缀必须仍被重写，协议头必须不被重写。
+
+### 修复：`--check` 的守卫看不见这些文件类型
+
+`uncovered_hits()`（本意是防"glob 写错导致空集假绿"）只读 `.py/.ts/.tsx/.json/.less`。因此这三类**既没被清扫、也没被报告**：
+
+| 文件 | 后果 |
+|---|---|
+| `desktop/portable/templates/README.txt` | 便携包解压后用户读到的第一行是 "Octop green portable package"（z01 的 zip 里实测读到） |
+| `desktop/src/assets/index.html` | 桌面壳自己的窗口标题、托盘设置窗、"显示 Octop" 按钮 |
+| `desktop/src/build/windows/nsis/wails_tools.nsh` | NSIS 的 `INFO_PRODUCTNAME` / `INFO_COMPANYNAME` / `INFO_COPYRIGHT`。它是**手写签入**的助手文件，`!ifndef` 里的值是构建没传 `-D` 时的兜底（本地 `makensis` 与手工打包路径就会用到）；正式构建走 `config.yml` 的 `productName` / `companyName`，那两处早已是我们品牌。现在兜底与真值一致 |
+
+清扫覆盖面从 **2356 → 3258 个文件**，守卫改为读所有文件（跳过二进制与 >2MB），并覆盖 `dashboard/public/*.html`、`src/octop/**/*.{md,sh,js,json}`、`desktop/**/*.{md,txt,html,nsh}`、`scripts/*.md`、`dashboard/src/**/*.css`。
+
+### 变更：帮助与反馈指向我们自己
+
+`AvatarDropdown` 的 `HELP_FEEDBACK_URL` 从 `https://octop.cloud` 改为仓库地址，并**下沉为品牌字面量**（OEM 交付时改 `brand/brand.yaml` 的 `to` 即可换成客户自己的文档/工单入口）。这条必须用 pattern：`https://octop.cloud` 是通道服务地址 `https://octop.cloud.tencent.com` 的前缀，纯字面量会把腾讯的 OctoBot 端点一起改坏——测试里同时锁了这两条。
+
+`transform()` 因此支持 `pattern:` 字面量；三条 identity 规则里有两条需要边界。
+
+### 便携包在全新状态下的实测
+
+下载 `zcagent-portable-windows-amd64-1.0.2b6+z01.zip`（196,531,087 B，逐字节核对；`gh release download` 曾在只落 72 MB 的情况下返回成功）→ 解压 658 MB → `start.bat --port 8090`：内嵌 CPython 3.12.12 直接起来，打印一次性首启口令 → 走完向导（验证密码 → 数据库默认 SQLite → 建管理员 → 模型可跳过）→ 登录进 `/chat`。实测：标题「智策 - 懂你、帮你、陪你成长的智能伙伴」、`--fn-color-brand = #3d5a80`、版本角标 `v1.0.2b6+z01`、侧栏默认 14 项、可见文案里**没有** "Octop"。唯一读回来的不符项就是上面那个帮助链接 `https://octop.cloud/`，本版修掉。
+
+### 验证
+
+`rebrand.py --check` 3258 文件无残留；`tests/unit/scripts` 5 passed；`tests/unit/api` + `tests/unit/agents` **1009 passed / 13 skipped**；前端 `prettier --check` 与 `eslint`（0 error）通过；`request.authToken.test.ts` 6 passed（这条直接读头名）。
+
+---
+
 ## [1.0.2b6+z01] — 2026-10-10
 
 基于上游 `v1.0.2b6`（commit `0c5a46a`，2026-10-08）。首个自有品牌版本。
