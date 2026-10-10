@@ -158,7 +158,8 @@ def main() -> int:
 
     # Our baseline can sit ahead of the newest stable tag (we started from main
     # while the last stable release was older). Nothing to merge yet then.
-    if git_ok("merge-base", "--is-ancestor", candidate, base):
+    candidate_is_ancestor = git_ok("merge-base", "--is-ancestor", candidate, base)
+    if candidate_is_ancestor:
         conflicts = []
         markdown = (
             f"## Upstream sync measurement\n\n"
@@ -180,7 +181,13 @@ def main() -> int:
     if conflicts or extra:
         print(f"sync-check FAILED: {len(conflicts)} conflict(s), {len(extra)} rule violation(s)", file=sys.stderr)
         return 1
-    print(f"sync-check OK: {len(owned)} owned upstream file(s), trial merge clean")
+    if candidate_is_ancestor:
+        print(
+            f"sync-check OK: nothing to merge yet -- {candidate} is already contained in "
+            f"{base}; no trial merge was attempted"
+        )
+    else:
+        print(f"sync-check OK: {len(owned)} owned upstream file(s), trial merge clean")
     return 0
 
 
