@@ -21,6 +21,9 @@ dashboard/src/pages/Settings/AdvancedSettings/UpdateConfig.tsx
 dashboard/src/pages/Settings/AdvancedSettings/index.tsx
 dashboard/src/pages/Setup/index.tsx
 dashboard/src/utils/expertColor.test.ts
+dashboard/src/utils/locale.ts
+dashboard/src/utils/localePrefs.test.ts
+dashboard/src/utils/localePrefs.ts
 dashboard/src/utils/permissions.ts
 fnos/docker/manifest
 fnos/native/manifest
