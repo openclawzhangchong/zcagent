@@ -54,7 +54,10 @@ export function useFullNavEnabled(): boolean {
   return useSyncExternalStore(subscribe, read, () => false);
 }
 
-export function filterAdvancedNav<T extends NavLike>(sections: T[], showAll: boolean): T[] {
+export function filterAdvancedNav<T extends NavLike>(
+  sections: T[],
+  showAll: boolean,
+): T[] {
   if (showAll) return sections;
   return sections
     .map((section) => ({

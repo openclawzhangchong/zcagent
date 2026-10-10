@@ -18,6 +18,7 @@ import argparse
 import base64
 import io
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -241,6 +242,76 @@ def apply_poses(brand: dict) -> int:
     return changed
 
 
+PRETTIER_EXTS = {".css", ".html", ".js", ".json", ".jsx", ".less", ".md", ".scss", ".ts", ".tsx"}
+
+
+def _prettier() -> tuple[str, str] | None:
+    """Locate node + the prettier CLI, or None if this box cannot format.
+
+    A throwaway worktree (scripts/classify_owned.py) has no node_modules of its
+    own, so fall back to the main checkout's -- both sides must produce the same
+    bytes, or every formatted file gets misclassified as hand-edited.
+    """
+    node = shutil.which("node")
+    if not node:
+        return None
+    rel = Path("dashboard") / "node_modules" / "prettier" / "bin" / "prettier.cjs"
+    for base in (ROOT, _git_common_dir().parent if _git_common_dir() else ROOT):
+        cli = base / rel
+        if cli.is_file():
+            return node, str(cli.resolve())
+    return None
+
+
+def _git_common_dir() -> Path | None:
+    r = subprocess.run(
+        ["git", "rev-parse", "--git-common-dir"], cwd=ROOT, capture_output=True, text=True
+    )
+    if r.returncode:
+        return None
+    path = Path(r.stdout.strip())
+    return path if path.is_absolute() else ROOT / path
+
+
+def format_written() -> int:
+    """Reflow the dashboard text files this run rewrote.
+
+    Substituting "Octop" -> "zcagent" changes string lengths, which breaks
+    prettier's line wrapping, and `npm run format:check` is a CI gate. Formatting
+    has to belong to --apply: if it is a manual step it gets lost on the first
+    regeneration after an upstream merge, and the gate goes red for no reason
+    anyone can trace.
+    """
+    r = subprocess.run(
+        ["git", "diff", "--name-only", "HEAD"], cwd=ROOT, capture_output=True, text=True
+    )
+    if r.returncode:
+        return 0
+    targets = [
+        ROOT / p
+        for p in r.stdout.split()
+        if p.startswith("dashboard/") and Path(p).suffix.lower() in PRETTIER_EXTS
+    ]
+    if not targets:
+        return 0
+    cli = _prettier()
+    if not cli:
+        print("  format  SKIPPED (no node/prettier): run `npm run format` in dashboard/ before pushing")
+        return 0
+    proc = subprocess.run(
+        [cli[0], cli[1], "--write", *(str(t) for t in targets)],
+        cwd=ROOT / "dashboard",
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode:
+        print(f"  format  FAILED: {(proc.stderr or proc.stdout).strip()[:300]}")
+        return 0
+    wrote = len([line for line in proc.stdout.splitlines() if line.strip()])
+    print(f"  format  prettier checked {len(targets)} rewritten file(s), reformatted {wrote}")
+    return wrote
+
+
 def cmd_apply(brand: dict) -> int:
     changed = 0
     for path, lang in text_targets(brand):
@@ -256,7 +327,8 @@ def cmd_apply(brand: dict) -> int:
     changed += apply_colors(brand)
     changed += apply_assets(brand)
     changed += apply_poses(brand)
-    print(f"rebrand: {changed} file(s) updated")
+    reflowed = format_written()
+    print(f"rebrand: {changed} file(s) updated, {reflowed} reflowed by prettier")
     return 0
 
 

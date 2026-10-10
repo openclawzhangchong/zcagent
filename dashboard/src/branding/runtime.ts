@@ -45,6 +45,8 @@ export function branding(): Branding {
 
 export function brandingName(language?: string): string | null {
   const zh = language?.toLowerCase().startsWith("zh");
-  const name = zh ? (current.name_zh ?? current.name) : (current.name ?? current.name_zh);
+  const name = zh
+    ? current.name_zh ?? current.name
+    : current.name ?? current.name_zh;
   return name?.trim() || null;
 }

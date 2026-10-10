@@ -1,5 +1,8 @@
 import AppLogo from "../branding/AppLogo";
-import { filterAdvancedNav, useFullNavEnabled } from "../branding/navSimplicity";
+import {
+  filterAdvancedNav,
+  useFullNavEnabled,
+} from "../branding/navSimplicity";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -404,7 +407,8 @@ export default function Sidebar({
   const [savedLayout, setSavedLayout] = useState<SidebarNavLayout | null>(null);
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const navSections = useMemo(
-    () => filterAdvancedNav(sectionsFromLayout(catalog, savedLayout), showFullNav),
+    () =>
+      filterAdvancedNav(sectionsFromLayout(catalog, savedLayout), showFullNav),
     [catalog, savedLayout, showFullNav],
   );
   const { toggleGroup, isGroupCollapsed } = useNavGroupCollapse(

@@ -4,7 +4,10 @@ import { Palette } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { message } from "@/utils/antdMessage";
 import { brandingApi, type Branding } from "../../../api/modules/branding";
-import { setFullNavEnabled, useFullNavEnabled } from "../../../branding/navSimplicity";
+import {
+  setFullNavEnabled,
+  useFullNavEnabled,
+} from "../../../branding/navSimplicity";
 import { apiErrorMessage } from "../../../utils/apiError";
 import { TabPanelHeader } from "./TabPanelHeader";
 import tabStyles from "./tabContent.module.less";
@@ -12,7 +15,11 @@ import tabStyles from "./tabContent.module.less";
 /** Matches the backend guard in api/routers/branding.py. */
 const MAX_LOGO_CHARS = 300_000;
 
-const labelStyle = { display: "block", fontWeight: 500, marginBottom: 6 } as const;
+const labelStyle = {
+  display: "block",
+  fontWeight: 500,
+  marginBottom: 6,
+} as const;
 
 export default function BrandingSettingsPanel() {
   const { t } = useTranslation();
@@ -23,7 +30,8 @@ export default function BrandingSettingsPanel() {
   const fullNav = useFullNavEnabled();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const patch = (next: Partial<Branding>) => setValue((prev) => ({ ...prev, ...next }));
+  const patch = (next: Partial<Branding>) =>
+    setValue((prev) => ({ ...prev, ...next }));
 
   useEffect(() => {
     brandingApi
@@ -42,7 +50,9 @@ export default function BrandingSettingsPanel() {
       // what actually applies the change.
       window.setTimeout(() => window.location.reload(), 800);
     } catch (err) {
-      message.error(apiErrorMessage(err, t("advancedSettings.branding.saveFailed"), t));
+      message.error(
+        apiErrorMessage(err, t("advancedSettings.branding.saveFailed"), t),
+      );
     } finally {
       setSaving(false);
     }
@@ -76,7 +86,11 @@ export default function BrandingSettingsPanel() {
         description={t("advancedSettings.branding.description")}
       />
       {loadError ? (
-        <Alert type="warning" showIcon message={t("advancedSettings.branding.loadFailed")} />
+        <Alert
+          type="warning"
+          showIcon
+          message={t("advancedSettings.branding.loadFailed")}
+        />
       ) : null}
 
       <div>
@@ -107,7 +121,11 @@ export default function BrandingSettingsPanel() {
         <Space>
           <input
             type="color"
-            value={/^#[0-9a-fA-F]{6}$/.test(value.color ?? "") ? value.color! : "#3d5a80"}
+            value={
+              /^#[0-9a-fA-F]{6}$/.test(value.color ?? "")
+                ? value.color!
+                : "#3d5a80"
+            }
             onChange={(e) => patch({ color: e.target.value })}
           />
           <Input

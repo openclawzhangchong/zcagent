@@ -5,7 +5,13 @@ there, then compares every file our branch touches against that regenerated
 tree. Identical -> the tool produces it, so a merge conflict there is mechanical
 (resolve to upstream and re-apply). Different -> it carries hand edits and is
 the real conflict surface, recorded in brand/owned-files.txt.
+
+Run it with the project venv (needs pyyaml + Pillow):
+
+    .venv/Scripts/python scripts/classify_owned.py
 """
+
+from __future__ import annotations
 
 import shutil
 import subprocess
@@ -13,68 +19,116 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path("D:/otp/zcagent")
-BASE = "0c5a46ab5f82e5ad9d1a56fa09b00e542f042fda"
-PY = REPO / ".venv" / "Scripts" / "python.exe"
+REPO = Path(__file__).resolve().parent.parent
+BRAND_DIR = REPO / "brand"
+OWNED = BRAND_DIR / "owned-files.txt"
 
 
-def run(*args: str, cwd: Path, **kw) -> subprocess.CompletedProcess:
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", **kw)
+def git(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args],
+        cwd=cwd or REPO,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+
+def baseline() -> str:
+    rev = (BRAND_DIR / "upstream-baseline.txt").read_text(encoding="utf-8").split()[0]
+    if git("cat-file", "-e", f"{rev}^{{commit}}").returncode:
+        raise SystemExit(f"baseline {rev} is not in this clone -- fetch upstream first")
+    return rev
+
+
+HEADER = """\
+# Files carrying hand edits -- NOT produced by `rebrand.py --apply`.
+# These must survive a regeneration and are the real merge conflict
+# surface: upstream owns them too, so a merge can stop here. The other
+# files we touch are byte-identical to what the tool regenerates from
+# upstream, so a conflict in one of those is mechanical -- take upstream's
+# side, then re-run --apply.
+# Regenerate this list with scripts/classify_owned.py.
+"""
+
+
+def same_content(ours: Path, theirs: Path) -> bool:
+    """Compare what git would store, not what this OS's checkout looks like:
+    with core.autocrlf=true the working tree is CRLF while every blob is LF."""
+    if not (ours.is_file() and theirs.is_file()):
+        return False
+    return ours.read_bytes().replace(b"\r\n", b"\n") == theirs.read_bytes().replace(b"\r\n", b"\n")
 
 
 def main() -> int:
+    base = baseline()
+    head = git("rev-parse", "HEAD").stdout.strip()
     tmp = Path(tempfile.mkdtemp(prefix="zcagent-baseline-"))
+    registered = False
     try:
-        r = run("git", "worktree", "add", "--detach", str(tmp), BASE, cwd=REPO)
+        r = git("worktree", "add", "--detach", str(tmp), base)
         if r.returncode:
-            print("worktree add failed:", r.stderr)
+            print("worktree add failed:", r.stderr.strip())
             return 1
+        registered = True
 
         # The baseline predates our tooling, so bring it in: pristine upstream
         # content + our brand config is exactly what a regeneration sees.
-        shutil.copytree(REPO / "brand", tmp / "brand", dirs_exist_ok=True)
+        shutil.copytree(BRAND_DIR, tmp / "brand", dirs_exist_ok=True)
         shutil.copy2(REPO / "scripts" / "rebrand.py", tmp / "scripts" / "rebrand.py")
 
-        r = run(str(PY), "scripts/rebrand.py", "--apply", cwd=tmp)
-        tail = (r.stdout or r.stderr).strip().splitlines()[-1:]
-        print("apply in baseline worktree:", tail)
+        r = subprocess.run(
+            [sys.executable, "scripts/rebrand.py", "--apply"],
+            cwd=tmp,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        tail = (r.stdout or r.stderr).strip().splitlines()[-3:]
+        print("regeneration in baseline worktree:")
+        for line in tail:
+            print("   ", line)
         if r.returncode:
             print("regeneration failed; refusing to classify on a broken tree")
             return 1
 
         owned = sorted(
-            {
-                p.replace("\\", "/")
-                for p in run("git", "diff", "--name-only", f"{BASE}..HEAD", cwd=REPO)
-                .stdout.split()
-            }
+            {p.replace("\\", "/") for p in git("diff", "--name-only", f"{base}..HEAD").stdout.split()}
         )
-        generated, hand = [], []
+        in_baseline = set(git("ls-tree", "-r", "--name-only", base).stdout.splitlines())
+        generated, hand, added = [], [], []
         for rel in owned:
+            if rel not in in_baseline:
+                added.append(rel)
+                continue
             ours, theirs = REPO / rel, tmp / rel
-            same = ours.is_file() and theirs.is_file() and ours.read_bytes() == theirs.read_bytes()
-            (generated if same else hand).append(rel)
+            (generated if same_content(ours, theirs) else hand).append(rel)
 
-        print(f"\nowned={len(owned)}  generated-by-tool={len(generated)}  hand-edited={len(hand)}")
+        print(
+            f"\nbranch delta vs {base[:8]}..{head[:8]}: {len(owned)} files\n"
+            f"  generated by --apply : {len(generated)}\n"
+            f"  hand-edited upstream : {len(hand)}\n"
+            f"  added by us          : {len(added)}"
+        )
         for f in hand:
             print("   hand:", f)
 
-        out = REPO / "brand" / "owned-files.txt"
-        out.write_text(
-            "# Files carrying hand edits -- NOT produced by `rebrand.py --apply`.\n"
-            "# These must survive a regeneration and are the real merge conflict\n"
-            "# surface. The other ~260 files we touch are byte-identical to what\n"
-            "# the tool regenerates from upstream, so a conflict in one of those is\n"
-            "# mechanical: take upstream's side, then re-run --apply.\n"
-            "# Regenerate this list with scripts/classify_owned.py.\n"
-            + "\n".join(hand)
-            + "\n",
-            encoding="utf-8",
+        body = "\n".join(hand) + "\n"
+        note = (
+            "\n# Files we added, so there is no upstream side to conflict with. Listed for\n"
+            "# completeness; sync_check.py ignores comment lines like these.\n"
+            + "".join(f"# {f}\n" for f in added)
         )
-        print(f"\nwrote {out}")
+        OWNED.write_text(HEADER + body + note, encoding="utf-8")
+        print(f"\nwrote {OWNED}")
         return 0
     finally:
-        run("git", "worktree", "remove", "--force", str(tmp), cwd=REPO)
+        if registered:
+            rm = git("worktree", "remove", "--force", str(tmp))
+            if rm.returncode:
+                print("worktree remove failed:", rm.stderr.strip())
+                shutil.rmtree(tmp, ignore_errors=True)
+                git("worktree", "prune")
         shutil.rmtree(tmp, ignore_errors=True)
 
 
