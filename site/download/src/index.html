@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>下载 智策 / zcagent · Windows 客户端 {{version}}</title>
+    <meta
+      name="description"
+      content="智策（zcagent）Windows 客户端下载：安装版与免安装便携版，含版本号、精确字节大小、SHA256 校验值、安装步骤与已知限制。"
+    />
+    <link rel="icon" href="./assets/favico.svg" />
+    <link rel="apple-touch-icon" href="./assets/pwa-512.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <img class="lockup" src="./assets/logo_horizontal_dark.png" alt="智策 zcagent" width="180" height="46" />
+        <nav class="topnav" aria-label="页面导航">
+          <a href="#install">安装步骤</a>
+          <a href="#verify">校验</a>
+          <a href="#limits">已知限制</a>
+          <a href="#history">版本历史</a>
+          <a href="{{repo_url}}" rel="noopener">仓库</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap" id="main">
+      <section class="lede">
+        <h1>智策 · Windows 客户端</h1>
+        <p class="lede-sum">
+          自托管的 AI 助手。装在一台机器上，数据留在本机，模型用你自己的 Key。
+        </p>
+        <ul class="facts" aria-label="当前版本信息">
+          <li><span>版本</span><b>{{version}}</b></li>
+          <li><span>发布</span><b>{{date}}</b></li>
+          <li><span>架构</span><b>Windows 10/11 · x64</b></li>
+          <li><span>实测环境</span><b>{{tested_on}}</b></li>
+        </ul>
+      </section>
+
+      <section class="cards" aria-label="下载产物">
+        <article class="card card-primary">
+          <div class="card-head">
+            <h2>安装版</h2>
+            <p class="card-for">给日常使用的同事：装完在开始菜单里有图标，带桌面窗口。</p>
+          </div>
+          <ul class="specs">
+            <li><span>文件</span><code>{{exe.name}}</code></li>
+            <li><span>大小</span><b>{{exe.size}}</b></li>
+            <li>
+              <span>SHA256</span
+              ><code class="hash" title="{{exe.sha}}">{{exe.sha_short}}</code
+              ><button class="copy" type="button" data-copy="{{exe.sha}}" aria-label="复制安装版的 SHA256">复制</button>
+            </li>
+            <li><span>依赖</span><b>Microsoft Edge WebView2</b>（Win10 较新版本已内置；缺失时安装器会提示）</li>
+          </ul>
+          <a class="btn btn-lg" href="{{exe.url}}">下载安装版 .exe</a>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h2>便携版</h2>
+            <p class="card-for">给内网批量部署与不想装东西的机器：解压即用，自带 Python 运行时。</p>
+          </div>
+          <ul class="specs">
+            <li><span>文件</span><code>{{zip.name}}</code></li>
+            <li><span>大小</span><b>{{zip.size}}</b></li>
+            <li>
+              <span>SHA256</span
+              ><code class="hash" title="{{zip.sha}}">{{zip.sha_short}}</code
+              ><button class="copy" type="button" data-copy="{{zip.sha}}" aria-label="复制便携版的 SHA256">复制</button>
+            </li>
+            <li><span>依赖</span><b>无需安装 Python / Node</b>；包内含 {{runtime}} 与全部依赖</li>
+          </ul>
+          <a class="btn btn-lg btn-quiet" href="{{zip.url}}">下载便携版 .zip</a>
+          <p class="card-note">便携版已实测跑通首启流程：解压约 {{portable_mib}} MiB，<code>start.bat</code> 直接起服务。</p>
+        </article>
+      </section>
+
+      <p class="warn" role="note">
+        两个安装包都<b>未做 Windows 代码签名</b>。首次运行 SmartScreen 会拦一次：点
+        <b>「更多信息」→「仍要运行」</b>即可，这不是拦截。企业内网复制过去通常不弹。
+      </p>
+
+      <section id="install" class="section">
+        <h2>装起来</h2>
+        <div class="steps-grid">
+          <div class="steps">
+            <h3>安装版</h3>
+            <ol>
+              <li>双击 <code>.exe</code>，按向导装到当前用户目录（不需要管理员权限）。</li>
+              <li>从开始菜单启动 <b>智策</b>，它会在本机起服务并打开窗口。</li>
+              <li>首次启动进入初始化向导：验证口令 → 数据库（默认本机 SQLite）→ 建管理员 → 配模型（可跳过）。</li>
+              <li>一次性引导口令在服务器控制台的黄框里，也写在 <code>%USERPROFILE%\octop-login.txt</code>。</li>
+            </ol>
+          </div>
+          <div class="steps">
+            <h3>便携版</h3>
+            <ol>
+              <li>解压到任意目录（路径含空格也可以）。</li>
+              <li>双击 <code>start.bat</code>；需要换端口或数据目录：<code>start.bat --port 8090 --home D:\zcagent-data</code>。</li>
+              <li>浏览器打开 <code>http://127.0.0.1:8088</code>，走同一套初始化向导。</li>
+              <li>数据默认落在解压目录的 <code>.\data</code>，整个文件夹拷走就是迁移。</li>
+            </ol>
+          </div>
+        </div>
+        <p class="section-note">
+          模型 Key 在「模型」页填，支持任意 OpenAI 兼容端点。不配模型也能先用完全部界面。
+        </p>
+      </section>
+
+      <section id="verify" class="section">
+        <h2>先校验，再运行</h2>
+        <p>在 PowerShell 里算出文件的 SHA256，和上面对照：</p>
+        <pre class="cmd"><code>Get-FileHash .\{{zip.name}} -Algorithm SHA256</code></pre>
+        <button class="btn btn-sm" type="button" data-copy="Get-FileHash .\{{zip.name}} -Algorithm SHA256">复制命令</button>
+        <p class="section-note">
+          大小以<b>精确字节数</b>为准（安装版 {{exe.bytes}} 字节、便携版 {{zip.bytes}} 字节）。Windows
+          资源管理器显示的 MB 会因单位换算略有差异。
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>数据、更新与卸载</h2>
+        <ul class="plain">
+          <li><b>数据在哪</b>：默认 <code>%USERPROFILE%\.octop</code>（便携版为 <code>.\data</code>），含账号、专家、对话与记忆、技能与模型配置。</li>
+          <li><b>更新</b>：应用内「应用设置 → 应用更新 → 检查更新」。默认<b>不</b>检查公共源，避免装上别人的构建；内网自建索引时设 <code>OCTOP_UPDATE_JSON_URL</code> 与 <code>OCTOP_UPDATE_SIMPLE_URL</code> 才会启用。</li>
+          <li><b>卸载</b>：安装版从「应用和功能」卸载；便携版直接删目录。两者都不动数据目录，重装即可继续用。</li>
+        </ul>
+      </section>
+
+      <section id="limits" class="section">
+        <h2>已知限制</h2>
+        <ul class="plain">
+          <li><b>「工作台 / 终端」在 Windows 上不可用</b>：该功能依赖 <code>pty</code>，按设计仅在 Linux/macOS 提供，不是本安装包的问题。</li>
+          <li><b>只出 Windows x64 包。</b>macOS / Linux / ARM64 的构建定义都在仓库里，按平台逐个放开并各自验收。</li>
+          <li><b>未签名</b>，因此首次运行有一次 SmartScreen 提示。</li>
+          <li>安装版需要 WebView2 运行时；缺失时安装器会提示安装。</li>
+        </ul>
+      </section>
+
+      <section id="history" class="section">
+        <h2>版本历史</h2>
+        <dl class="hist">
+          <dt>{{version}} · {{date}} · 当前</dt>
+          <dd>
+            完整逐条改动见
+            <a href="{{changelog_url}}" rel="noopener">CHANGELOG</a>；本次发布的全部产物与校验值在
+            <a href="{{release_url}}" rel="noopener">GitHub Release</a>。
+          </dd>
+          <dt>{{prev.version}} · 已废弃</dt>
+          <dd>{{prev.reason}}，<a href="{{prev.release_url}}" rel="noopener">该发布页</a>已标注废弃原因。</dd>
+          <dt>基线</dt>
+          <dd>基于上游 <a href="https://github.com/TencentCloud/Octop" rel="noopener">TencentCloud/Octop</a> <code>v1.0.2b6</code>（MIT License），以薄 fork 方式定期合并上游稳定版本。</dd>
+        </dl>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <p>
+          智策 / zcagent · 基于 TencentCloud/Octop（MIT）构建 · 产物由 GitHub Actions 的
+          <code>zcagent Desktop Package</code> 作业产出
+        </p>
+        <p class="foot-links">
+          <a href="{{release_url}}" rel="noopener">本次发布</a>
+          <a href="{{issues_url}}" rel="noopener">反馈问题</a>
+          <a href="{{repo_url}}" rel="noopener">项目说明</a>
+        </p>
+      </div>
+    </footer>
+
+    <span class="sr-only" role="status" aria-live="polite" id="live"></span>
+    <script src="./app.js"></script>
+  </body>
+</html>
