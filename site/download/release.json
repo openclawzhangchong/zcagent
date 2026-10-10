@@ -1,30 +1,30 @@
 {
-  "version": "1.0.2b6+z02",
-  "tag": "v1.0.2b6-z02",
+  "version": "1.0.2b6+z03",
+  "tag": "v1.0.2b6-z03",
   "date": "2026-10-10",
   "repo": "openclawzhangchong/zcagent",
-  "release_url": "https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z02",
+  "release_url": "https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z03",
   "site_url": "https://zcagent-download-igdker4k5y4.qoder.website/",
   "tested_on": "Windows 10 10.0.19045",
   "runtime": "CPython 3.12.12",
   "portable_extracted_mib": 658,
   "previous": {
-    "version": "1.0.2b6+z01",
-    "tag": "v1.0.2b6-z01",
-    "reason": "请勿安装：产物内带着被改名的协议头与若干旧品牌文案"
+    "version": "1.0.2b6+z02",
+    "tag": "v1.0.2b6-z02",
+    "reason": "可继续用，但客户端图标仍是上游的、安装版首启会开成英文"
   },
   "assets": {
     "exe": {
-      "name": "zcagent-desktop-windows-amd64-1.0.2b6+z02.exe",
-      "bytes": 192376329,
-      "sha256": "434c71d9e3a0f59483d29cacccbdc04719aca6429ec775d8c2ff6b69fe80332f",
-      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z02/zcagent-desktop-windows-amd64-1.0.2b6%2Bz02.exe"
+      "name": "zcagent-desktop-windows-amd64-1.0.2b6+z03.exe",
+      "bytes": 192378564,
+      "sha256": "d7dd30607f90aa820c6fdcedf7e16d4bc4580eb28651094820f1c2f8a898197f",
+      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z03/zcagent-desktop-windows-amd64-1.0.2b6%2Bz03.exe"
     },
     "zip": {
-      "name": "zcagent-portable-windows-amd64-1.0.2b6+z02.zip",
-      "bytes": 196531309,
-      "sha256": "e231485d7c98791940074aa9628d4a7cefc4d5990f6e321b3c686125cc7b4984",
-      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z02/zcagent-portable-windows-amd64-1.0.2b6%2Bz02.zip"
+      "name": "zcagent-portable-windows-amd64-1.0.2b6+z03.zip",
+      "bytes": 196534301,
+      "sha256": "60960009e25657420c86fc351beb28bf3bbdd7ebf29137b434a74c311b183be4",
+      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z03/zcagent-portable-windows-amd64-1.0.2b6%2Bz03.zip"
     }
   }
 }
