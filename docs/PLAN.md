@@ -1,6 +1,6 @@
 # 计划表（P2 / P4 / P5）
 
-> 截至 2026-10-09。已定的四个决策：**P2 做换壳+信息架构（不重做 Chat 内部）**、**更新索引自建 devpi**、**只做 Windows 代码签名、不做 macOS 公证**、**Windows 优先**。
+> 截至 2026-10-09。已定的四个决策：**P2 做换壳+信息架构（不重做 Chat 内部）**、**更新索引自建 devpi**、**代码签名列为可选后置（不做 macOS 公证）**、**Windows 优先**。
 > 交接快照见 [`HANDOVER.md`](./HANDOVER.md)，历史见 [`../CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 排期原则
@@ -45,7 +45,7 @@ P2-1、P2-2 已在 P1b 完成，P2-0 取消，所以净工作量只剩 **4–6 �
 | P5-1 产物矩阵（按"Windows 优先"定）：首批 = Windows 安装包 + Linux 服务端 Docker 镜像；macOS 与 fnOS 后置 | 一句话能说清交付什么 | 0.2 人日 | 已定 |
 | P5-2 Windows 桌面 CI 构建：`windows-latest` 装 Go + wails3 + NSIS | 打 tag 出 `.exe` / 便携包 | 3–5 人日 | `config.yml` 改完必须 `wails3 task common:update:build-assets` 重生成 nsis，否则 `productName` 与 `windows/info.json` 两处不一致；`nsis/project.nsi:5-6` 写死了 `bin\Octop.exe` |
 | P5-3 自建 devpi 内网索引 + CI 推 wheel | 更新页报的是我们的版本 | 1–2 人日 | **第一天先实测**：我们的代码假设索引形状是 `<host>/pypi/<name>/json`（与 PyPI 一致），devpi 需验证确实提供该端点，否则要调整 `self_update.py` 的 URL 拼接 |
-| P5-4 Windows 代码签名证书 | 下载不再触发 SmartScreen 拦截 | 1 人日 + **采购周期数周** | 外部依赖，要最早启动；macOS 公证按决策**不做**，因此 macOS 产物也一并后置 |
+| ~~P5-4~~ | ~~Windows 代码签名证书~~ | —— | —— | **降级为可选后置（2026-10-09）**。对照证据：上游 `octop-desktop.yml` 379 行里**没有任何签名 / 证书 / 公证步骤**，就是 `wails3` + NSIS 直接发，所以同类产品的 exe 本来就是未签名可交付的。签名只影响一件事——从网上下载时 SmartScreen 那个"Windows 已保护你的电脑"蓝窗要不要点一次"更多信息→仍要运行"，不是拦截。企业内网分发（复制过去、无 Mark of the Web）通常根本不弹。**不是构建阻塞项。** |
 | P5-5 版本号打通：`pyproject` 版本 = 上游基线 + `+z` 序号，产物命名对齐 `release_download_links.py` | 更新页 / 安装包名 / CHANGELOG 三处一致 | 1 人日 | PEP 440 local version 不能上 PyPI，但内网 devpi 可以 |
 | P5-6 Linux 服务端 Docker 镜像 | 内网可拉、可 `docker compose up` | 1–2 人日 | 上游 `docker-publish.yml` 推的是 `ghcr.io/tencentcloud/octop`，必须换 registry 并改 `fnos/*/manifest` 里的镜像地址 |
 
@@ -53,14 +53,14 @@ P2-1、P2-2 已在 P1b 完成，P2-0 取消，所以净工作量只剩 **4–6 �
 
 | 周 | 内容 |
 |---|---|
-| 1 | P4-1 ～ P4-3；同时启动 P5-4 证书采购（外部周期最长，先跑起来） |
+| 1 | P4-1 ～ P4-3（已完成） |
 | 2 | P2-1 + P2-2（P1b 收尾） |
 | 3–5 | P2-3 信息架构 + P2-4 首屏；每次合并前看冲突面积读数 |
 | 6–8 | P5-2 Windows 构建 → P5-3 devpi → P5-5 版本号 → P5-6 镜像 |
 
 ## 待确认（不阻塞开工）
 
-1. macOS 是否彻底不出（当前按"不做公证所以后置"处理）。
+1. macOS 产物出不出——与签名无关（上游未签名未公证也照发），纯粹是"要不要支持 macOS"的产品决定。
 2. devpi 托管在哪台机器、由谁运维。
-3. Windows 签名证书预算与采购渠道（OV / EV 差别影响 SmartScreen 表现）。
+3. 代码签名：默认**不买**。只有出现"用户从公网下载后大量反馈 SmartScreen 蓝窗"或某客户合同要求时再评估（OV 靠下载量攒信誉、EV 立即免弹，差别只在这个弹窗）。
 4. P2-3 要隐藏哪些上游入口——需要一份"本版本不交付的功能清单"。
