@@ -1387,7 +1387,7 @@ class AgentManager:
     def reload_octop_harnesss(self) -> None:
         """Rebuild harness agents in place (e.g. after tool-guard rules changed on disk).
 
-        Does not rebuild Octop-side agent config from the DB — use :meth:`reload` for that.
+        Does not rebuild zcagent-side agent config from the DB — use :meth:`reload` for that.
         """
         if self._harness_manager is not None:
             self._harness_manager.rebuild_all_agents()
@@ -3217,7 +3217,7 @@ class AgentManager:
         from octop.infra.knowledge.hint import KnowledgeSearchHintMiddleware
 
         # FilesystemGuard + ModelSettings live in octop-harness (auto-mounted).
-        # BinaryReadGuard stays Octop-specific (inbound/attachment product policy).
+        # BinaryReadGuard stays zcagent-specific (inbound/attachment product policy).
         # ThreadArtifacts writes workspace paths onto threads after successful tools.
         # WorkspaceImageMaterialize expands path-only vision refs at model-call time.
         # OctopUiOffload stays innermost so every outer middleware observes the

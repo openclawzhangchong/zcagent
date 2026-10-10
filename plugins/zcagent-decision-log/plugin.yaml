@@ -1,0 +1,7 @@
+id: zcagent-decision-log
+version: 0.1.0
+name: 决策留痕
+description: Records decisions and their reasoning into the agent workspace so "上次为什么这么定" can be answered later
+icon: "🧭"
+kind: skill
+entry: main.py

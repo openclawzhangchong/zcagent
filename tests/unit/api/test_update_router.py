@@ -17,7 +17,10 @@ from octop.infra.setup.self_update import UpgradeResult
 
 
 @pytest.fixture(autouse=True)
-def _clear_update_status_cache() -> None:
+def _clear_update_status_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Update checks are off unless an operator points them at an index they own,
+    # so these tests opt in explicitly rather than relying on a global default.
+    monkeypatch.setenv("OCTOP_UPDATE_CHECK", "1")
     update_store.clear_cached_status()
     yield
     update_store.clear_cached_status()

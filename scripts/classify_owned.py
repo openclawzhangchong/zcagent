@@ -13,7 +13,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path("D:/otp/Octop")
+REPO = Path("D:/otp/zcagent")
 BASE = "0c5a46ab5f82e5ad9d1a56fa09b00e542f042fda"
 PY = REPO / ".venv" / "Scripts" / "python.exe"
 

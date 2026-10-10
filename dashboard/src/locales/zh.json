@@ -3354,6 +3354,9 @@
       "saved": "已保存，正在刷新…",
       "saveFailed": "品牌设置保存失败",
       "reset": "恢复内置",
+      "interface": "界面",
+      "showAllFeatures": "在侧栏显示全部功能入口",
+      "showAllFeaturesHint": "默认关闭：云端协同、远程桌面、ACP、Token 统计、存储后端不显示，因为内网单机部署用不到。打开即可全部恢复。",
       "loadFailed": "无法读取当前品牌设置。"
     },
     "bridge": {

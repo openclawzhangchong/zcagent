@@ -225,6 +225,19 @@ def _description_for_version(
     return fallback
 
 
+def update_check_enabled() -> bool:
+    """Whether to advertise updates at all.
+
+    A fork that publishes nothing to the configured index must not tell its
+    users "a new version is ready" -- that button would install someone else's
+    build. So the check is off until an operator points it somewhere they own.
+    """
+    raw = os.environ.get("OCTOP_UPDATE_CHECK")
+    if raw is not None:
+        return raw.strip().lower() not in {"0", "false", "no", "off", ""}
+    return bool(os.environ.get("OCTOP_UPDATE_INDEX_URL"))
+
+
 def fetch_pypi_info(timeout: int = 10) -> PyPIInfo | None:
     """Fetch version and long description from the PyPI JSON API.
 

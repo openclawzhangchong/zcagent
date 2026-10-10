@@ -53,6 +53,31 @@
 - **已完成**：`logo_url` 接入 `src/branding/AppLogo.tsx`，替换 Header / Sidebar / Login / Setup **4 处**调用点（先前估计的"12 处"把吉祥物引用也算进去了，实际只有 4 处）；`loadBranding()` 同时改写 `link[rel=icon]` 与 `apple-touch-icon`，浏览器标签页图标跟着换。管理页新增「品牌」tab（`/admin/advanced?tab=branding`），可填中英文名、标语、主色、粘贴 https 链接或上传图片，保存后自动刷新生效。
 - 已知边界：`index.html` 里 JS 之前的启动屏仍用构建期 logo —— 运行时覆盖发生在 React 挂载前的一次 fetch，早于它也就要把品牌写进 HTML 模板，那属于构建期职责。
 
+### 新增：P2 换壳 —— 导航渐进式披露
+
+默认侧栏只保留内网单机助手用得上的 14 项，把**云端协同、远程桌面、ACP、Token 统计、存储后端**这 5 项收进一个开关（应用设置 → 品牌 → 界面）。选择"隐藏"而不是"删除"：删掉每次追版都要冲突一次，而且会真的拿走能力；开关放在我们自己的文件里，上游零冲突。
+
+实测（无头驱动真实点击开关）：默认 14 项 → 打开后 19 项，5 个入口全部回来，`aria-checked: false → true` 且侧栏实时响应。
+
+### 新增：P3 首个自有能力 —— 决策留痕 skill 插件
+
+`plugins/zcagent-decision-log/`（`kind: skill`）。刻意**不自己实现文件写入**：插件 API 没有"当前专家工作区"入口，硬写会重复 harness 的能力并随其演进而漂移；改为教专家用它已有的文件工具，把决定按固定小节写进 `decisions/YYYY-MM.md`。
+
+管线已验证：`octop plugin install` → 运行时 `loaded: True` → 技能同步进 `.octop/skills/decision-log/` → `octop skills list` 显示 `enabled=True`。
+
+### 变更：更新检查默认关闭
+
+`/admin/advanced?tab=updates` 之前会去查公共 PyPI 上的 `octop` 包，于是我们自己的部署会弹"新版本已就绪 → 立即更新"，点下去装的是别人的构建。现在默认不检查：`OCTOP_UPDATE_CHECK=1` 显式打开，或配置了 `OCTOP_UPDATE_INDEX_URL`（指向自家内网索引）时自动打开。实测 `/api/update/status` 返回 `has_update:false`、`latest_version:null`、无 error。
+
+### 变更：发布产物名与桌面流水线
+
+- 产物前缀 `Octop-` → `zcagent-`（`desktop/portable/_common.sh` 等 51 个文件同步）。这条必须做：NSIS 的产物名来自 `productName`（已是 `zcagent`），而 workflow 的上传 glob 还写着 `Octop-desktop-*`，配上 `if-no-files-found: error` 会让发版作业直接失败。token 规则为保护 `X-Octop-*` 跳过了后接连字符的情况，所以单列一条字面量规则。
+- `octop-desktop.yml` 裁剪为只构建 `windows-amd64`（保留其余平台定义，放开是一行改动）；内嵌的 python 平台筛选块已做语法校验。
+
+### 版本
+
+`pyproject.toml` 与 `src/octop/__init__.py` 升到 `1.0.2b6+z1`。实测该 local version 对打包无害：`stamp_version.four_part_version("1.0.2b6+z1")` → `1.0.2.0`，显示串保留后缀。
+
 ### 仓库与流水线
 
 - 远端：`origin = github.com/openclawzhangchong/zcagent`，`upstream = TencentCloud/Octop`。
@@ -84,5 +109,7 @@
 - **凭据存储：决定不改为强制加密（2026-10-09）。** Agent 可在工作区 `.octop/.env` 写入凭据，曾提议强制走 `connectors` 的加密 `secrets`，已否决：普通用户接自己的 MCP 就是靠直接编辑这个文件，加密会把主路径变成工单。这是权衡后的接受项，不要重做；详见 `docs/HANDOVER.md` 第 6 节。保留的底线只有一条：不许在任何文案或提示词里声称"密钥不落盘"。
 - Windows 下 `工作台 / 终端` 不可用（上游按设计禁用，见 `src/octop/api/routers/terminal.py`）。
 - 系统提示词里的 OS / 工作区路径在 Windows 上会被模型复述成 Linux 风格路径，属上游待修。
+- **技能遵循度不足（模型侧，非接线问题）**：接好的 `decision-log` 技能在实测中没被走通——第一轮把决定写进了 `MEMORY.md`；第二轮显式点名 `decision-log`，模型却回"未命中 `totorosir-workbuddy-checkin`"（技能名串台）。当前模型是 flash 档，说明"装了技能"不等于"会用技能"，交付时要按模型档位评估。
+- **模型会写错日期**：那次写入 `MEMORY.md` 的记录把日期写成 `2026-07-11`，实际是 2026-10-10。对"决策审计留痕"这类能力这是致命缺陷，已在技能里加了"日期必须取自运行环境"的硬约束，但根因在 harness 未把当前日期作为强约束注入。
 - 侧栏「云端协同 BETA」角标仍用 `#ff4d4f`（`src/layouts/Sidebar.tsx:215`），这是语义"提醒/危险"红而非品牌色，暂未改。
 - `octop-mascot-peek.webm`、`octop-mascot-type.webm`、`octop-mascot-tasks.png` 在代码里**无人引用**（前端只用 `.webp`），属上游死资产，仍随构建产物发布，暂未处理。

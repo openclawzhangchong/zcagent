@@ -2,7 +2,8 @@
 
 基于 **[TencentCloud/Octop](https://github.com/TencentCloud/Octop)**（MIT License）做自有品牌的 AI 助手产品。
 上游原文档保留在 [`README.upstream.md`](./README.upstream.md)，逐版本改动见 [`CHANGELOG.md`](./CHANGELOG.md)，
-接手前先读 [`docs/HANDOVER.md`](./docs/HANDOVER.md)（状态快照、踩过的坑、验证基线、待办）。
+接手前先读 [`docs/HANDOVER.md`](./docs/HANDOVER.md)（状态快照、踩过的坑、验证基线、待办），
+在此仓库写代码前读 [`docs/CONVENTIONS.md`](./docs/CONVENTIONS.md)（只读区、硬红线、冲突面积纪律、追版 SOP）。
 
 - 上游基线：`v1.0.2b6` / commit `0c5a46a`
 - 许可证：上游 MIT，本 fork 同样以 MIT 发布（`LICENSE` 保留上游版权声明）

@@ -33,14 +33,14 @@ octop backup --help     # 备份/恢复
 
 | 版本 | 包名 | 体积 | 运行方式 | 依赖 |
 |------|------|------|----------|------|
-| **Docker 版（推荐，尤其是 ARM）** | `Octop-fnos-docker-<ver>.fpk` | ~340 KB | 飞牛拉取 `ghcr.io/tencentcloud/octop:<本包版本>`（`amd64` / `arm64` 多架构），重启不再重拉 | 宿主需有 Docker，且能访问 `ghcr.io` |
-| **本地版 x86_64** | `Octop-fnos-native-<ver>.fpk` | ~200 MB | 复用飞牛「Python 3.12」+ 包内核心依赖与前端 | 无需 Docker |
-| **本地版 ARM64** | `Octop-fnos-native-arm64-<ver>.fpk` | ~200 MB | 同上，site-packages 为 aarch64；勿装到 x86 | 无需 Docker；ARM 飞牛无 Docker 时再用 |
+| **Docker 版（推荐，尤其是 ARM）** | `zcagent-fnos-docker-<ver>.fpk` | ~340 KB | 飞牛拉取 `ghcr.io/tencentcloud/octop:<本包版本>`（`amd64` / `arm64` 多架构），重启不再重拉 | 宿主需有 Docker，且能访问 `ghcr.io` |
+| **本地版 x86_64** | `zcagent-fnos-native-<ver>.fpk` | ~200 MB | 复用飞牛「Python 3.12」+ 包内核心依赖与前端 | 无需 Docker |
+| **本地版 ARM64** | `zcagent-fnos-native-arm64-<ver>.fpk` | ~200 MB | 同上，site-packages 为 aarch64；勿装到 x86 | 无需 Docker；ARM 飞牛无 Docker 时再用 |
 
 - **Docker 版**实现为 FnOS `docker-project`：包体只含 `docker-compose.yaml` 与向导配置，运行时由飞牛从 GHCR 拉取镜像。x86 / ARM 飞牛共用这一份 FPK，Docker 按本机架构拉对应镜像层。ARM 飞牛优先用这一份。镜像已内置 `desktop` 桌面控制与前端；Playwright Chromium 不预装，可在控制台按需安装。
 - **本地版**实现为 FnOS 原生 `app`：解释器复用飞牛「Python 3.12」开发工具；包内是 zcagent 核心依赖与前端。专家 shell / 技能若要跑 `node` / `npx`，会复用飞牛已装的 Node.js（不强制安装）。扩展里的 `.so` 与 CPU 架构绑定，因此 x86 与 ARM 各打一份；装错架构会在安装或启动时报错。
 
-> 上述包随正式版一起挂在 **`v*` GitHub Release** 上（例如 [v0.9.31](https://github.com/openclawzhangchong/zcagent/releases/latest)）：`Octop-fnos-docker-<ver>.fpk` / `Octop-fnos-native-<ver>.fpk` / `Octop-fnos-native-arm64-<ver>.fpk`。
+> 上述包随正式版一起挂在 **`v*` GitHub Release** 上（例如 [v0.9.31](https://github.com/openclawzhangchong/zcagent/releases/latest)）：`zcagent-fnos-docker-<ver>.fpk` / `zcagent-fnos-native-<ver>.fpk` / `zcagent-fnos-native-arm64-<ver>.fpk`。
 
 ## 目录结构
 
@@ -91,8 +91,8 @@ fnos/
 
 ```bash
 bash scripts/build-fpk.sh            # Docker 版 + 当前机器架构的本地版
-bash scripts/build-fpk.sh docker     # 仅 Docker 版  → dist/Octop-fnos-docker-<version>.fpk
-bash scripts/build-fpk.sh native     # 仅本地版      → dist/Octop-fnos-native-<version>.fpk
+bash scripts/build-fpk.sh docker     # 仅 Docker 版  → dist/zcagent-fnos-docker-<version>.fpk
+bash scripts/build-fpk.sh native     # 仅本地版      → dist/zcagent-fnos-native-<version>.fpk
 FPK_ARCH=arm64 bash scripts/build-fpk.sh native   # ARM 本地版（需已放入 aarch64 site-packages）
 ```
 
@@ -101,9 +101,9 @@ FPK_ARCH=arm64 bash scripts/build-fpk.sh native   # ARM 本地版（需已放入
 ## 在飞牛上安装
 
 1. 飞牛「应用中心 → 设置 → 手动安装应用」选择对应 `.fpk`：
-   - **优先**：已装 Docker（含 ARM 飞牛）→ `Octop-fnos-docker-<version>.fpk`（x86 / ARM 通用）
-   - 不想依赖 Docker、x86_64 飞牛 → `Octop-fnos-native-<version>.fpk`
-   - 不想依赖 Docker、ARM64 飞牛 → `Octop-fnos-native-arm64-<version>.fpk`（不要装到 x86）
+   - **优先**：已装 Docker（含 ARM 飞牛）→ `zcagent-fnos-docker-<version>.fpk`（x86 / ARM 通用）
+   - 不想依赖 Docker、x86_64 飞牛 → `zcagent-fnos-native-<version>.fpk`
+   - 不想依赖 Docker、ARM64 飞牛 → `zcagent-fnos-native-arm64-<version>.fpk`（不要装到 x86）
 2. 安装向导中设置管理员用户名与密码（显示名称、邮箱可选），并阅读「接下来怎么用」。
 3. 等到应用中心显示「运行中」再点「打开」，或用浏览器访问 Docker 版 `http://<设备IP>:8088` / 本地版 `http://<设备IP>:8089`，用刚才设置的账号登录。
 4. 登录后到控制台「设置 → 模型」配置 API Key。Docker 版首次会从 `ghcr.io` 拉取与本包版本相同的镜像（设备需能访问 GitHub Container Registry），请等下载完成；之后重启不会重拉。容器数据挂在飞牛 `data-share`（`TRIM_DATA_SHARE_PATHS`，一般为 `/volX/@appshare/octop/data`），应用重启后保留。本地版无需联网拉镜像。Playwright Chromium 不预装，需要远程浏览器时在控制台按需安装。

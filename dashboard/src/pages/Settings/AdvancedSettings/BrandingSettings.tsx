@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Alert, Button, Input, Space } from "antd";
+import { Alert, Button, Input, Space, Switch } from "antd";
 import { Palette } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { message } from "@/utils/antdMessage";
 import { brandingApi, type Branding } from "../../../api/modules/branding";
+import { setFullNavEnabled, useFullNavEnabled } from "../../../branding/navSimplicity";
 import { apiErrorMessage } from "../../../utils/apiError";
 import { TabPanelHeader } from "./TabPanelHeader";
 import tabStyles from "./tabContent.module.less";
@@ -19,6 +20,7 @@ export default function BrandingSettingsPanel() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fullNav = useFullNavEnabled();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const patch = (next: Partial<Branding>) => setValue((prev) => ({ ...prev, ...next }));
@@ -149,6 +151,17 @@ export default function BrandingSettingsPanel() {
             />
           ) : null}
         </Space>
+      </div>
+
+      <div>
+        <div style={labelStyle}>{t("advancedSettings.branding.interface")}</div>
+        <Space>
+          <Switch checked={fullNav} onChange={setFullNavEnabled} />
+          <span>{t("advancedSettings.branding.showAllFeatures")}</span>
+        </Space>
+        <div className={tabStyles.sectionDesc}>
+          {t("advancedSettings.branding.showAllFeaturesHint")}
+        </div>
       </div>
 
       <Space>

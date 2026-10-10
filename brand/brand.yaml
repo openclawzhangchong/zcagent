@@ -22,6 +22,11 @@ identity:
     # 上游仓库 slug 出现在安装脚本、镜像标签、"查看更新"链接里；
     # 不写这条，token 规则会把它改成不存在的 TencentCloud/zcagent。
     - { from: "TencentCloud/Octop", to: "openclawzhangchong/zcagent" }
+    # 发布产物名前缀（Octop-desktop-*.exe / Octop-portable-*.zip / *.fpk）。
+    # token 规则因为要保护 X-Octop-* 这类头名而跳过后接连字符的情况，所以必须
+    # 单独列这条：NSIS 的产物名来自 productName（已是 zcagent），生成器与
+    # workflow 的 glob 必须一起改，否则上传步骤 if-no-files-found: error。
+    - { from: "Octop-", to: "zcagent-" }
 
 colors:
   brand: "#3D5A80"     # 智策默认主色（钢蓝，配牧羊犬的深灰蓝+米白）

@@ -33,6 +33,7 @@ from octop.infra.setup.self_update import (
     is_prerelease,
     parse_changelog_for_version,
     run_upgrade,
+    update_check_enabled,
 )
 from octop.infra.setup.service import (
     ServiceRuntime,
@@ -191,6 +192,12 @@ async def update_status(
 ) -> dict[str, Any]:
     """Return last check result; re-probe PyPI when the server cache TTL expires."""
     stable_only = _read_stable_only(server)
+    if not update_check_enabled():
+        # latest_any="" keeps _build_status from reaching out to an index we do
+        # not own, while still reporting a clean "nothing to install" state.
+        return await asyncio.to_thread(
+            _build_status, latest_any="", stable_only=stable_only
+        )
     cached = get_cached_status()
     if cached is not None:
         return _auto_status(cached, stable_only=stable_only)

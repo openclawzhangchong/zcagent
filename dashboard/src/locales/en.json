@@ -3354,6 +3354,9 @@
       "saved": "Saved. Reloading...",
       "saveFailed": "Failed to save branding",
       "reset": "Reset to built-in",
+      "interface": "Interface",
+      "showAllFeatures": "Show every feature entry in the sidebar",
+      "showAllFeaturesHint": "Off by default: cloud collaboration, remote desktop, ACP, token usage and storage backends are hidden because they are not part of an internal single-machine deployment. Turn on to show them again.",
       "loadFailed": "Could not load the current branding."
     },
     "bridge": {

@@ -1,4 +1,5 @@
 import AppLogo from "../branding/AppLogo";
+import { filterAdvancedNav, useFullNavEnabled } from "../branding/navSimplicity";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -395,6 +396,7 @@ export default function Sidebar({
   const { layoutMode, minimalPane, setMinimalPane } = useLayoutMode();
   const isMinimal = layoutMode === "minimal";
   const onChatPath = isChatPath(location.pathname);
+  const showFullNav = useFullNavEnabled();
   const catalog = useMemo(
     () => buildNavSections(user, { mobileEnabled }),
     [user, mobileEnabled],
@@ -402,8 +404,8 @@ export default function Sidebar({
   const [savedLayout, setSavedLayout] = useState<SidebarNavLayout | null>(null);
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const navSections = useMemo(
-    () => sectionsFromLayout(catalog, savedLayout),
-    [catalog, savedLayout],
+    () => filterAdvancedNav(sectionsFromLayout(catalog, savedLayout), showFullNav),
+    [catalog, savedLayout, showFullNav],
   );
   const { toggleGroup, isGroupCollapsed } = useNavGroupCollapse(
     navSections,

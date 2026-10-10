@@ -30,7 +30,7 @@ on:
         default: ""
         type: string
       attach_from_run:
-        description: "Existing workflow run ID — attach its Octop-* artifacts and skip the 6-platform rebuild"
+        description: "Existing workflow run ID — attach its zcagent-* artifacts and skip the 6-platform rebuild"
         required: false
         default: ""
         type: string
@@ -105,8 +105,13 @@ jobs:
               {"plat": "windows-amd64", "arch": "amd64", "os": "windows-latest"},
               {"plat": "windows-arm64", "arch": "arm64", "os": "windows-11-arm"},
           ]
+          # zcagent v1 ships a Windows desktop build only. Widen this set to
+          # re-enable the other platforms; the definitions above stay so the
+          # matrix inputs keep working unchanged.
+          product_only = {"windows-amd64"}
+          all_plats = [row for row in all_plats if row["plat"] in product_only]
           if os.environ["EVENT_NAME"] == "pull_request":
-              sel = "darwin-arm64,darwin-amd64,windows-amd64,windows-arm64"
+              sel = "windows-amd64"
           else:
               sel = os.environ.get("PLATFORMS", "all").lower().replace(" ", "")
           known = {row["plat"] for row in all_plats}
@@ -184,7 +189,7 @@ jobs:
       - name: Smoke import (native host only)
         run: |
           set -euo pipefail
-          staging="desktop/portable/release/Octop-${{ matrix.plat }}"
+          staging="desktop/portable/release/zcagent-${{ matrix.plat }}"
           if [[ -x "${staging}/runtime/bin/python3" ]]; then
             py="${staging}/runtime/bin/python3"
           elif [[ -f "${staging}/runtime/python.exe" ]]; then
@@ -288,14 +293,14 @@ jobs:
           wails3 task package
           ARCH=${{ matrix.arch }}
           VERSION=${{ env.OCTOP_VERSION }}
-          PORTABLE_ZIP=../portable/release/Octop-portable-${{ matrix.plat }}-${{ env.OCTOP_VERSION }}.zip
+          PORTABLE_ZIP=../portable/release/zcagent-portable-${{ matrix.plat }}-${{ env.OCTOP_VERSION }}.zip
 
       # archive: false — upload the prebuilt zip as-is. Default archive=true would
       # wrap it again, so Actions UI / "Download artifact" becomes zip-in-zip.
       # With archive:false, artifact name is the filename (name: is ignored).
       - uses: actions/upload-artifact@v7
         with:
-          path: desktop/portable/release/Octop-portable-${{ matrix.plat }}-${{ env.OCTOP_VERSION }}.zip
+          path: desktop/portable/release/zcagent-portable-${{ matrix.plat }}-${{ env.OCTOP_VERSION }}.zip
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -303,7 +308,7 @@ jobs:
       - name: Upload bundled desktop package
         uses: actions/upload-artifact@v7
         with:
-          path: desktop/src/bin/Octop-desktop-${{ matrix.plat }}-${{ env.OCTOP_VERSION }}.*
+          path: desktop/src/bin/zcagent-desktop-${{ matrix.plat }}-${{ env.OCTOP_VERSION }}.*
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -351,7 +356,7 @@ jobs:
       # zips into directories, so files: release-assets/* would skip them.
       - uses: actions/download-artifact@v8
         with:
-          pattern: Octop-*
+          pattern: zcagent-*
           path: release-assets
           merge-multiple: true
           skip-decompress: true
