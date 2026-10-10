@@ -3336,6 +3336,13 @@
   },
   "advancedSettings": {
     "description": "Manage runtime configuration and environment variables.",
+    "clients": {
+      "title": "Client downloads",
+      "desc": "Windows installers and the portable package are listed on the download page. For an intranet deployment, point it at your own mirror in Settings → Branding.",
+      "open": "Open the download page",
+      "hintDefault": "Currently the project's Releases page. Set a client download URL under Branding to show your own.",
+      "hintCustom": "Address set by this deployment's branding; clear it in Branding to fall back to Releases."
+    },
     "branding": {
       "title": "Brand",
       "description": "Override the product name, tagline, accent colour and logo for this deployment. Changes apply on reload and need no rebuild.",
@@ -3357,7 +3364,9 @@
       "interface": "Interface",
       "showAllFeatures": "Show every feature entry in the sidebar",
       "showAllFeaturesHint": "Off by default: cloud collaboration, remote desktop, ACP, token usage and storage backends are hidden because they are not part of an internal single-machine deployment. Turn on to show them again.",
-      "loadFailed": "Could not load the current branding."
+      "loadFailed": "Could not load the current branding.",
+      "downloadUrl": "Client download page",
+      "downloadUrlHint": "Shown on 应用设置 → 应用更新 → 客户端下载. Leave empty to use the project Releases page. An intranet address may be plain http."
     },
     "bridge": {
       "title": "Cloud collaboration",

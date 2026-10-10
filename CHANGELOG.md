@@ -31,6 +31,52 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [未发布] 1.0.2b6+z03
+
+### 新增：应用更新页里的「客户端下载」
+
+`/admin/advanced?tab=updates` 底部多一张卡片，指向 Windows 客户端的下载地址。地址来自品牌层新增的
+`download_url`（`PUT /api/branding` 可改，`http://` 允许，因为内网下载站就是 http；`javascript:` /
+`data:` / 相对路径被拒），留空回落到本项目的 Releases 页。**下一节讲为什么默认不是那个更好看的下载页。**
+
+改动：`branding.py` 字段与校验、`branding/runtime.ts` 的 `downloadUrl()`、新组件
+`ClientDownloads.tsx`（复用 `UpdateConfig.module.less` 的面板类，视觉与旁边面板一致）、
+`BrandingSettings.tsx` 的输入框、两份 locale。已实测整条 OEM 回路：默认 → 在「品牌」里填
+`http://10.20.30.40/zcagent/` 保存 → 卡片按钮与提示语随之切换 → 清空后回落默认。
+
+### 移除：更新页里上游的一键安装命令
+
+`UpdateConfig` 的「按安装方式更新」原来教用户执行
+
+```
+curl -fsSL https://finnie-1258344699.cos.ap-guangzhou.myqcloud.com/octop/install.sh | bash
+irm https://finnie-1258344699.cos.ap-guangzhou.myqcloud.com/octop/install.ps1 | iex
+```
+
+在智策的安装包里跑这两条，装的是**上游的 Octop**——正是更新检查默认关闭所要防的那件事，却以"升级说明"
+的形式摆在页面上。已从 `GUIDE_METHOD_ORDER` 去掉 `installer` 一项，由上面的客户端下载卡替代；`cli` /
+`pip` / `source` / `docker` 保留（它们操作的是本机已装的那一个）。
+
+### 实测：安装版第一次真跑（含卸载）
+
+见 [`site/download/VERIFICATION.md`](site/download/VERIFICATION.md)。要点：SHA256 与 Release digest
+一致；`ProductName/CompanyName=zcagent`、`FileVersion=1.0.2b6+z02`；静默安装 → WebView2 起窗口 → 应用把
+绿色包解到 `~/.octop/portable` 并以 `launch.py run --port 8088` 起服务（HTTP 200）；卸载后安装目录与控制
+面板条目都干净。**一条要写进交付话术的残留**：`~/.octop/portable` 约 **712 MB** 不被卸载删除（它在数据目录
+内，卸载器按设计不动数据）。
+
+顺带记录一个只在源码开发安装上出现的现象：更新页的 `current_version` 取自已安装的发行版元数据
+（`importlib.metadata`），不是 `src/octop/__init__.py`，所以改完版本号不重装就会显示旧值；打包安装的产物
+实测显示正确。
+
+### 新增：客户端下载页纳入仓库
+
+`site/download/`：`release.json`（版本、每个产物的名字/字节数/SHA256/链接的唯一来源）+
+`src/`（模板与资源）+ `build.py`（渲染 `dist/`，`--from-github` 直接从 Release API 刷新数字，拿不到
+`digest` 就失败退出；`--check` 用于断言 `dist/` 是否过期）。已发布并设为公开访问。
+
+---
+
 ## [1.0.2b6+z02] — 2026-10-10
 
 修的是**已经发出去的 z01 产物里**的两处品牌缺陷，以及一处指向错误的外链。触发点很朴素：你指出侧栏「帮助与反馈」不该指向上游官网。

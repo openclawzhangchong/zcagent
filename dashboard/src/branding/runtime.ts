@@ -13,7 +13,16 @@ export type Branding = {
   tagline?: string | null;
   color?: string | null;
   logo_url?: string | null;
+  download_url?: string | null;
 };
+
+/**
+ * Where the Windows client comes from when a deployment has not said otherwise.
+ * Deliberately the Releases page rather than a nicer hosted page: it is the one
+ * address that cannot drift from the binaries we publish.
+ */
+export const DEFAULT_DOWNLOAD_URL =
+  "https://github.com/openclawzhangchong/zcagent/releases";
 
 let current: Branding = {};
 
@@ -49,4 +58,9 @@ export function brandingName(language?: string): string | null {
     ? current.name_zh ?? current.name
     : current.name ?? current.name_zh;
   return name?.trim() || null;
+}
+
+/** The deployment's client download page, or the built-in default. */
+export function downloadUrl(): string {
+  return current.download_url?.trim() || DEFAULT_DOWNLOAD_URL;
 }

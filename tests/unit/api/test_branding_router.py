@@ -73,6 +73,7 @@ async def test_put_of_an_empty_payload_clears_the_row(server: SimpleNamespace) -
         "tagline": None,
         "color": None,
         "logo_url": None,
+        "download_url": None,
     }
     assert server.services.settings_repo.deleted == [BRANDING_SETTING_KEY]
     assert server.services.settings_repo.store == {}
@@ -119,6 +120,34 @@ def test_color_accepts_hex(value: str) -> None:
 def test_color_rejects_anything_that_is_not_rrggbb(value: str) -> None:
     with pytest.raises(ValidationError):
         BrandingPayload(color=value)
+
+
+@pytest.mark.parametrize("value", ["https://dl.example.com/win", "http://10.0.0.8/zcagent/"])
+def test_download_url_accepts_http_for_intranet_mirrors(value: str) -> None:
+    """Unlike logo_url, this field is clicked as a link, not loaded as a
+    subresource -- so plain http on an intranet is the normal case."""
+    assert BrandingPayload(download_url=value).download_url == value
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "file:///c:/", "//x/y"],
+)
+def test_download_url_rejects_executable_or_relative_schemes(value: str) -> None:
+    with pytest.raises(ValidationError):
+        BrandingPayload(download_url=value)
+
+
+@pytest.mark.asyncio
+async def test_download_url_round_trips_and_persists_with_the_rest(
+    server: SimpleNamespace,
+) -> None:
+    await put_branding(
+        BrandingPayload(name="Other", download_url="http://intranet/dl"), server, None
+    )
+    stored = json.loads(server.services.settings_repo.store[BRANDING_SETTING_KEY])
+    assert stored == {"name": "Other", "download_url": "http://intranet/dl"}
+    assert (await get_branding(server)).download_url == "http://intranet/dl"
 
 
 def test_blank_fields_are_dropped_so_a_partial_edit_keeps_the_rest() -> None:

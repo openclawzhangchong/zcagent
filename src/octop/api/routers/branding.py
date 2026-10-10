@@ -2,8 +2,9 @@
 
 The build-time layer (``brand/brand.yaml`` + ``scripts/rebrand.py``) decides what
 a fresh install ships as. This router is the per-deployment override a customer
-admin can change afterwards -- product name, tagline, accent colour and logo --
-without a rebuild. Values live in the settings KV, so no schema change.
+admin can change afterwards -- product name, tagline, accent colour, logo and the
+client download page -- without a rebuild. Values live in the settings KV, so no
+schema change.
 """
 
 from __future__ import annotations
@@ -35,12 +36,28 @@ class BrandingPayload(BaseModel):
     logo_url: str | None = Field(
         default=None, description="Absolute https:// URL or an inline data:image/ URI."
     )
+    download_url: str | None = Field(
+        default=None,
+        description="Where the Windows client is downloaded from; shown on the update page.",
+    )
 
     @field_validator("color")
     @classmethod
     def _validate_color(cls, value: str | None) -> str | None:
         if value and not _HEX_COLOR.match(value):
             raise ValueError("color must be #rrggbb")
+        return value
+
+    @field_validator("download_url")
+    @classmethod
+    def _validate_download_url(cls, value: str | None) -> str | None:
+        if not value:
+            return value
+        # Rendered as an <a href>, so the risk is a scheme that runs code rather
+        # than the file-read one logo_url guards. Plain http is allowed: an
+        # intranet download page is the normal case for this field.
+        if not value.startswith(("https://", "http://")):
+            raise ValueError("download_url must be an http(s):// URL")
         return value
 
     @field_validator("logo_url")

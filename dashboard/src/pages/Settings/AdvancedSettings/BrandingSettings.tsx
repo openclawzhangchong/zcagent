@@ -117,6 +117,19 @@ export default function BrandingSettingsPanel() {
         />
       </div>
       <div>
+        <div style={labelStyle}>
+          {t("advancedSettings.branding.downloadUrl")}
+        </div>
+        <Input
+          value={value.download_url ?? ""}
+          placeholder="https://github.com/openclawzhangchong/zcagent/releases"
+          onChange={(e) => patch({ download_url: e.target.value || null })}
+        />
+        <div className={tabStyles.sectionDesc}>
+          {t("advancedSettings.branding.downloadUrlHint")}
+        </div>
+      </div>
+      <div>
         <div style={labelStyle}>{t("advancedSettings.branding.color")}</div>
         <Space>
           <input

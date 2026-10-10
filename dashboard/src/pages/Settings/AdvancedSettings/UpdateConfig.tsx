@@ -23,6 +23,7 @@ import {
   storeUpdateStatus,
 } from "../../../utils/updateStatusCache";
 import { TabPanelHeader } from "./TabPanelHeader";
+import ClientDownloads from "./ClientDownloads";
 import styles from "./UpdateConfig.module.less";
 
 /** Shell snippets shown in the manual upgrade guide (commands are locale-agnostic). */
@@ -72,7 +73,9 @@ type GuideMethodKey =
 
 const GUIDE_METHOD_ORDER: GuideMethodKey[] = [
   "ui",
-  "installer",
+  // "installer" is deliberately absent: that snippet pipes upstream's COS bucket
+  // into a shell, which on this product installs somebody else's build. The
+  // client download card below replaces it with an address we own.
   "cli",
   "pip",
   "source",
@@ -586,6 +589,7 @@ export default function UpdateConfig() {
         </section>
 
         <UpgradeGuide />
+        <ClientDownloads />
       </div>
     </div>
   );
