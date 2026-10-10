@@ -73,13 +73,24 @@ python scripts/rebrand.py --status   # 看 diff 面积
 
 ## 更新源
 
-`/admin/advanced?tab=updates` 检查的是 PyPI JSON API。企业内网部署时把索引指到自己托管的包：
+`/admin/advanced?tab=updates` 检查的是一个 PyPI JSON API。企业内网部署时把索引指到自己托管的包：
 
 ```bash
 OCTOP_UPDATE_INDEX_URL=https://devpi.internal.example.com   # 默认 https://pypi.org
 ```
 
-分发名仍是 `octop`（它同时是 pip 升级目标和已安装发行版查询名），所以本仓库目前**不发布** PyPI 包；要发自有 wheel 时再单独决定发行名。
+**自建 devpi 需要多给两个变量**（实测：devpi 的 `/pypi/<name>/json` 只服务 `root/pypi` 镜像，私有 index 的形状是 `/{user}/{index}/{name}/`，响应键为 `{"result": {版本号: …}}`）：
+
+```bash
+OCTOP_UPDATE_JSON_URL=http://devpi.internal:3111/zcagent/prod/{name}/     # 查版本
+OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装包
+```
+
+配了自有索引后，安装候选只包含该索引，不会回落公共镜像或 pypi.org。更新检查默认**关闭**：`OCTOP_UPDATE_CHECK=1` 显式打开，或配置上述任一变量时自动打开。
+
+版本号规则是 `<上游基线>+z<两位序号>`（例：`1.0.2b6+z01`）。**序号必须零填充**：PEP 440 对字母数字 local 段按字符串比较，`+z10` 会排在 `+z9` 下面，不填充就等于给 pip 一个降级包。
+
+分发名仍是 `octop`（它同时是 pip 升级目标和已安装发行版查询名），所以本仓库目前**不发布** PyPI 包；PEP 440 local version 本来也上不了 PyPI，内网索引正合适。
 
 ## 已知平台限制
 

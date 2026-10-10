@@ -1,6 +1,6 @@
 # 交接说明
 
-> 状态快照，截至 **2026-10-10**（`v1.0.2b6-z1` 已发版）。不是教程：工作流看 [`README.md`](../README.md)，逐版本改动看 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 状态快照，截至 **2026-10-10**（`v1.0.2b6-z01` 已发版）。不是教程：工作流看 [`README.md`](../README.md)，逐版本改动看 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 1. 这个项目在判断什么
 
@@ -23,7 +23,7 @@
 | P2 换壳与信息架构 | 完成 | 导航渐进式披露：默认 14 项，开关打开 19 项，无头驱动真实点击验证；P2-1 / P2-2 已并入 P1b；P2-0 凭据加密**已否决，不重做**（见第 6 节） |
 | P3 首个自有能力 | 完成（遵循度受模型档位限制） | `plugins/zcagent-decision-log/` 走 `octop plugin install` → `loaded: True` → `skills list` 里 `enabled=True`；实测模型会绕开技能，见第 5 节 |
 | P4 追版度量 | 完成（首次真实追版待做） | `frontend.yml` + `sync-attempt.yml` + `scripts/sync_check.py`；合成冲突分支实测能识别冲突、非零退出、并完整还原工作树 |
-| P5 自有产物链 | 完成 | Windows 桌面产物 `zcagent-desktop-windows-amd64-1.0.2b6+z1.exe` + 便携 zip 由自有 workflow 产出并挂到 GitHub Release；未签名（刻意的，上游也不签） |
+| P5 自有产物链 | 完成 | Windows 桌面产物 `zcagent-desktop-windows-amd64-1.0.2b6+z01.exe` + 便携 zip 由自有 workflow 产出并挂到 GitHub Release；未签名（刻意的，上游也不签）。内网索引侧已对着**真实 devpi** 端到端跑通（建索引 → 传 wheel → 读出我们的版本） |
 
 ### 冲突面积的真实测量（重要）
 
@@ -46,11 +46,11 @@
 
 ## 3. 下一步
 
-P0–P5 都已收尾，`v1.0.2b6-z1` 已发版。接下来真正有价值的是这三件事，都不在代码里：
+P0–P5 都已收尾，`v1.0.2b6-z01` 已发版。追版装置今天已**真跑过一次**（不是合成用例）：上游 `main` 自基线后没有前进，`develop` 反而落后于 main（上游用 sync-main-to-develop 单向同步），最新 stable 仍是 `v1.0.1`（比我们的 beta 基线旧），所以"无可 merge"是真结论。剩下的三件事：
 
-1. **首次真实追版**：等上游出 stable（`v1.0.2` 或 `v1.1.0`），跑 `scripts/sync_check.py` 看试 merge 报告，再按 SOP 解冲突。度量装置已经证明自己能红，第一次真跑大概率会暴露"上游也改了 locale / `App.tsx`"这类日常——面积已经量化到 25 个文件，不再是未知数。
-2. **干净机器上的安装验收**：产物目前只在本机构建机上验过启动。要在一台没装过 Python / Node 的 Windows 机器上跑一遍安装版和便携版，确认内嵌运行时、数据目录迁移、SmartScreen 提示的话术，以及卸载不留垃圾。
-3. **内网更新源**：`OCTOP_UPDATE_INDEX_URL` 已可配，但要真起一个 devpi 并把 `1.0.2b6+z1` 的 wheel 传上去，`/admin/advanced?tab=updates` 才会显示我们自己的版本而不是什么都不做。
+1. **干净机器上的安装验收**（最值钱的一件）：产物目前只在本机构建机上验过启动。要在一台没装过 Python / Node 的 Windows 机器上跑一遍安装版和便携版，确认内嵌运行时、数据目录迁移、SmartScreen 提示的话术，以及卸载不留垃圾。
+2. **devpi 的运维落地**：代码侧已对着真实 devpi-server 端到端跑通（建私有 index → 上传我们的 wheel → 读出 `1.0.2b6+z01`），缺的是"起在哪台机器、谁运维、CI 怎么自动推 wheel"。
+3. **等上游 `v1.0.2` 稳定版**：那才是第一次真实追版，届时按 `CONVENTIONS.md` 第 6 节走，并把 SOP 脚本化（P4-4）。
 
 排期与出口条件在 [`PLAN.md`](./PLAN.md)。一句话原则仍然成立：**每多手改一个上游文件，追版成本就永久上升**——所以能放进 `brand/brand.yaml` 的不要写进源码，能用运行时覆盖的不要构建期硬改，能加新文件的不要改旧文件。
 
@@ -69,6 +69,8 @@ P0–P5 都已收尾，`v1.0.2b6-z1` 已发版。接下来真正有价值的是�
 - **`gh` 会把这个 fork 解析成上游仓库**：`gh repo view` / `gh run list` 默认返回 `TencentCloud/Octop` 的数据。查自己的 Actions / Release 必须显式 `--repo openclawzhangchong/zcagent` 或写全 `owner/repo`，否则读到的是腾讯的流水线。
 - **`git ls-remote origin <branch> <sha>` 不是"推送成功"的判据**：带 SHA 的 pattern 匹配不到任何 ref，而 branch 名总能匹配，于是这个检查恒真。我因此误报过一次推送成功。要比对 `git ls-remote origin refs/heads/<branch>` 的输出与本地 HEAD。
 - **别在验证命令里顺手写 `git checkout -- .`**：它会把刚做好的格式化与换行转换整体清掉（踩过一次，代价是重跑 prettier）。看状态请用 `git status` / `git diff`。
+- **别照文档写索引地址，要对着真服务测**：我们在代码注释里写过"devpi 提供同样的 `/pypi/<name>/json`"，起一个真 devpi、传一个真 wheel 上去之后发现是 404——那条路由只服务 `root/pypi` 镜像，私有 index 是 `/{user}/{index}/{name}/` + `Accept: application/json`，响应还换成 `{"result": {版本号: …}}`。
+- **PEP 440 的 local 段按字符串比较**：`Version("1.0.2+z10") < Version("1.0.2+z9")`。所以 `+z` 序号必须零填充（`z01`…`z99`）。另外上游 `parse_version()` 的正则**捕获了** `local` 却不用它，导致 `+z` 补丁在更新检查里完全不可见——修它之前先确认判序与 pip 一致，别顺手做成"更聪明"的自然排序。
 
 ## 5. 验证基线（别去追的鬼）
 

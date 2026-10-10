@@ -4,15 +4,34 @@
 
 ## 版本号规则
 
-`<上游基线版本>+z<N>`，例如 `1.0.2b6+z1`。
+`<上游基线版本>+z<两位序号>`，例如 `1.0.2b6+z01`。**序号必须零填充。**
 
 - `+` 前是所基于的上游版本，追版时只改这一段；
-- `z<N>` 是我们的补丁序号，每次发布 +1；
-- 用 PEP 440 local version，因此这类包**不能**上传 PyPI（我们不发布公共包，内网分发正合适）。
+- `z<NN>` 是我们的补丁序号，每次发布 +1，**写成 `z01`…`z99` 而不是 `z1`…`z99`**：PEP 440 对 local 版本段按**字符串**比较，所以 `+z10` 会排在 `+z9` **下面**——不填充的话第 10 次发布在 pip 眼里是降级（已实测：`Version("1.0.2+z10") < Version("1.0.2+z9")`）。
+- 用 PEP 440 local version，因此这类包**不能**上传 PyPI（我们不发布公共包，内网索引正合适）。
+- 更新检查的比较器 `self_update.parse_version` 已按 PEP 440 处理 local 段，与 pip 的判序**一致**——故意不做"更聪明"的自然排序：按钮承诺了而 pip 装不了，比没有按钮更糟。
+
+## 内网更新源怎么配
+
+上游与 devpi 的"查版本"接口**既不同 URL 也不同 JSON 形状**（对着真实 devpi-server 实测，不是照文档写的）：
+
+| 索引 | URL | 响应 |
+|---|---|---|
+| PyPI / Warehouse | `GET {host}/pypi/{name}/json` | `{"info": …, "releases": …}` |
+| devpi | `GET {host}/{user}/{index}/{name}/`（`Accept: application/json`） | `{"result": {版本号: …}}` |
+
+所以只有 `OCTOP_UPDATE_INDEX_URL` 时走 Warehouse 形状；自建 devpi 要显式给模板：
+
+```bash
+OCTOP_UPDATE_JSON_URL=http://devpi.internal:3111/zcagent/prod/{name}/     # 查版本
+OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装包
+```
+
+配了自有索引后，安装候选**只**包含该索引，不再探测公共镜像、也不回落 pypi.org——否则"立即更新"可能把别人的 `octop` 包装进内网机器。
 
 ---
 
-## [1.0.2b6+z1] — 2026-10-10
+## [1.0.2b6+z01] — 2026-10-10
 
 基于上游 `v1.0.2b6`（commit `0c5a46a`，2026-10-08）。首个自有品牌版本。
 
@@ -20,13 +39,14 @@
 
 | 项 | 值 |
 |---|---|
-| tag | `v1.0.2b6-z1` → commit `5dbff1b`（其后的提交均为纯文档） |
-| GitHub Release | <https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z1>，标记 **prerelease**（基线本身是上游 beta） |
-| 产物 | `zcagent-desktop-windows-amd64-1.0.2b6+z1.exe`（192 MB）、`zcagent-portable-windows-amd64-1.0.2b6+z1.zip`（197 MB），由 `zcagent Desktop Package` 作业产出并挂到 Release |
+| tag | `v1.0.2b6-z01`（其后的提交均为纯文档） |
+| GitHub Release | <https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z01>，标记 **prerelease**（基线本身是上游 beta） |
+| 产物 | `zcagent-desktop-windows-amd64-1.0.2b6+z01.exe`（约 192 MB）、`zcagent-portable-windows-amd64-1.0.2b6+z01.zip`（约 197 MB），由 `zcagent Desktop Package` 作业产出并挂到 Release |
+| 为什么重切版本号 | 首版按 `+z1` 发布；实测 PEP 440 对 local 段按字符串比较，`+z10 < +z9`，即第 10 次自有发布会被判为降级。序号从 `z01` 起零填充是代价最小的修法（改 4 个文件的版本串 + 重打一次 tag 重跑一次构建），比让比较器去"比 pip 聪明"安全 |
 | `Frontend` 门禁 | 绿：ESLint 0 error、`prettier --check` 通过、`tsc -b` + vite build 通过 |
 | vitest 基线（CI，非阻塞） | 6 failed / 1147 passed，218 文件，92.7s。这 6 个失败所在的测试文件与其被测模块相对上游基线**零改动**，故不属品牌改动引入；本机在干净上游树上稳定红 6–8 个 |
 | 签名 | 未签名（刻意，见 `docs/PLAN.md` P5-4） |
-| tag 重打说明 | 首次构建（run `38019377417`）成功但对应 tag 落在门禁变绿之前，故把 tag 移到 `5dbff1b` 重打一次，让**产物 = 被测过的提交**；`Attach zips` 作业靠 `overwrite_files: true` 原地替换同名产物 |
+| 追版现状 | 上游 `main` 自基线后未前进（`0c5a46a` 就是当天的 main tip），`develop` 反而**落后于** main（上游用 sync-main-to-develop 单向同步），所以 `sync_check.py` 报"无可 merge"是真结论而非装置失效；最新 stable tag 仍是 `v1.0.1`，比我们的 beta 基线旧，下一个追版窗口是上游出 `v1.0.2` 稳定版 |
 
 
 ### 新增：OEM 品牌层
@@ -46,9 +66,28 @@
 - 反写域名替换同时覆盖正则里的转义写法（`com\.tencent\.octop`），否则 `stamp_version.py` 会在打包时 `SystemExit`。
 - 上游文档改名保留：`README.md → README.upstream.md`、`CHANGELOG.md → CHANGELOG.upstream.md`。追版时这两个文件按"ours"解冲突。
 
-### 变更：更新源可配置
+### 变更：更新源可配置（并实测过真实 devpi）
 
 `src/octop/infra/setup/self_update.py` 的索引地址改为读 `OCTOP_UPDATE_INDEX_URL`（默认仍是 `https://pypi.org`），UI 上的来源标签随之显示真实主机名。分发名保持 `octop`，因为它同时是 pip 升级目标与已安装发行版查询名。
+
+先前这里写过一句"devpi 提供同样的 `/pypi/<name>/json`"——**实测是错的**：本地起 devpi-server、建私有 index、把我们真正的 wheel 传上去之后，`/pypi/octop/json` 返回 404（那条路由只服务 `root/pypi` 镜像），devpi 的形状是 `GET /{user}/{index}/{name}/` + `Accept: application/json`，响应还换成 `{"result": {版本号: …}}`。于是：
+
+- 新增 `OCTOP_UPDATE_JSON_URL`（含 `{name}` 的模板）与 `OCTOP_UPDATE_SIMPLE_URL`（装包地址，devpi 是 `+simple`）；请求头补 `Accept: application/json`。
+- `_as_warehouse_shape()` 把 devpi 的 project / 单版本视图归一化成 Warehouse 的 `info`/`releases`，下游一处都不用分支。
+- **配了自有索引后，安装候选只包含该索引**，不再探测公共镜像、也不回落 pypi.org。原来的写法会把四个公共镜像排在前面并始终把 pypi.org 追加为兜底——内网部署点"立即更新"就可能装上别人的 `octop`，正是这条更新检查默认关闭所要防的事。
+- 端到端实测：devpi 里放 `1.0.2b6+z01` → 读出 `latest_any=1.0.2b6+z01`、`source=127.0.0.1`；再传一个更高版本 → 判序正确。
+
+### 修复：`+z` 补丁序号此前对更新检查不可见
+
+`parse_version()`（上游手写的 PEP 440 排序键）正则里**捕获了** `local` 段却从不使用它，于是 `1.0.2b6+z1` 与 `1.0.2b6+z9` 的键完全相同：`is_newer()` 恒为 False，**我们自己的补丁序列在更新页上永远不会亮**。实测：
+
+```
+is_newer("1.0.2b6+z9", "1.0.2b6+z1") -> False     # 修复前
+```
+
+修法是把 local 段按 PEP 440 的规则纳入排序键（数字段按数值、字母数字段按小写字符串、有 local 高于无 local），**故意不做自然排序**：判序必须和 pip 一致，否则按钮承诺了而 pip 装不了。上游测试里 `parse_version("1.0.2+local.10") == parse_version("1.0.2")` 这条断言正是被忽略 local 的结果，已按 PEP 440 改正并加注释。
+
+顺带测出 scheme 本身的坑：PEP 440 对字母数字 local 段按**字符串**比较，`Version("1.0.2+z10") < Version("1.0.2+z9")`。所以序号从 `z01` 起零填充，本版随之从 `+z1` 重切为 `+z01`（`1.0.2b6+z1` → `1.0.2b6` 的打包等价性已复核：`four_part_version("1.0.2b6+z01")` → `1.0.2.0`）。
 
 ### 变更：一处上游测试修正
 
@@ -89,7 +128,7 @@
 
 ### 版本
 
-`pyproject.toml` 与 `src/octop/__init__.py` 升到 `1.0.2b6+z1`。实测该 local version 对打包无害：`stamp_version.four_part_version("1.0.2b6+z1")` → `1.0.2.0`，显示串保留后缀。
+`pyproject.toml` 与 `src/octop/__init__.py` 升到 `1.0.2b6+z01`。实测该 local version 对打包无害：`stamp_version.four_part_version("1.0.2b6+z01")` → `1.0.2.0`，显示串保留后缀。
 
 ### 仓库与流水线
 

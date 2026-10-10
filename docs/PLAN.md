@@ -1,6 +1,6 @@
 # 计划表（P2 / P4 / P5）
 
-> 截至 2026-10-10：**`v1.0.2b6-z1` 已发版**（Windows 安装包 + 便携包挂在 GitHub Release 上）。已定的四个决策：**P2 做换壳+信息架构（不重做 Chat 内部）**、**更新索引自建 devpi**、**代码签名列为可选后置（不做 macOS 公证）**、**Windows 优先**。
+> 截至 2026-10-10：**`v1.0.2b6-z01` 已发版**（Windows 安装包 + 便携包挂在 GitHub Release 上）。已定的四个决策：**P2 做换壳+信息架构（不重做 Chat 内部）**、**更新索引自建 devpi**、**代码签名列为可选后置（不做 macOS 公证）**、**Windows 优先**。
 > 交接快照见 [`HANDOVER.md`](./HANDOVER.md)，历史见 [`../CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 排期原则
@@ -44,16 +44,16 @@ P2-1、P2-2 已在 P1b 完成，P2-0 取消，P2-3 用最小代价完成，P2-5 
 |---|---|---|
 | P5-1 产物矩阵（Windows 优先） | ✅ 已定并已执行 | 首批 = Windows 安装包 + 便携包；`octop-desktop.yml` 里平台定义仍保留，`product_only = {"windows-amd64"}` 一处过滤，放开是一行改动。Linux 服务端镜像后置 |
 | P5-2 Windows 桌面 CI 构建 | ✅ 完成 | 打 tag 出 `zcagent-desktop-windows-amd64-<ver>.exe` 与 `zcagent-portable-windows-amd64-<ver>.zip`，两者由 `Attach zips to GitHub Release` 挂到 Release（`overwrite_files: true` 让重跑幂等）。踩过的坑：产物前缀 `Octop-` → `zcagent-` 必须与 workflow 的上传 glob 同步改，否则 `if-no-files-found: error` 直接让发版作业失败 |
-| P5-3 自建 devpi 内网索引 + CI 推 wheel | ⬜ 未做 | `OCTOP_UPDATE_INDEX_URL` 已可配、更新检查默认已关，但还没有真的索引。**第一天先实测**端点形状是否为 `<host>/pypi/<name>/json`，否则要调 `self_update.py` 的 URL 拼接 |
+| P5-3 自建 devpi 内网索引 + CI 推 wheel | 🟡 代码侧完成，运维未落地 | **已对着真实 devpi-server 端到端实测**：建私有 index → 上传我们的 wheel → `fetch_pypi_info()` 读出 `1.0.2b6+z01`。测出的事实与文档相反：devpi 的 `/pypi/<name>/json` 只服务 `root/pypi` 镜像，私有 index 用 `/{user}/{index}/{name}/` + `Accept: application/json`，响应是 `{"result": {版本号: …}}` → 新增 `OCTOP_UPDATE_JSON_URL` / `OCTOP_UPDATE_SIMPLE_URL` 与形状归一化，并且**配了自有索引就不再探测或回落公共镜像**（否则内网点"立即更新"可能装上别人的 `octop`）。剩下的是：起在哪台机器、谁运维、CI 自动推 wheel |
 | ~~P5-4 Windows 代码签名证书~~ | **降级为可选后置（2026-10-09）** | 对照证据：上游 `octop-desktop.yml` 里**没有任何签名 / 证书 / 公证步骤**，就是 `wails3` + NSIS 直接发，所以同类产品的 exe 本来就未签名可交付。签名只影响一次 SmartScreen 蓝窗要不要点"仍要运行"，企业内网分发（无 Mark of the Web）通常根本不弹。**不是构建阻塞项。** |
-| P5-5 版本号打通 | ✅ 完成 | `1.0.2b6+z1`：`pyproject.toml` = `src/octop/__init__.py` = 产物名 = 更新页显示 = CHANGELOG 五处一致。实测 local version 对打包无害（`four_part_version("1.0.2b6+z1")` → `1.0.2.0`，显示串保留后缀）。注意 PEP 440 local version 不能上 PyPI，内网 devpi 可以 |
+| P5-5 版本号打通 | ✅ 完成 | `1.0.2b6+z01`：`pyproject.toml` = `src/octop/__init__.py` = 产物名 = 更新页显示 = CHANGELOG 五处一致。实测 local version 对打包无害（`four_part_version("1.0.2b6+z01")` → `1.0.2.0`，显示串保留后缀）。注意 PEP 440 local version 不能上 PyPI，内网 devpi 可以 |
 | P5-6 Linux 服务端 Docker 镜像 | ⬜ 未做 | 上游 `docker-publish.yml` 推的是 `ghcr.io/tencentcloud/octop`，必须换 registry 并改 `fnos/*/manifest` 里的镜像地址 |
 
 ## 下一步（按价值排序）
 
 1. **干净机器验收**：在一台没装过 Python / Node 的 Windows 机器上跑安装版与便携版，确认内嵌运行时、数据目录、SmartScreen 话术、卸载残留。这是目前唯一"没人验证过"的环节，而它正是客户第一面。
-2. **P5-3 devpi**：起索引 + 推 wheel，让更新页报我们的版本。
-3. **首次真实追版**：等上游出 stable tag，按 `CONVENTIONS.md` 第 6 节走一遍，顺手把 P4-4 脚本化。
+2. **P5-3 运维侧**：代码已实测支持 devpi（见上表），剩下"起在哪台机器 + CI 自动推 wheel"。
+3. **追版窗口**：今天真跑过一次 `sync_check.py` —— 上游 `main` 仍等于我们的基线 `0c5a46a`，`develop` 落后于 main，最新 stable 还是 `v1.0.1`（比 beta 基线旧），所以**当前无可 merge**。第一次真实追版要等上游出 `v1.0.2` 稳定版，届时按 `CONVENTIONS.md` 第 6 节走一遍并顺手把 P4-4 脚本化。
 4. **P5-6 镜像**：有 Linux 服务端需求时再做。
 
 ## 待确认（不阻塞开工）

@@ -72,7 +72,7 @@ python scripts/rebrand.py --apply                    # 纯生成文件：取上�
 python scripts/classify_owned.py                     # 更新冲突面积清单
 ```
 
-版本号规则见 `CHANGELOG.md`：`<上游基线>+z<N>`。beta tag 一律不追。
+版本号规则见 `CHANGELOG.md`：`<上游基线>+z<两位序号>`，序号**零填充**（`z01`…`z99`）——PEP 440 对字母数字 local 段按字符串比较，`+z10` 会排在 `+z9` 下面。beta tag 一律不追。
 
 ## 7. 门禁与工具链陷阱
 
