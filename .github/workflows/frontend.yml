@@ -1,0 +1,64 @@
+name: Frontend
+
+# Upstream's ci.yml has no Node job and the Makefile never runs vitest, so the
+# dashboard's 218 test files are unenforced upstream. This workflow is the gate
+# our own frontend changes answer to.
+
+on:
+  pull_request:
+  push:
+    branches: [product/main]
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: Dashboard gates
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      # `npm run build` is `tsc -b && vite build`, so this is also the typecheck.
+      - name: Typecheck and build
+        run: npm run build
+
+      - name: Unit tests
+        id: test
+        run: npm run test 2>&1 | tee vitest.log
+        continue-on-error: true
+
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo "## Frontend unit tests"
+            echo
+            echo '```'
+            grep -aE "Test Files|Tests " vitest.log | tail -n 4 || true
+            echo '```'
+            echo
+            echo "Non-blocking for now: a clean upstream tree already fails 6-10 of"
+            echo "these on the dev machine (thread pool + 1s async timeouts), so the"
+            echo "first CI runs establish the real baseline before this goes blocking."
+          } >> "$GITHUB_STEP_SUMMARY"

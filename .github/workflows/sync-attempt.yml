@@ -1,0 +1,32 @@
+name: Upstream sync attempt
+
+# Weekly measurement, never a push. Answers: how far has upstream moved, does a
+# trial merge conflict, and does the conflict land inside our declared
+# hand-edit surface (brand/owned-files.txt). Red means "budget time to merge".
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Mondays 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: Trial merge and conflict area
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/TencentCloud/Octop.git
+
+      - name: Measure
+        run: python scripts/sync_check.py --report "$GITHUB_STEP_SUMMARY"

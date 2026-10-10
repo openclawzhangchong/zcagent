@@ -1,0 +1,31 @@
+# Files carrying hand edits -- NOT produced by `rebrand.py --apply`.
+# These must survive a regeneration and are the real merge conflict
+# surface. The other ~260 files we touch are byte-identical to what
+# the tool regenerates from upstream, so a conflict in one of those is
+# mechanical: take upstream's side, then re-run --apply.
+# Regenerate this list with scripts/classify_owned.py.
+CHANGELOG.md
+CHANGELOG.upstream.md
+README.md
+README.upstream.md
+dashboard/src/App.tsx
+dashboard/src/api/modules/branding.ts
+dashboard/src/branding/AppLogo.tsx
+dashboard/src/branding/runtime.ts
+dashboard/src/layouts/Header.tsx
+dashboard/src/layouts/Sidebar.tsx
+dashboard/src/locales/en.json
+dashboard/src/locales/zh.json
+dashboard/src/main.tsx
+dashboard/src/pages/Login/index.tsx
+dashboard/src/pages/Settings/AdvancedSettings/BrandingSettings.tsx
+dashboard/src/pages/Settings/AdvancedSettings/index.tsx
+dashboard/src/pages/Setup/index.tsx
+dashboard/src/utils/expertColor.test.ts
+dashboard/src/utils/permissions.ts
+docs/HANDOVER.md
+docs/PLAN.md
+src/octop/api/app.py
+src/octop/api/deps.py
+src/octop/api/routers/branding.py
+src/octop/infra/setup/self_update.py
