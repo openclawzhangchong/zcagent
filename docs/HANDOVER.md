@@ -72,6 +72,8 @@ P0–P5 都已收尾，`v1.0.2b6-z01` 已发版。追版装置今天已**真跑�
 - **别照文档写索引地址，要对着真服务测**：我们在代码注释里写过"devpi 提供同样的 `/pypi/<name>/json`"，起一个真 devpi、传一个真 wheel 上去之后发现是 404——那条路由只服务 `root/pypi` 镜像，私有 index 是 `/{user}/{index}/{name}/` + `Accept: application/json`，响应还换成 `{"result": {版本号: …}}`。
 - **字面量替换必须有边界**。`Octop-` → `zcagent-` 是为产物名写的，没有边界就顺手把 `X-Octop-Agent-Id` / `X-Octop-Access-Token` 也改了，13 个文件、**并且发到了 z01 产物里**。链路两端都在我们树里，所以冒烟全绿——断的是边界上那头（对端是上游实例或照上游文档写的客户端）。同理 `https://octop.cloud` 是 `https://octop.cloud.tencent.com` 的前缀。`brand.yaml` 的 identity 规则因此支持 `pattern:`，`tests/unit/scripts/test_rebrand_transform.py` 两侧都锁住。
 - **守卫的覆盖面要和被守卫的东西一样宽**。`uncovered_hits()` 本意是防"glob 写错导致空集假绿"，却只读 5 种扩展名——于是便携包里的 `README.txt`、桌面壳的 `index.html`（窗口标题 / 托盘设置窗 / "显示 Octop" 按钮）、NSIS 的产品名与发行商全都**既没被清扫也没被报告**。任何"检查"如果按扩展名白名单挑文件，就等于在说"我没看的地方都是对的"。
+- **WebView2 会把语言"猜错并且写死"**：安装版在中文 Windows 上 `navigator.language` 报 `en-US`，界面按浏览器语言开了英文；而 `applyGuestLocale()` 把这个猜测 `storeUiLocale()` 落进 localStorage，于是英文成了永久状态。现在默认中文、自动猜的不落盘。**教训是通用的一条：自动检测结果不要当成用户偏好保存**，两者要分开。
+- **桌面端图标不在 `asset_map` 里，源码看不出来**。`.ico` 是构建时由 `wails3 generate icons -input appicon.png` 生成的，仓库里没有，所以 `git diff` 一切正常、装出来的 exe 却还挂着上游图标。凡是"产物才是真相"的东西（图标、包内 README、NSIS 元数据、语言默认值），验证就得真装一次。
 - **PEP 440 的 local 段按字符串比较**：`Version("1.0.2+z10") < Version("1.0.2+z9")`。所以 `+z` 序号必须零填充（`z01`…`z99`）。另外上游 `parse_version()` 的正则**捕获了** `local` 却不用它，导致 `+z` 补丁在更新检查里完全不可见——修它之前先确认判序与 pip 一致，别顺手做成"更聪明"的自然排序。
 
 ## 5. 验证基线（别去追的鬼）

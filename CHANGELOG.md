@@ -75,6 +75,41 @@ irm https://finnie-1258344699.cos.ap-guangzhou.myqcloud.com/octop/install.ps1 | 
 `src/`（模板与资源）+ `build.py`（渲染 `dist/`，`--from-github` 直接从 Release API 刷新数字，拿不到
 `digest` 就失败退出；`--check` 用于断言 `dist/` 是否过期）。已发布并设为公开访问。
 
+### 修复：桌面客户端的图标一直是上游的
+
+`brand.yaml` 的 `asset_map` 覆盖了 PWA / favicon / 字标 / 竖版 SVG，**唯独没有桌面端的三张**：
+`desktop/src/build/appicon.png`、`appicon-macos.png`、`desktop/src/assets/tray-icon.png`。
+`wails3 generate icons -input appicon.png -windowsfilename windows/icon.ico` 在构建时把
+`appicon.png` 变成 `.ico`（仓库里没有 `.ico`），再由 `wails3 generate syso` 嵌进 exe ——
+所以**装完之后文件图标、任务栏、开始菜单、系统托盘显示的还是上游的 Octop 图标**。已把三张纳入
+`asset_map`（512 / 1024 / 96，`keep_bg`），`--apply` 后 `appicon.png` 与 `pwa-512.png` 字节一致，
+托盘图在 96px 下仍清晰。这条只有真装一次才看得见，源码里看不出问题。
+
+### 修复：安装版客户端默认开成英文
+
+现象：安装版首页登录页是 "Sign in / Forgot password?"，而浏览器里同一套界面是中文。原因不在翻译——
+`zh.json` 里 `login.forgotPassword*` 这些 key 的值本来就是中文——而在语言初始化：
+
+- WebView2 在中文 Windows 上把 `navigator.language` 报成 `en-US`，`detectBrowserLocale()` 于是选英文；
+- 更糟的是 `applyGuestLocale()` 会把这个**猜出来的**语言 `storeUiLocale()` 写进 localStorage，
+  于是"第一次打开是英文"变成"以后都是英文"。
+
+修法：`resolveInitialLocale()` 改为「已存偏好优先，否则中文」（智策是中文优先产品），
+`applyGuestLocale()` 不再自动落盘——自动猜的语言不是用户的选择。用户在安装向导 / 账户里显式选的
+English 仍然生效并保留。实测：`navigator.language = en-US` + 空 localStorage 的新浏览器上下文里，
+登录页与「忘记密码」弹窗全部中文，只剩命令与 Linux/macOS/Windows/Docker 这些名字是拉丁字
+（这正是"除了命令没办法"的边界）。`localePrefs.test.ts` 补两条断言（无偏好→zh、显式 en→保留）。
+
+### 文档：README 顶部改成产品介绍 + 客户端获取
+
+原来 README 第一句就是"基于上游做自有品牌"，那是**给我们自己看的**；现在顶部先讲智策是什么
+（专家 / 技能 / 工具插件 / 知识库 / 连接器 / 通道 / 定时任务 / 多用户的各自用途）、实测过什么、
+明确不做什么，然后是 Windows 客户端怎么拿。fork 与追版的内容下移，仍然全在。
+
+客户端表格用 `<!-- client-downloads:start/end -->` 标记，由 `site/download/build.py` 从
+`release.json` 生成——**和下载页共用同一份数字**。反向验证过：手改 README 里一个字节数，
+`build.py --check` 退出码 2 并提示重跑；恢复后为 0。
+
 ---
 
 ## [1.0.2b6+z02] — 2026-10-10

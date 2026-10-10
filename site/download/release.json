@@ -4,6 +4,7 @@
   "date": "2026-10-10",
   "repo": "openclawzhangchong/zcagent",
   "release_url": "https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z02",
+  "site_url": "https://zcagent-download-igdker4k5y4.qoder.website/",
   "tested_on": "Windows 10 10.0.19045",
   "runtime": "CPython 3.12.12",
   "portable_extracted_mib": 658,

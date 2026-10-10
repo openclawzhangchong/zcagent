@@ -1,9 +1,60 @@
 # 智策 / zcagent
 
-基于 **[TencentCloud/Octop](https://github.com/TencentCloud/Octop)**（MIT License）做自有品牌的 AI 助手产品。
-上游原文档保留在 [`README.upstream.md`](./README.upstream.md)，逐版本改动见 [`CHANGELOG.md`](./CHANGELOG.md)，
-接手前先读 [`docs/HANDOVER.md`](./docs/HANDOVER.md)（状态快照、踩过的坑、验证基线、待办），
-在此仓库写代码前读 [`docs/CONVENTIONS.md`](./docs/CONVENTIONS.md)（只读区、硬红线、冲突面积纪律、追版 SOP）。
+**懂你、帮你、陪你成长的智能伙伴** —— 一台机器上就能跑起来的自托管 AI 助手。
+模型用你自己的 Key，账号、对话、记忆、技能全部落在本机磁盘，不出内网。
+
+## 智策是什么
+
+它不是一个聊天窗口，而是一台"助理的运行环境"：你创建若干**专家**（Agent），每个专家有自己的
+人格与记忆、自己的技能与工具、自己的工作目录，可以从 Web 控制台、桌面客户端或聊天通道里使用。
+
+| 概念 | 它解决什么 |
+|---|---|
+| **专家 / Expert** | 一个带人格的助理。工作区里自动种下 `SOUL.md`（人格）、`USER.md`（你是谁）、`MEMORY.md`（长期记忆）、`AGENTS.md`、`PROACTIVE.md`，全部是**明文文件**，你可以直接改、直接拷走 |
+| **技能 / Skill** | 教专家"怎么做某类事"的 Markdown 说明书，可打包分发（`kind: skill`），也可由插件注入 |
+| **工具 / Tool 与插件** | 插件注册工具、在模型调用前后插桩（`kind: tool` / `hook`），带 `ui/dist` 时前端还能渲染交互卡片 |
+| **知识库 / 连接器 / 通道** | 私有语料检索、外部服务与 OAuth/MCP 接入、聊天通道进出（含企业微信、QQ 邮箱等） |
+| **定时任务 / 自动化** | 让专家按计划自己跑，而不是每次都人问一遍 |
+| **多用户** | 一套服务多个账号，权限、配额、审计分开 |
+
+**已在本机实测过的能力**：多用户登录与权限、建专家、真实对话（OpenAI 兼容端点）、工具调用写文件并
+落盘核对、技能安装与 `enabled` 生效、Web 控制台全功能、Windows 桌面客户端与便携包、更新检查走自建
+内网索引。
+
+**明确不做 / 已知边界**：`工作台 / 终端` 在 Windows 上不可用（上游按设计依赖 `pty`，见
+`src/octop/api/routers/terminal.py`）；技能的**遵循度**取决于模型档位，flash 档实测会绕开技能；
+Agent 可在工作区 `.octop/.env` 写明文凭据，这是**权衡后的接受项**（强制加密会挡住普通用户接自己
+MCP 的主路径），因此任何文案都不声称"密钥不落盘"。详见 [`docs/HANDOVER.md`](./docs/HANDOVER.md) 第 6 节。
+
+## 获取 Windows 客户端
+
+<!-- client-downloads:start -->
+| 产物 | 大小 | SHA256 | 适合谁 |
+|---|---|---|---|
+| [`zcagent-desktop-windows-amd64-1.0.2b6+z02.exe`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z02/zcagent-desktop-windows-amd64-1.0.2b6%2Bz02.exe) | 183.5 MiB（192,376,329 字节） | `434c71d9…80332f` | 日常使用：开始菜单图标 + 桌面窗口（需 WebView2 运行时） |
+| [`zcagent-portable-windows-amd64-1.0.2b6+z02.zip`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z02/zcagent-portable-windows-amd64-1.0.2b6%2Bz02.zip) | 187.4 MiB（196,531,309 字节） | `e231485d…7b4984` | 内网批量部署：解压 → `start.bat`，自带 CPython，不需要装 Python / Node |
+
+下载页：<https://zcagent-download-igdker4k5y4.qoder.website/> ｜ 全部产物：[GitHub Releases](https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z02)
+<!-- client-downloads:end -->
+
+装完第一次启动会走初始化向导（验证口令 → 数据库 → 建管理员 → 配模型，模型可跳过）。一次性口令在
+服务器控制台的黄框里，也写在 `%USERPROFILE%\octop-login.txt`。数据默认落在 `%USERPROFILE%\.octop`
+（便携版为解压目录下的 `.\data`），卸载不动它。
+
+安装包**未做 Windows 代码签名**（上游同样未签名发布），首次运行 SmartScreen 会拦一次：
+「更多信息 → 仍要运行」。实测记录（含哈希核对、静默安装/启动/卸载、以及卸载后 `~/.octop/portable`
+约 712 MB 不被清理这条残留）见 [`site/download/VERIFICATION.md`](./site/download/VERIFICATION.md)。
+
+> 上面这张表由 `python site/download/build.py --from-github` 从 Release API 重新生成，
+> 不要手改数字；`build.py --check` 会检查它是否已经过期。
+
+---
+
+本仓库是基于 **[TencentCloud/Octop](https://github.com/TencentCloud/Octop)**（MIT License）做自有品牌的
+产品分支。上游原文档保留在 [`README.upstream.md`](./README.upstream.md)，逐版本改动见
+[`CHANGELOG.md`](./CHANGELOG.md)，接手前先读 [`docs/HANDOVER.md`](./docs/HANDOVER.md)（状态快照、踩过的坑、
+验证基线、待办），在此仓库写代码前读 [`docs/CONVENTIONS.md`](./docs/CONVENTIONS.md)（只读区、硬红线、
+冲突面积纪律、追版 SOP）。
 
 - 上游基线：`v1.0.2b6` / commit `0c5a46a`
 - 许可证：上游 MIT，本 fork 同样以 MIT 发布（`LICENSE` 保留上游版权声明）
