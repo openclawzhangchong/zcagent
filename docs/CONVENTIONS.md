@@ -34,16 +34,25 @@
 ## 4. 品牌改动一律走工具，不手改
 
 ```bash
-python scripts/rebrand.py --apply    # 改名/换色/重出图标与字标
+python scripts/rebrand.py --apply    # 改名/换色/重出图标与字标，并对刚重写的 dashboard 文件跑 prettier
 python scripts/rebrand.py --check    # 断言无残留，并报告未被覆盖的文件
 python scripts/rebrand.py --revert   # 还原本工具改过的一切
 ```
 
 `--check` 会额外报告"含旧品牌但没被清扫覆盖"的文件——只扫目标清单的检查在 glob 写错时会**空集假绿**，这个坑踩过。
 
+**格式化属于 `--apply`，不是"记得手工 `npm run format`"。** 替换品牌词会改变字符串长度，prettier 于是要求重新换行（品牌色写成大写十六进制也会被判定未格式化）。把这一步写成口头约定，第一次追版之后 `Frontend` 的 Format check 就会红，而且没人能追溯到原因。
+
+**换行由 `.gitattributes` 固定为 LF。** 仓库里所有文本 blob 都是 LF，但 Windows 检出配合 `core.autocrlf=true` 会给出 CRLF 工作树，`prettier --check .` 便把上千个干净文件报成脏。**遇到这种情况先信 CI**：CI 只报 9 个，本机报 1082 个，差额全是换行。别为此对整棵树跑 `--write`，更别在验证命令里顺手写 `git checkout -- .`（它会连你刚做的格式化一起清掉）。
+
 ## 5. 冲突面积纪律
 
-`brand/owned-files.txt` 声明我们**承载手工改动**的上游文件（当前 25 个）。它由 `scripts/classify_owned.py` 生成：在基线的临时 worktree 里跑一次 `--apply`，再逐文件字节比对——落在清扫 glob 里不等于纯生成，别用 glob 判断。
+`brand/owned-files.txt` 声明我们**承载手工改动**的上游文件（当前 25 个），另有 27 个"我们新增、没有上游 counterpart"的文件以注释形式列在同一份里。它由 `scripts/classify_owned.py` 生成：在基线的临时 worktree 里跑一次 `--apply`，再比对 **git 存储的内容**（忽略本机换行）。
+
+当前读数：**相对基线 334 个文件 = 282 个纯生成物 + 25 个手工改动 + 27 个新增**。两条教训：
+
+- 落在清扫 glob 里不等于纯生成物——`dashboard/src/**` 既被清扫也包含手写的运行时代码，用 glob 判断会把 P1b 全算成生成物。
+- 用**逐字节**比对也不对——Windows 工作树是 CRLF，而 `--apply` 会跑 prettier 写 LF，于是约 230 个生成物会被误判成手工改动，冲突面积虚高十倍。
 
 改上游文件时：
 
@@ -64,3 +73,17 @@ python scripts/classify_owned.py                     # 更新冲突面积清单
 ```
 
 版本号规则见 `CHANGELOG.md`：`<上游基线>+z<N>`。beta tag 一律不追。
+
+## 7. 门禁与工具链陷阱
+
+**`Frontend` workflow 是前端唯一的红绿灯**：`npm ci` → `eslint .` → `prettier --check .` → `npm run build`（含 `tsc -b`）→ vitest 汇总。上游 `ci.yml` 没有 Node job，所以这些检查在上游从不执行——它自己的树上就有 2 个 ESLint 错误。
+
+- **不许为了让门禁变绿而 disable 规则或加 `// eslint-disable`**。上游带来的错误就改正它（改动会计入冲突面积，这是代价，也是信号）。
+- vitest 暂时 `continue-on-error`：干净上游树在本机已稳定红 6–10 个（`pool: "threads"` + testing-library 1000ms 异步超时），先让 CI 建立自己的基线再转阻塞。
+- 后端仍按上游 `make all`（Ruff + `mypy --strict` + pytest）；全量 pytest 在 Windows 上要几小时，改品牌时用 `rebrand.py --status` 找受影响的测试文件再跑。
+
+**两个会让人误报"成功"的陷阱**（都踩过）：
+
+- `git ls-remote origin <branch> <sha>` **不是**推送成功的判据：带 SHA 的 pattern 匹配不到任何 ref，而 branch 名总能匹配，检查恒真。要比对 `git ls-remote origin refs/heads/<branch>` 的输出与本地 HEAD。
+- `gh` 会把这个 fork 解析成**上游仓库**：`gh repo view` / `gh run list` 默认给的是 `TencentCloud/Octop` 的数据。查自己的 Actions / Release 必须显式 `--repo openclawzhangchong/zcagent`。
+
