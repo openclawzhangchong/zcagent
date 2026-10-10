@@ -17,6 +17,7 @@ dashboard/src/main.tsx
 dashboard/src/pages/Agent/Channels/components/constants.test.ts
 dashboard/src/pages/Chat/hooks/chatStore.ts
 dashboard/src/pages/Login/index.tsx
+dashboard/src/pages/Settings/AdvancedSettings/UpdateConfig.tsx
 dashboard/src/pages/Settings/AdvancedSettings/index.tsx
 dashboard/src/pages/Setup/index.tsx
 dashboard/src/utils/expertColor.test.ts
@@ -51,6 +52,7 @@ tests/unit/infra/setup/test_self_update.py
 # dashboard/src/branding/navSimplicity.ts
 # dashboard/src/branding/runtime.ts
 # dashboard/src/pages/Settings/AdvancedSettings/BrandingSettings.tsx
+# dashboard/src/pages/Settings/AdvancedSettings/ClientDownloads.tsx
 # docs/CONVENTIONS.md
 # docs/HANDOVER.md
 # docs/PLAN.md
@@ -60,6 +62,17 @@ tests/unit/infra/setup/test_self_update.py
 # scripts/classify_owned.py
 # scripts/rebrand.py
 # scripts/sync_check.py
+# site/download/README.md
+# site/download/VERIFICATION.md
+# site/download/build.py
+# site/download/release.json
+# site/download/src/app.js
+# site/download/src/assets/favico.svg
+# site/download/src/assets/logo_horizontal_dark.png
+# site/download/src/assets/logo_horizontal_white.png
+# site/download/src/assets/pwa-512.png
+# site/download/src/index.html
+# site/download/src/styles.css
 # src/octop/api/routers/branding.py
 # tests/unit/api/test_branding_router.py
 # tests/unit/scripts/test_rebrand_transform.py
