@@ -36,7 +36,24 @@ def test_pep440_order() -> None:
     assert parse_version("1.0.2b5") > parse_version("1.0.2b4")
     assert parse_version("1.0.2b10") > parse_version("1.0.2b9")
     assert parse_version("1.0.2") > parse_version("1.0.2b5")
-    assert parse_version("1.0.2+local.10") == parse_version("1.0.2")
+    # A local segment is part of the ordering, exactly like pip sees it:
+    # 1.0.2+z01 is a *different, newer* build than the bare 1.0.2.
+    assert parse_version("1.0.2+local.10") > parse_version("1.0.2")
+    assert parse_version("1.0.2+10") > parse_version("1.0.2+9")
+
+
+def test_padded_patch_sequence_orders_and_detects() -> None:
+    """`<upstream base>+zNN` is our release scheme; the update check must see a
+    z-increment as newer even though the base version is unchanged."""
+    seq = ["1.0.2b6+z01", "1.0.2b6+z02", "1.0.2b6+z09", "1.0.2b6+z10", "1.0.2b6+z99"]
+    assert [parse_version(v) for v in seq] == sorted(parse_version(v) for v in seq)
+    assert is_newer("1.0.2b6+z02", "1.0.2b6+z01")
+    assert is_newer("1.0.2b6+z10", "1.0.2b6+z09")
+    assert is_newer("1.0.2b6+z01", "1.0.2b6")
+    assert not is_newer("1.0.2b6", "1.0.2b6+z01")
+    # Why the padding is load-bearing: unpadded, pip itself would order z10
+    # below z9, so an unpadded release would look like a downgrade.
+    assert not is_newer("1.0.2b6+z10", "1.0.2b6+z9")
 
 
 def test_is_prerelease() -> None:
@@ -424,3 +441,83 @@ def test_run_managed_upgrade_uses_ranked_indexes(
     assert calls == ["fast.example", "pypi.org"]
     assert "slow.example: missing_version 1.0.1" in (result.mirror_errors or [])
     assert any("fast.example" in err for err in (result.mirror_errors or []))
+
+
+def test_fetch_pypi_info_accepts_a_devpi_project_view(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """devpi keys its project document by version; the updater must still report
+    the newest release, split stable from pre-release, and keep the source label."""
+    from octop.infra.setup import self_update
+
+    project = {
+        "result": {
+            "1.0.1": {
+                "name": "octop",
+                "version": "1.0.1",
+                "description": "## [1.0.1]\n- upstream\n",
+                "files": [],
+            },
+            "1.0.2b6+z1": {
+                "name": "octop",
+                "version": "1.0.2b6+z1",
+                "description": "## [1.0.2b6+z1]\n- first zcagent build\n",
+                "files": [],
+            },
+        },
+        "type": "app.project",
+    }
+    urls: list[str] = []
+
+    def fake_urlopen(req: object, timeout: int = 10) -> _JsonResp:
+        url = getattr(req, "full_url", "")
+        urls.append(url)
+        assert url.endswith("/root/dev/octop/")
+        return _JsonResp(project)
+
+    monkeypatch.setattr(self_update, "_JSON_URL_TMPL", "http://127.0.0.1:3111/root/dev/{name}/")
+    monkeypatch.setattr(self_update.urllib.request, "urlopen", fake_urlopen)
+    info = fetch_pypi_info()
+    assert info is not None
+    assert info.version == "1.0.2b6+z1"
+    assert info.latest_stable == "1.0.1"
+    assert "first zcagent build" in (info.description or "")
+    assert info.source == "127.0.0.1"
+    assert urls == ["http://127.0.0.1:3111/root/dev/octop/"]
+
+
+def test_devpi_version_url_is_a_path_segment(monkeypatch: pytest.MonkeyPatch) -> None:
+    from octop.infra.setup import self_update
+
+    monkeypatch.setattr(self_update, "_JSON_URL_TMPL", "http://devpi.internal/root/dev/{name}/")
+    assert (
+        self_update._pypi_json_url("1.0.2b6+z1")
+        == "http://devpi.internal/root/dev/octop/1.0.2b6%2Bz1/"
+    )
+    monkeypatch.setattr(self_update, "_JSON_URL_TMPL", "")
+    monkeypatch.setattr(self_update, "_PYPI_HOST", "https://pypi.org")
+    assert self_update._pypi_json_url() == "https://pypi.org/pypi/octop/json"
+
+
+def test_private_index_never_offers_public_mirrors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An internal deployment must not be able to "upgrade" into someone else's
+    public ``octop`` build, so the mirrors are not even probed."""
+    from types import SimpleNamespace
+
+    from octop.infra.setup import self_update
+
+    monkeypatch.setattr(self_update, "_source_host", lambda: "devpi.internal")
+    monkeypatch.setattr(self_update, "_SIMPLE_URL", "http://devpi.internal/root/dev/+simple/")
+    seen: list[str] = []
+
+    def fake_probe(url: str, **kwargs: object) -> SimpleNamespace:
+        seen.append(url)
+        return SimpleNamespace(
+            index_url=url, label=index_label(url), status="has_version", detail="", elapsed=0.1
+        )
+
+    monkeypatch.setattr(self_update, "probe_index", fake_probe)
+    ordered, skip_errors = self_update.rank_install_indexes("1.0.2b6+z1")
+    assert seen == ["http://devpi.internal/root/dev/+simple/"]
+    assert ordered == [("http://devpi.internal/root/dev/+simple/", "devpi.internal")]
+    assert skip_errors == []

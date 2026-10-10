@@ -23,13 +23,25 @@ from octop.infra.utils.paths import PathLayout
 logger = logging.getLogger(__name__)
 
 _PACKAGE_NAME = "octop"
-# OEM: point the update check at a private index (devpi serves the same
-# /pypi/<name>/json shape). The distribution name stays `octop` because it is
-# also the pip upgrade target and the installed-dist lookup.
+# OEM: point the update check at a private index. Two shapes have to be spoken,
+# because Warehouse and devpi agree on neither the URL nor the JSON (measured
+# against a real devpi-server, not from its docs):
+#
+#   Warehouse  GET {host}/pypi/{name}/json        -> {"info": …, "releases": …}
+#   devpi      GET {host}/{user}/{index}/{name}/  -> {"result": {version: …}}
+#
+# ``OCTOP_UPDATE_INDEX_URL`` alone keeps the Warehouse shape; set
+# ``OCTOP_UPDATE_JSON_URL`` (a template containing ``{name}``) for devpi, e.g.
+# ``http://devpi.internal:3111/zcagent/prod/{name}/``.
 _PYPI_HOST = os.environ.get("OCTOP_UPDATE_INDEX_URL", "https://pypi.org").rstrip("/")
-_PYPI_URL = f"{_PYPI_HOST}/pypi/{_PACKAGE_NAME}/json"
-_PYPI_SIMPLE = f"{_PYPI_HOST}/simple"
-_PYPI_UA = {"User-Agent": f"{_PACKAGE_NAME}-updater/1.0"}
+_JSON_URL_TMPL = os.environ.get("OCTOP_UPDATE_JSON_URL", "").strip()
+# Where ``octop update`` installs *from*; devpi's index is ``+simple``, so the
+# Warehouse derivation below is wrong for it and can be overridden.
+_SIMPLE_URL = os.environ.get("OCTOP_UPDATE_SIMPLE_URL", "").strip() or f"{_PYPI_HOST}/simple"
+_PYPI_UA = {
+    "User-Agent": f"{_PACKAGE_NAME}-updater/1.0",
+    "Accept": "application/json",
+}
 _GREEN_PACKAGES_ENV = "OCTOP_GREEN_PACKAGES"
 _STASH_SUFFIX = ".octop-old"
 _PROBE_TIMEOUT_S = 8
@@ -190,18 +202,57 @@ def pick_latest_versions(versions: list[str]) -> tuple[str | None, str | None]:
     return latest_any, latest_stable
 
 
+def _project_json_url() -> str:
+    """URL of the project metadata document for the configured index shape."""
+    if _JSON_URL_TMPL:
+        return _JSON_URL_TMPL.replace("{name}", _PACKAGE_NAME)
+    return f"{_PYPI_HOST}/pypi/{_PACKAGE_NAME}/json"
+
+
+def _source_host() -> str:
+    """Hostname of the index we actually query (``pypi.org`` unless configured)."""
+    return urllib.parse.urlsplit(_project_json_url()).hostname or "pypi.org"
+
+
 def _pypi_json_url(version: str | None = None) -> str:
     if not version:
-        return _PYPI_URL
+        return _project_json_url()
+    if _JSON_URL_TMPL:
+        encoded = urllib.parse.quote(version, safe="")
+        return _project_json_url().rstrip("/") + f"/{encoded}/"
     encoded = urllib.parse.quote(version, safe="")
     return f"{_PYPI_HOST}/pypi/{_PACKAGE_NAME}/{encoded}/json"
+
+
+def _as_warehouse_shape(payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize devpi's project/version view into Warehouse's ``info``/``releases``.
+
+    Everything downstream speaks the Warehouse document shape, so the index
+    dialect is translated once here instead of branching in each caller.
+    """
+    result = payload.get("result")
+    if "releases" in payload or not isinstance(result, dict):
+        return payload
+    if "version" in result and "name" in result:  # devpi per-version view
+        version = str(result.get("version") or "")
+        return {"info": result, "releases": {version: result.get("files") or []}}
+    releases = {
+        str(ver): (entry.get("files") or [])
+        for ver, entry in result.items()
+        if isinstance(entry, dict)
+    }
+    versions = [ver for ver in releases if ver]
+    latest = max(versions, key=parse_version) if versions else ""
+    info = dict(result.get(latest) or {})
+    info.setdefault("version", latest)
+    return {"info": info, "releases": releases}
 
 
 def _load_pypi_json(url: str, timeout: int) -> dict[str, Any]:
     req = urllib.request.Request(url, headers=_PYPI_UA)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         payload: dict[str, Any] = json.loads(resp.read().decode("utf-8"))
-    return payload
+    return _as_warehouse_shape(payload)
 
 
 def _description_for_version(
@@ -235,7 +286,11 @@ def update_check_enabled() -> bool:
     raw = os.environ.get("OCTOP_UPDATE_CHECK")
     if raw is not None:
         return raw.strip().lower() not in {"0", "false", "no", "off", ""}
-    return bool(os.environ.get("OCTOP_UPDATE_INDEX_URL"))
+    return bool(
+        os.environ.get("OCTOP_UPDATE_INDEX_URL")
+        or os.environ.get("OCTOP_UPDATE_JSON_URL")
+        or os.environ.get("OCTOP_UPDATE_SIMPLE_URL")
+    )
 
 
 def fetch_pypi_info(timeout: int = 10) -> PyPIInfo | None:
@@ -246,7 +301,7 @@ def fetch_pypi_info(timeout: int = 10) -> PyPIInfo | None:
     Returns None on any network or parse failure.
     """
     try:
-        data = _load_pypi_json(_PYPI_URL, timeout)
+        data = _load_pypi_json(_project_json_url(), timeout)
         info = data["info"]
         versions = _usable_release_versions(data)
         info_version = str(info["version"])
@@ -264,7 +319,7 @@ def fetch_pypi_info(timeout: int = 10) -> PyPIInfo | None:
             version=latest_any,
             latest_stable=latest_stable,
             description=description,
-            source=index_label(_PYPI_HOST),
+            source=index_label(_project_json_url()),
         )
     except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError) as exc:
         logger.warning("failed to fetch PyPI info: %s", exc)
@@ -343,7 +398,26 @@ def _numeric_release_key(value: str) -> tuple[int, ...]:
     return tuple(parts) or (0,)
 
 
-VersionKey = tuple[int, tuple[int, ...], tuple[int, ...], int, tuple[int, ...]]
+_LocalSegment = tuple[int, "int | str"]
+VersionKey = tuple[
+    int, tuple[int, ...], tuple[int, ...], int, tuple[int, ...], tuple[_LocalSegment, ...]
+]
+
+
+def _local_key(local: str | None) -> tuple[_LocalSegment, ...]:
+    """PEP 440 local-version ordering -- i.e. the ordering pip itself will use.
+
+    Deliberately *not* "nicer" than pip: an update button that offers something
+    pip then refuses to install is worse than no button. That is also why our own
+    patch sequence is zero-padded (``+z01``): alphanumeric local segments compare
+    as strings, so ``+z10`` sorts below ``+z9``.
+    """
+    if not local:
+        return ()
+    segments: list[_LocalSegment] = []
+    for part in local.split("."):
+        segments.append((0, int(part)) if part.isdigit() else (1, part.lower()))
+    return tuple(segments)
 
 
 def parse_version(value: str) -> VersionKey:
@@ -352,7 +426,7 @@ def parse_version(value: str) -> VersionKey:
     if match is None:
         # Unknown shape: keep previous numeric-only behaviour.
         numeric = _numeric_release_key(value)
-        return (0, numeric + (0,) * max(0, 8 - len(numeric)), (1,), -1, (1,))
+        return (0, numeric + (0,) * max(0, 8 - len(numeric)), (1,), -1, (1,), ())
     epoch = int(match.group("epoch") or 0)
     release_parts = tuple(int(part) for part in match.group("release").split("."))
     # Pad so 1.0 and 1.0.0 compare equal under tuple ordering.
@@ -375,7 +449,7 @@ def parse_version(value: str) -> VersionKey:
         dev_key: tuple[int, ...] = (0, int(match.group("dev_n") or 0))
     else:
         dev_key = (1,)
-    return (epoch, release, pre_key, post_key, dev_key)
+    return (epoch, release, pre_key, post_key, dev_key, _local_key(match.group("local")))
 
 
 def is_prerelease(value: str) -> bool:
@@ -658,10 +732,15 @@ def rank_install_indexes(
     """Probe mirrors in parallel; return ``([(index_url, label), ...], skip_errors)``.
 
     Install candidates are indexes that list the target version, ordered by probe
-    latency. ``pypi.org`` is always appended as a final fallback even when its
-    probe fails (HTML parse misses / transient errors).
+    latency. The configured index is always appended as a final fallback even when
+    its probe fails (HTML parse misses / transient errors).
+
+    A deployment that points at its own index installs **only** from it. Falling
+    back to the public mirrors there would offer an upgrade to someone else's
+    ``octop`` build -- the exact hazard the default-off update check exists for.
     """
-    indexes = [*_MIRRORS, _PYPI_SIMPLE]
+    private = _source_host() != "pypi.org"
+    indexes = [_SIMPLE_URL] if private else [*_MIRRORS, _SIMPLE_URL]
     probes: list[IndexProbe] = []
     with ThreadPoolExecutor(max_workers=len(indexes)) as pool:
         futures = [
@@ -672,10 +751,10 @@ def rank_install_indexes(
 
     skip_errors: list[str] = []
     mirror_hits: list[IndexProbe] = []
-    pypi_probe: IndexProbe | None = None
+    own_probe: IndexProbe | None = None
     for probe in probes:
-        if probe.label == "pypi.org":
-            pypi_probe = probe
+        if probe.index_url == _SIMPLE_URL:
+            own_probe = probe
             continue
         if probe.status == "has_version":
             mirror_hits.append(probe)
@@ -685,9 +764,9 @@ def rank_install_indexes(
     mirror_hits.sort(key=lambda item: item.elapsed)
     ordered: list[tuple[str, str]] = [(item.index_url, item.label) for item in mirror_hits]
 
-    if pypi_probe is not None and pypi_probe.status != "has_version":
-        skip_errors.append(f"pypi.org: {pypi_probe.detail or pypi_probe.status}")
-    ordered.append((_PYPI_SIMPLE, "pypi.org"))
+    if own_probe is not None and own_probe.status != "has_version":
+        skip_errors.append(f"{own_probe.label}: {own_probe.detail or own_probe.status}")
+    ordered.append((_SIMPLE_URL, index_label(_SIMPLE_URL)))
     return ordered, skip_errors
 
 
