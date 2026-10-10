@@ -72,6 +72,13 @@
 | 标识符未被误改 | `X-Octop-*`、`prefixCls="octop"`、`OCTOP_HOME`、`octop-harness` 依赖名、i18n key 均已核对原样 |
 | 运行期冒烟 | 登录 → 建专家 → 真实对话（OpenAI 兼容 provider）→ 工具调用写文件并落盘核对，全通过 |
 
+### 新增：P4 追版度量
+
+- `.github/workflows/frontend.yml`：lint + prettier check + `tsc -b`/build + vitest 汇总。**vitest 暂不阻塞**——上游 CI 从不跑它，干净上游树在本机已红 6–10 个，先让 CI 建立自己的基线再转阻塞。
+- `.github/workflows/sync-attempt.yml` + `scripts/sync_check.py`：每周一试 merge 最新 stable tag（不提交不推送），报告"上游领先多少 / 哪些文件冲突 / 是否踩了我们的规矩"，冲突或违规时退出码非零。含两条守卫：不许私自新增编号 migration；工作树有未提交改动时拒绝试 merge（回滚用 `reset --hard`）。
+- `scripts/classify_owned.py`：用真实管线量冲突面积——在基线的临时 worktree 里跑一次 `--apply`，再逐文件字节比对，得出 `brand/owned-files.txt`：**285 个改动文件里 260 个是纯生成物（冲突可机械处理），25 个承载手工改动（真实冲突面）**。先前按"是否落在清扫 glob 内"分类会把 P1b 的运行时代码误判成生成物，故改用字节比对。
+- 验证：用从基线分叉、在同一位置插入不同行的合成分支实测 `sync_check.py`，正确报出 1 个冲突、退出码非零、且工作树完整还原。真实 upstream 试 merge 因本机 `github.com:443` 中断未跑成，留给首次 CI。
+
 ### 已知问题（待 P2 处理）
 
 - **凭据存储是本产品的一条硬性要求**：Agent 侧写入的凭据一律走 `infra/connectors/` 的加密 `secrets` 存储，工具输出不得声称"未落盘"。已列为 P2-0，排在界面重构之前。
