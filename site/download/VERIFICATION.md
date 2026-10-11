@@ -61,8 +61,24 @@ ALL ASSERTIONS HELD -- report at .zc-verify/reports/1.0.2b6+z09.json
 ### 空闲预下载两趟对照（z09 产物上重跑）
 
 ```
-PENDING_Z09_PREFETCH
+proving idle prefetch for BAAI/bge-small-zh-v1.5 on installed 1.0.2b6+z09 python=3.12.12
+  booting with prefetch on port 8099
+  result: downloaded=True bytes=94,781,076 settings={'knowledge_onnx_prefetch': 'done', 'knowledge_onnx_prefetch_attempts': '1'}
+  booting without prefetch on port 8099
+  result: downloaded=False bytes=0 settings={}
+OK idle prefetch downloaded 94,781,076 bytes 125.1s after boot and recorded knowledge_onnx_prefetch=done
+OK OCTOP_KNOWLEDGE_MODEL_PREFETCH=0 downloaded nothing and wrote no state
+report: .zc-verify/prefetch-z09/prefetch-report.json
 ```
+
+| 趟 | 开关 | 实测 |
+|---|---|---|
+| 1 | 默认（不设） | 首批 ONNX 字节出现在启动后 **125.1 秒**（>90 秒空闲闸 + 三源探测），130 秒时 **94,781,076 字节**齐、单调增长；`knowledge_onnx_prefetch=done`、`attempts=1` 都写进了那份临时 `OCTOP_HOME` 的 settings 表 |
+| 2 | `OCTOP_KNOWLEDGE_MODEL_PREFETCH=0` | 观察 135 秒（超过空闲闸）：**0 字节、0 行状态**，而控制面库确实建起来了（`booted=true`） |
+
+z08 那一轮这一趟只能证到"字节落盘 + attempts 递增"，`done` 拿不到——原因就是 §缓存寻址 那节：
+下载完成后 `_download_sync` 里那次 fastembed 校验加载起不来，整个下载被判为失败。
+现在同一个工具在 z09 上拿到 `done`，说明**空闲预下载这条链第一次端到端闭合**。
 
 ## 1.0.2b6+z08 · 2026-10-11（主题：新手第一分钟；方案见 `docs/PLAN-z08.md`）
 
