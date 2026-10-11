@@ -232,6 +232,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev
 
+      # The desktop Go package decides whether the bundled runtime replaces the
+      # installed one, so its tests gate packaging rather than report afterwards.
+      - name: Test desktop Go package
+        working-directory: desktop/src
+        run: |
+          set -euo pipefail
+          go vet ./...
+          go test ./...
+
       - name: Install Wails v3 CLI
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.13
 

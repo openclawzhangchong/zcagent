@@ -7,7 +7,9 @@ import (
 )
 
 // Keep ordering aligned with octop.infra.setup.self_update.parse_version.
-// Local segments (+local) are parsed but ignored, matching the Python key.
+// Local segments (+local) decide the comparison when everything before them is
+// equal: releases that differ only by build metadata, such as 1.0.2b6+z02 vs
+// 1.0.2b6+z03, must not look identical, or the bundled runtime is never replaced.
 
 var pep440RE = regexp.MustCompile(`(?i)^v?(?:(?P<epoch>\d+)!)?(?P<release>\d+(?:\.\d+)*)(?:[-_\.]?(?P<pre_l>alpha|a|beta|b|preview|pre|rc|c)[-_\.]?(?P<pre_n>\d+)?)?(?:(?:[-_\.]?(?P<post_l>post|rev|r)[-_\.]?(?P<post_n>\d+))|(?:-(?P<post_n1>\d+)))?(?:[-_\.]?(?P<dev_l>dev)[-_\.]?(?P<dev_n>\d+)?)?(?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?$`)
 
@@ -19,12 +21,21 @@ var preRank = map[string]int{
 
 const releasePad = 8
 
+// localSegment is one +-separated part of a PEP 440 local version. Numeric parts
+// always sort below alphanumeric parts, mirroring packaging's LocalSegment.
+type localSegment struct {
+	numeric bool
+	value   int
+	text    string
+}
+
 type versionKey struct {
 	epoch   int
 	release [releasePad]int
 	pre     []int
 	post    int
 	dev     []int
+	local   []localSegment
 }
 
 func compareVersions(left, right string) int {
@@ -44,7 +55,70 @@ func compareVersions(left, right string) int {
 	if a.post != b.post {
 		return cmpInt(a.post, b.post)
 	}
-	return compareIntSlice(a.dev, b.dev)
+	if c := compareIntSlice(a.dev, b.dev); c != 0 {
+		return c
+	}
+	return compareLocal(a.local, b.local)
+}
+
+func compareLocal(left, right []localSegment) int {
+	if left == nil || right == nil {
+		return cmpInt(b2i(left != nil), b2i(right != nil))
+	}
+	n := min(len(left), len(right))
+	for i := 0; i < n; i++ {
+		l, r := left[i], right[i]
+		if l.numeric != r.numeric {
+			return cmpInt(b2i(r.numeric), b2i(l.numeric))
+		}
+		if l.numeric {
+			if c := cmpInt(l.value, r.value); c != 0 {
+				return c
+			}
+			continue
+		}
+		if c := strings.Compare(strings.ToLower(l.text), strings.ToLower(r.text)); c != 0 {
+			return c
+		}
+	}
+	return cmpInt(len(left), len(right))
+}
+
+func b2i(v bool) int {
+	if v {
+		return 1
+	}
+	return 0
+}
+
+func parseLocal(value string) []localSegment {
+	if value == "" {
+		return nil
+	}
+	var segments []localSegment
+	for _, part := range strings.FieldsFunc(value, func(r rune) bool {
+		return r == '.' || r == '-' || r == '_'
+	}) {
+		if digitsOnly(part) {
+			n, _ := strconv.Atoi(part)
+			segments = append(segments, localSegment{numeric: true, value: n})
+			continue
+		}
+		segments = append(segments, localSegment{text: part})
+	}
+	return segments
+}
+
+func digitsOnly(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, ch := range value {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func parseVersion(value string) versionKey {
@@ -93,6 +167,7 @@ func parseVersion(value string) versionKey {
 	} else {
 		key.dev = []int{1}
 	}
+	key.local = parseLocal(get("local"))
 	return key
 }
 

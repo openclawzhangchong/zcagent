@@ -394,8 +394,8 @@ func TestCompareVersions(t *testing.T) {
 		{"1.0.2b5", "1.0.2rc1", -1},
 		{"1.0.2rc1", "1.0.2", -1},
 		{"v1.0.2B05", "1.0.2b5", 0},
-		{"1.0.2+local.10", "1.0.2+local.9", 0},
-		{"1.0.2+local.10", "1.0.2", 0},
+		{"1.0.2+local.10", "1.0.2+local.9", 1},
+		{"1.0.2+local.10", "1.0.2", 1},
 		{"1.0.2-custom", "1.0.1", 1},
 		{"dev", "dev", 0},
 	} {
@@ -416,6 +416,9 @@ func TestEnsurePortablePrereleaseUpgrade(t *testing.T) {
 		{"two-digit beta", "1.0.2b9", "1.0.2b10", true, false},
 		{"final", "1.0.2b5", "1.0.2", true, false},
 		{"same", "1.0.2b5", "1.0.2b5", false, false},
+		{"build tag", "1.0.2b6+z02", "1.0.2b6+z03", true, false},
+		{"same build tag", "1.0.2b6+z03", "1.0.2b6+z03", false, false},
+		{"older build tag", "1.0.2b6+z05", "1.0.2b6+z04", false, false},
 		{"backup failure", "1.0.2b4", "1.0.2b5", true, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
