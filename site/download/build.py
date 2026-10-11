@@ -28,6 +28,10 @@ SRC = HERE / "src"
 DIST = HERE / "dist"
 DATA_FILE = HERE / "release.json"
 REPO_README = HERE.parent.parent / "README.md"
+# The page's logos come straight from the brand-generated dashboard output. A
+# hand-copied `src/assets/` here went stale the moment the icon was redrawn.
+PUBLIC = HERE.parent.parent / "dashboard" / "public"
+PAGE_ASSETS = ("favico.svg", "logo_horizontal_dark.png", "pwa-512.png")
 TOKEN_RE = re.compile(r"\{\{([a-z0-9_.]+)\}\}")
 
 
@@ -229,6 +233,16 @@ def main() -> int:
                     f"dist/{name} is stale -- run: python site/download/build.py", file=sys.stderr
                 )
                 return 2
+        for name in PAGE_ASSETS:
+            built = DIST / "assets" / name
+            want = (PUBLIC / name).read_bytes()
+            if not built.is_file() or built.read_bytes() != want:
+                print(
+                    f"dist/assets/{name} is not the current brand output -- run:"
+                    " python site/download/build.py",
+                    file=sys.stderr,
+                )
+                return 2
         if sync_readme(data, values, check=True):
             return 2
         print("dist and the README download table are up to date")
@@ -238,8 +252,9 @@ def main() -> int:
     (DIST / "index.html").write_text(html, encoding="utf-8")
     for asset in ("styles.css", "app.js"):
         shutil.copy2(SRC / asset, DIST / asset)
-    if (SRC / "assets").is_dir():
-        shutil.copytree(SRC / "assets", DIST / "assets", dirs_exist_ok=True)
+    (DIST / "assets").mkdir(exist_ok=True)
+    for name in PAGE_ASSETS:
+        shutil.copy2(PUBLIC / name, DIST / "assets" / name)
     sync_readme(data, values, check=False)
     print(
         "wrote dist/  "
