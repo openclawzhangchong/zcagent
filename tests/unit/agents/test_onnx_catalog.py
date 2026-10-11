@@ -13,6 +13,7 @@ import pytest
 from octop.infra.agents.providers.onnx_catalog import (
     _EXTRA_CATALOG_IDS,
     _FALLBACK_SIZE_GB,
+    CURATED_MODEL_IDS,
     ONNX_PRESET_MODEL_IDS,
     PASSAGE_ROLE,
     QUERY_ROLE,
@@ -114,6 +115,32 @@ class TestModelNotes:
 
     def test_unknown_model_has_no_note(self) -> None:
         assert model_notes("some/brand-new-model") == ("", "")
+
+
+class TestKnowledgeDialogOptions:
+    """The dialog used to receive every model fastembed can load -- 41 entries
+    including a CLIP text tower, which is simply the wrong tool here."""
+
+    def test_default_view_is_the_recommended_set(self) -> None:
+        from octop.api.routers.knowledge_bases import _onnx_options_for_knowledge
+
+        ids = [str(m["id"]) for m in _onnx_options_for_knowledge(include_all=False)]
+        assert ids == list(ONNX_PRESET_MODEL_IDS)
+
+    def test_expanded_view_stays_inside_the_curated_catalog(self) -> None:
+        from octop.api.routers.knowledge_bases import _onnx_options_for_knowledge
+
+        ids = [str(m["id"]) for m in _onnx_options_for_knowledge(include_all=True)]
+        assert set(ids) == set(CURATED_MODEL_IDS)
+        assert all("clip" not in mid.lower() for mid in ids)
+        assert len(ids) < 20, f"expanded view leaked {len(ids)} models"
+
+    def test_expanded_view_superset_of_default(self) -> None:
+        from octop.api.routers.knowledge_bases import _onnx_options_for_knowledge
+
+        default = {str(m["id"]) for m in _onnx_options_for_knowledge(include_all=False)}
+        expanded = {str(m["id"]) for m in _onnx_options_for_knowledge(include_all=True)}
+        assert default < expanded
 
 
 class TestFallbackSizes:

@@ -35,8 +35,10 @@ import type { InputRef } from "antd/es/input";
 import { ResizableTable } from "@/components/ResizableTable";
 import {
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Download,
   Eye,
   FilePlus,
@@ -754,10 +756,8 @@ export default function KnowledgeBasesPage() {
         });
         setCatalog(options.onnx);
         setRemoteProviders(options.remote);
-        if (allOnnx) {
-          onnxExpandedRef.current = true;
-          setOnnxExpanded(true);
-        }
+        onnxExpandedRef.current = allOnnx;
+        setOnnxExpanded(allOnnx);
         return options;
       } catch (error) {
         message.error(
@@ -3281,15 +3281,31 @@ export default function KnowledgeBasesPage() {
                       {t("knowledgeBases.noModels")}
                     </Typography.Text>
                   ) : null}
-                  {catalog.length > 0 && !onnxExpanded ? (
+                  {catalog.length > 0 ? (
                     <Button
                       type="link"
+                      size="small"
                       loading={onnxExpanding}
                       className={styles.showMoreOnnx}
-                      onClick={() => void loadEmbeddingOptions(true)}
+                      icon={
+                        onnxExpanded ? (
+                          <ChevronUp size={14} />
+                        ) : (
+                          <ChevronDown size={14} />
+                        )
+                      }
+                      iconPosition="end"
+                      onClick={() => void loadEmbeddingOptions(!onnxExpanded)}
                     >
-                      {t("knowledgeBases.showMoreOnnx")}
+                      {onnxExpanded
+                        ? t("knowledgeBases.hideAdvancedOnnx")
+                        : t("knowledgeBases.showAdvancedOnnx")}
                     </Button>
+                  ) : null}
+                  {onnxExpanded ? (
+                    <p className={styles.onnxAdvancedHint}>
+                      {t("knowledgeBases.advancedOnnxHint")}
+                    </p>
                   ) : null}
                 </div>
               )}

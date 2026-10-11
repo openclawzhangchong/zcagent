@@ -22,6 +22,7 @@ from octop.infra.agents.providers.model_flags import (
     is_vision_model,
 )
 from octop.infra.agents.providers.onnx_catalog import (
+    CURATED_MODEL_IDS,
     ONNX_PRESET_MODEL_IDS,
     list_onnx_catalog_models,
 )
@@ -254,13 +255,17 @@ def _map_knowledge_error(
 
 
 def _onnx_options_for_knowledge(*, include_all: bool = False) -> list[dict[str, Any]]:
-    """Recommended ONNX models, or the full catalog when *include_all* is set."""
+    """Recommended ONNX models, or the full curated catalog when *include_all* is set.
+
+    "Full" means the curated catalog, not every model fastembed can load: that
+    list is 41 entries deep and includes ``Qdrant/clip-ViT-B-32-text``, a CLIP
+    text tower that is simply the wrong tool for a knowledge base. Intersecting
+    also keeps the list stable when fastembed adds or drops a model.
+    """
     catalog = list_onnx_catalog_models()
-    if include_all:
-        models = catalog
-    else:
-        by_id = {str(model["id"]): model for model in catalog}
-        models = [by_id[model_id] for model_id in ONNX_PRESET_MODEL_IDS if model_id in by_id]
+    by_id = {str(model["id"]): model for model in catalog}
+    wanted = CURATED_MODEL_IDS if include_all else ONNX_PRESET_MODEL_IDS
+    models = [by_id[model_id] for model_id in wanted if model_id in by_id]
     return [
         {
             **model,

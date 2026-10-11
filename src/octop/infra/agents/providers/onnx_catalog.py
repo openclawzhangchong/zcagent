@@ -160,6 +160,10 @@ def model_notes(model_id: str) -> tuple[str, str]:
     return _MODEL_NOTES.get(model_id, ("", ""))
 
 
+# Everything a user is allowed to see in the knowledge-base dialog.
+CURATED_MODEL_IDS: tuple[str, ...] = ONNX_PRESET_MODEL_IDS + _EXTRA_CATALOG_IDS
+
+
 def _model_entry(
     model_id: str,
     *,
