@@ -978,8 +978,8 @@ export default function KnowledgeBasesPage() {
       return;
     }
     baseForm.setFieldsValue({
-      name: "",
-      description: "",
+      name: t("knowledgeBases.defaultName"),
+      description: t("knowledgeBases.defaultDescription"),
       icon_name: "book-open",
       max_documents: 100,
     });
@@ -3049,6 +3049,11 @@ export default function KnowledgeBasesPage() {
           >
             <Input autoFocus maxLength={200} />
           </Form.Item>
+          {!editingBaseId ? (
+            <p className={styles.baseNameHint}>
+              {t("knowledgeBases.defaultNameHint")}
+            </p>
+          ) : null}
           <Form.Item name="description" label={t("knowledgeBases.description")}>
             <Input.TextArea
               autoSize={{ minRows: 2, maxRows: 5 }}
