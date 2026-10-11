@@ -91,6 +91,22 @@ def settings_rows(home: Path) -> dict[str, str]:
     return {str(k): str(v) for k, v in rows}
 
 
+def settle(home: Path, rows: dict[str, str]) -> dict[str, str]:
+    """Wait for the state row after the weights have landed.
+
+    ``prefetch_default_model`` follows the download manager, which itself polls on
+    a two-second timer, so the full model is on disk a beat before ``done`` is
+    written. Breaking at the first complete byte count would kill the server
+    before that write and report a working feature as broken -- which is exactly
+    what happened on the first z08 run.
+    """
+    deadline = time.time() + 30
+    while rows.get(STATE_KEY) != DONE and time.time() < deadline:
+        time.sleep(3)
+        rows = settings_rows(home)
+    return rows
+
+
 def run_once(
     *,
     argv_head: list[str],
@@ -152,10 +168,8 @@ def run_once(
             rows = settings_rows(home)
             done = rows.get(STATE_KEY) == DONE
             if done or size >= WEIGHTS_FLOOR:
-                if not done and size >= WEIGHTS_FLOOR:
-                    # Weights are on disk; give the state write one poll to land.
-                    time.sleep(POLL_S)
-                    rows = settings_rows(home)
+                if not done:
+                    rows = settle(home, rows)
                 outcome.update(
                     {
                         "downloaded": True,
@@ -184,8 +198,6 @@ def run_once(
     outcome["booted"] = (home / "octop.db").is_file()
     if first_bytes_at is not None:
         outcome["first_bytes_after_boot_s"] = round(first_bytes_at - boot, 1)
-    if rows := settings_rows(home):
-        outcome["settings"] = rows
     if len(sizes) > 1:
         outcome["grew_monotonically"] = all(b >= a for a, b in zip(sizes, sizes[1:], strict=False))
     log(
