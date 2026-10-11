@@ -1,5 +1,10 @@
 # z10 实施方案 · 从「三栏专家制」改成「一栏助手制」
 
+> **⚠ 这份方案的前提有一半是错的，先读 §0.0「前提校正」。**
+> 标题里的「一栏助手制」只对**桌面单机形态**成立；上游产品定位是**多用户多专家**的自托管平台，
+> 企业 LAN 部署下"员工看到的东西少"是**角色与权限**问题，不是**信息架构**问题。
+> 本期不动手实现，等 §0.0 末尾那三个部署问题有答案。
+
 目标版本：`1.0.2b6+z10`（本期只装 M1/M2/M4a/M5a/M6/M7），tag `v1.0.2b6-z10`。
 主题不是加功能，而是**让一个没用过的人打开就能聊、聊起来不用选专家、左边只看到自己需要的东西**。
 
@@ -10,7 +15,92 @@
 
 ---
 
-## 0. 七个决策
+## ⚠ 0.0 前提校正（2026-10-12 读完上游 docs 之后重写判断）
+
+**这一节优先于下文所有判断。** 昨天这份方案是按"zcagent = 单人自装的桌面助理"写的，
+而那个前提来自**我们自己**的文档（`README.md:3-4`「一台机器上就能跑起来的自托管 AI 助手」、
+`docs/PLAN.md:67`「内网单机部署用不到就是死路」、`dashboard/src/branding/navSimplicity.ts:5-10`
+「zcagent v1 ships as an internal, single-machine assistant」）——**不是上游的产品定位**。
+上游文档把这件事说得很清楚，而且多处与我的假设相反。
+
+### 上游到底是什么产品（每条都核对过原文）
+
+| 事实 | 出处 |
+|---|---|
+| 「self-hosted AI assistant platform for **multiple users and agents**」 | `docs/architecture.md:3-4` |
+| 「for **households and small teams** … all sharing one control-plane database」 | `README.upstream.md:69` |
+| 单进程、单端口、**单机纵向扩展**；「Single active Octop writer; no multi-instance write promise」 | `docs/adr/001-single-process-model.md:14,27-34`；`docs/adr/002-database-backends.md:44` |
+| **局域网访问是一等公民**：「use `0.0.0.0` for LAN access」；FAQ「如何修改监听地址让局域网访问」；FnOS 文档直接写「浏览器访问 `http://<设备IP>:8088`」 | `docs/configuration.md:136`；`docs/user-guide.md:430-431`；`fnos/README.md:108` |
+| 两个角色 + **角色模板**（permissions/policies 存 JSON）；员工登录后**左侧没有「管理」栏**是文档承诺的行为 | `docs/api.md:109-119,25-28`；`docs/ldap.md:400,494`；`infra/db/migrations/018_user_role.sql:6-16` |
+| 「**Multiple experts per user**; each has its own workspace, providers, channels, and cron」 | `README.upstream.md:116` |
+| 设计目标原文：「giving **each user a personal team of specialized agents they can switch between per task**」 | `README.upstream.md:71` |
+| 专家可**跨用户共享**、技能/子代理是**共享资源池**、PC 客户端是官方形态之一 | `README.upstream.md:160-162` |
+| 上游**没有**任何 trial / free / 内置 key 概念；唯一的零 key 路线是 **Ollama** | 全 `docs/` 搜不到；`docs/user-guide.md:236`「本地模型，默认无需 API Key」、`:4.6` |
+
+**「一个员工一个专家」在上游文档里不存在**，在代码里也不存在：没有任何强制单专家的不变量，
+`max_agents` 只是策略上限（`infra/users/resource_policy.py:18-20,196-207`）。
+它是**部署惯例 / 负责人的口径**，不是产品规则。下文凡是把"专家多"当缺陷来修的，都要按这个重读。
+
+### 我昨天写错的两处（硬错误，不是措辞问题）
+
+1. **导航项数算错了**。我写「普通用户 8 项、管理员 14 项」。按 `buildNavSections`
+   （`layouts/sidebarNav.tsx:134-315`）逐项重算，对照权限目录
+   （`infra/users/permissions.py:50-216`，24 个 key；`BASELINE_PERMISSIONS` = 4 个 settings 权限 `:222`；
+   种子 `user` 角色恰好只拿到这 4 个，`infra/db/migrate.py:1041-1048`）：
+   **基线员工 = 10 项，管理员 = 14 项（19 个 key 默认藏 5 个），零权限下限 = 6 项**
+   （`personalization` 与 `bridge` 不受权限控制）。
+   探针截图上数到 13 项是因为侧栏可滚动，第 14 项（高级）在折线外——不是 13 项。
+   M2 的靶子大小完全取决于这个数，所以这条必须改。
+   顺带一个真漂移：`remote-phone` 在 `SIDEBAR_NAV_KEYS` 与 `NAV_PERMISSIONS` 里有，
+   但 `buildNavSections` 永不产出它（`:234-245` 桌面与手机共用一个入口）。
+2. **「员工看到一长串专家」的原因我归错了**。`GET /api/agents` 默认 `scope=mine`
+   = 自己的 ∪ 别人 `is_shared=1` 的（`api/routers/agents.py:212-221,253-255`；
+   `infra/db/repos/agents.py:212-221` 的 SQL 是 `WHERE is_shared=1 AND enabled=1 AND user_id != ?`，
+   **没有 per-user ACL**，共享 = 对全体用户可见）；`scope=all` 需要 `users` 权限（`agents.py:224-229`）。
+   而**建专家不需要任何权限**（`agents.py:281-287` 只要 `current_user`）。
+   → 员工列表变长的真实原因是"有人共享了"或"他自己建了"，**不是 UI 把管理员的东西露给了员工**。
+   把列表藏起来治不了这个，反而会把上游的共享池能力打掉。
+
+### 两个交付形态我昨天混成了一个
+
+- **桌面客户端 = 自带本机服务**：`desktop/src/process.go:23` 起的是
+  `… launch run --host 127.0.0.1 --port <port>`，webview 指本机 `:55`；
+  `desktop/src` 里**没有任何"连远端 Octop"的配置项**（搜过 `serverUrl`/`baseUrl`/`remoteHost`）。
+  跨实例只有 **Bridge**（`docs/bridge.md`，按"地址+用户名+密码"连另一台，影子 id `bridge:{conn}:{agent}`），
+  它是**用户级**的联邦，不是"客户端连服务器"。
+- **企业 LAN 部署 = 一台服务器 + 浏览器按 IP 访问**（`--host 0.0.0.0`、Docker 已默认这么设
+  `docker/docker-compose.yml:36`、TLS 有内置 Let's Encrypt 路径 `docs/configuration.md:85-95`）。
+
+→ z10 任何"简化"都必须标明作用在哪个形态。给桌面单机改的默认值，
+不能顺手改掉共享服务器部署里管理员需要的可见性。
+
+### 逐条重判（留 / 改 / 停）
+
+| 项 | 判定 | 理由 |
+|---|---|---|
+| M1 默认两栏 | **留** | 纯形态问题，与租户模型无关；探针量的 3 列 vs 2 列仍然成立 |
+| M2 左栏收到 6 项 | **改靶子** | 正当机制已经存在：**角色模板 + 24 个权限 key**。应改成 (a) 校对 nav 与权限目录的一致性、(b) 把 `navSimplicity` 那个每人一份的 localStorage 开关换成角色模板里的一个权限，让管理员按角色决定；而不是给员工藏东西 |
+| M3 扁平会话列表 | **降级 + 补要求** | 员工通常 1 个自有专家 + 少量共享，收益比我写的小。若做，migration 必须**成对**写 `021_*.sql` + `021_*.pg.sql` 并同步 `tests/unit/db/test_db_pool.py` 的版本断言（`AGENTS.md` §7），昨天我只写了 SQLite |
+| M4a 放开 craft-only 的开关 | **留一半** | @ 提及是上游既有能力（`chat/models.py:64-67`），把它从 `craft` + `+` 后面挪出来不与部署模型冲突；"专家 chip 常驻"要先确认下面 M4b 的三选一 |
+| M4b fork-to-agent 换专家 | **停，先回答三选一** | 上游对"一人多专家"给的答案是 **团队**（`docs/expert-teams.md:12-16`：host + ≥2 成员，可加入"自己的专家 + 分享给自己的专家"，v1 团队不可共享）和 **@mention**。fork-to-agent 是我加的第三条路。**必须先搞清前两条为什么不好用**，否则是在跟上游能力抢地盘，还会在每次追版时冲突 |
+| M5a 首启两条入口 | **改方向** | "免费先用"应该走上游**已写进文档**的 Ollama 路线：哨兵 key `api_key="ollama"` 已经能骗过 `iter_usable_rows` 的非空检查（`providers/store.py:116`；写入点 `Setup/steps/ModelStep.tsx:383`；识别点 `pages/Settings/Models/presetUtils.ts:210`）。所以首启该问的是"本机有没有 Ollama"，不是"我们塞一把云端 key" |
+| M5b 内置 API key | **停** | 除了昨天写的暴露面（明文列、`GET /api/providers` 原样回吐、产物未冻结），**共享服务器部署下内置 key = 全公司流量记在一个账单上**，风险比单机更高。且它是 fork-only 发明，与上游零 key 路线重复 |
+| M6 模板一键建专家 | **留** | `POST /api/agents/from-expert/{id}` 权限是 `user`（`docs/api.md:135,304`），专家页本来就分「我的专家 / 我的团队 / 专家库 / 市场」四个 tab（`docs/expert-teams.md:144`）。要改的是首屏默认落在哪个 tab，不是新造入口 |
+| M7 三处观感缺陷 | **留** | 假绿灯 / 弹窗挡位 / 硬编码英文 `New Chat`，都与角色模型无关 |
+
+### 需要负责人回答的三件事（这是部署事实，代码答不了）
+
+1. zcagent 的目标客户是「一台服务器 + 局域网多员工」还是「每人装一个桌面客户端」，还是两条都要？
+   两条都要的话，哪个是主形态、默认值听谁的？
+2. 「一个员工一个专家」是**产品承诺**（要在权限/UI 上强制）还是**常见用法**？
+   如果要强制，`max_agents=1` 这条策略现在就能做到，不需要新代码。
+3. 员工那个专家列表实际是怎么变长的——共享池造成的，还是他们自己建的？
+   （决定 M2 到底该动权限模板还是动共享可见性。）
+
+---
+
+## 0. 七个决策（⚠ 其中 D2/D3/D5/D6 已被 §0.0 改判，原文保留以便对照）
+
 
 | # | 决策 | 选定的做法 |
 |---|---|---|
@@ -46,7 +136,7 @@ M3 要加 migration（schema v20→v21），M4b 要动 fork 与 harness，M5b �
 
 | 状态 | 可见列数 | 会话栏位置 | 会话列表可见 | 左栏主导航 |
 |---|---|---|---|---|
-| `classic`（今天的默认） | **3** | 独立中列 | 是 | 3 项 + 设置/控制/管理 10 项 = **13 项** |
+| `classic`（今天的默认） | **3** | 独立中列 | 是 | 截图可见 **13**（侧栏可滚，第 14 项在折线外） |
 | `minimal` + 任务 pane | **2** | 收进左栏下半部 | 是 | 3 项（对话/专家/自动化） |
 | `minimal` + 设置 pane | **2** | 左栏内，但被 `hidden` | **否** | 13 项 |
 
@@ -65,6 +155,13 @@ M1 的验收门因此不是"能不能两栏"，而是"pane 切换会不会让人
 这是「对话有点乱」的第二根因，比列数更本质。
 
 ### 1.3 左栏项目数与「设置」的语义过载
+
+> 项数以本段为准（`§0.0` 已把我昨天的 8/14 更正为 10/14）。基线员工 **10 项** =
+> 未分组 4（chat/experts/tasks/token-usage）+ 设置组 6（personalization/channels/connectors/
+> skill-packages/knowledge-bases/bridge）；管理员 **14 项** = 19 个 key 藏 5 个；零权限下限 **6 项**
+> （`personalization`、`bridge` 不受权限控制）。依据：`sidebarNav.tsx:134-315` 逐项 +
+> `permissions.py:222` 的 `BASELINE_PERMISSIONS`（种子 `user` 角色只有这 4 个 settings 权限，
+> `migrate.py:1041-1048`）。截图上数到 13 是因为侧栏可滚动。
 
 - 目录 `layouts/sidebarNav.tsx:51-71`：**19 个 key**；分组 `:73`（settings / control / admin）；
   装配 `buildNavSections` `:134-315`。
@@ -178,7 +275,7 @@ D2 要的扁平时间线，后端目前是缺的。
 │ 设 │  └──────────┘                │        └────────────┤  │ 输入…       ➤ │  │
 │ 置 │                            │                        │  └────────────────┘  │
 └────┴──────────┴────────────────┘                        └──────────────────────┘
- 19 个 key，默认露 8~14 项            6 项 + 一个「设置」聚合页；会话不再按专家分组
+ 19 个 key，员工 10 项 / 管理员 14 项   6 项 + 一个「设置」聚合页；会话不再按专家分组
 ```
 
 输入框常显行上只放三样，其余进 `+`：**当前接手的专家**、**模型**、附件。
@@ -206,7 +303,7 @@ D2 要的扁平时间线，后端目前是缺的。
 
 会碰到的测试：`layouts/layoutModeStorage.test.ts`（钉了默认 `classic`，必须同步改，否则门禁假绿）。
 验收门（前三条已实测，作为现状基线；改完复测）：
-- `classic`：3 列、会话栏是独立列、左栏 13 项 —— 现状基线；
+- `classic`：3 列、会话栏是独立列、左栏截图可见 13 项（管理员，第 14 项在滚动区外）—— 现状基线；
 - 全新 profile 打开 `/chat`：2 列、会话栏在左栏内、左栏主导航 ≤ 6 项；
 - **切到设置视图后，历史会话仍在** —— 现在是 FAIL，用
   `python scripts/verify/layout_probe.py --python .venv/Scripts/python.exe --port 8097 --expect-fixed`
@@ -215,6 +312,9 @@ D2 要的扁平时间线，后端目前是缺的。
 - 已存 `classic` 的 profile 升级后仍是 classic（防"顺手改了老用户偏好"）。
 
 ### M2 · 左栏 6 项 + 「设置」聚合页
+
+> **⚠ 已改判，见 §0.0 逐条重判表**：正当机制是角色模板 + 24 个权限 key，员工看不到「管理」栏
+> 本来就是上游承诺；本节的"藏起来"要换成"nav 与权限目录对齐 + 把本地开关换成权限"。
 
 改哪里：
 1. `layouts/sidebarNav.tsx:134-315`：顶层只留 chat / experts / knowledge-bases / skill-packages / tasks + 一个 `settings` 条目；
@@ -231,6 +331,10 @@ D2 要的扁平时间线，后端目前是缺的。
 用户自定义导航（`SidebarNavCustomizer.tsx`）在旧偏好下不报错（key 未删，只移位）。
 
 ### M3 · 会话列表扁平化（z11）
+
+> **⚠ 已降级，见 §0.0**：员工通常是"1 个自有专家 + 少量共享"，收益比昨天写的小。
+> 若仍要做，migration 必须**成对**提交 `021_*.sql` + `021_*.pg.sql`（`AGENTS.md` §7），
+> 并同步 `tests/unit/db/test_db_pool.py` 的版本断言——昨天只写了 SQLite 一条。
 
 改哪里：
 1. 新 repo 方法 `ThreadsRepo.list_recent_for_user(user_id, *, q, limit, offset)` →
@@ -263,6 +367,9 @@ D2 要的扁平时间线，后端目前是缺的。
    改成页面内直接给两条入口（接 M5a），别再跳管理页。
 
 **M4b（z11，后端）：fork-to-agent「由 X 接手」**
+
+> **⚠ 已停，见 §0.0**：上游对"一人多专家"已给出两条路——**团队**（`docs/expert-teams.md:12-16`）
+> 与 **@mention**。fork-to-agent 是我加的第三条。先回答"前两条为什么不好用"，再决定要不要造第三条。
 1. `ForkThreadBody`（`chat/models.py:152-165`）加 `dest_agent_id`；路由 `chat/history.py:419-456` 校验
    **目标 agent 属于同一 user**（与 `target_agent_ids` 的 same-user 规则一致，`models.py:64-67`）。
 2. `fork_dashboard_thread`（`fork.py:181-289`）：把 `:236-238` 的 `source.agent_id` 换成解析后的目标 agent；
@@ -291,6 +398,11 @@ D2 要的扁平时间线，后端目前是缺的。
 4. 首启三步行事历（z08 M7 已建）接上第 0 步「说第一句话」。
 
 **M5b（z12）：真内置 key —— 四个条件缺一就不做**
+
+> **⚠ 已停，见 §0.0**：上游没有 trial/free/内置 key 概念，唯一的零 key 路线是 Ollama
+> （`docs/user-guide.md:236`，代码用哨兵 `api_key="ollama"` 过关：`Setup/steps/ModelStep.tsx:383`
+> → `providers/store.py:116`）。首启免费应该挂在那条已被文档承诺的路上。
+> 另外：共享服务器部署下内置 key = 全公司流量记在一把 key 上，风险高于单机场景。
 | 条件 | 现状缺口 | 要做 |
 |---|---|---|
 | key 不进公共仓库 | 今天无 secret 注入机制（`rebrand.py:1-30` 只换展示文本） | CI 构建时从 secret 写进产物的独立 `trial_key` 文件；源码树里恒为占位符；加一条 CI 检查：仓库内搜不到该 key 指纹 |
@@ -332,20 +444,30 @@ D2 要的扁平时间线，后端目前是缺的。
 
 1. **不删专家概念**。threads / workspace / checkpointer / 知识默认值全部以 agent 为轴
    （`001:135`、`manager.py:3338-3385`、`processor.py:1534`），删它等于重写后端。
+   上游还把它当卖点：「Multiple experts per user」（`README.upstream.md:116`）。
 2. **不原地改线程的 agent_id**（理由见 M4 末）。
 3. **不把 key 藏进客户端**。提取是必然（1.7），只做可运营的止血，不做伪装成安全的工程。
 4. **不在 z10 动 schema**。migration 与 UI 默认值分版本，回滚粒度才够细。
 5. **不在公共仓库提交任何真实凭证**（含体验 key、演示管理员口令）。
+6. **不与上游能力抢地盘**：一人多专家上游已给"团队 + @mention + 专家共享"三条路
+   （`README.upstream.md:116,160-162`、`docs/expert-teams.md:12-16`、`chat/models.py:64-67`），
+   零 key 首启上游已给 Ollama（`docs/user-guide.md:236`）。fork-only 的发明要先证明上游那条路不通。
+7. **不用 localStorage 私有开关解决角色问题**：员工该看到什么由角色模板与权限目录决定
+   （`018_user_role.sql`、`permissions.py:50-216`），每人一份本地状态在多员工部署里不可运营。
 
 ---
 
-## 5. 分期
+## 5. 分期（⚠ 已按 §0.0 改判；本期不动手，等三个部署问题有答案）
 
 | 版本 | 内容 | 回滚方式 |
 |---|---|---|
-| **z10** | M1 默认两栏、M2 左栏 6 项 + 设置聚合页、M4a 专家/模型 chip 常显 + 空状态重写、M5a 首启两条入口、M6 模板一键、M7 三处观感 | 逐项可退：M1 是一行默认值；M2 只改归属；M4a/M5a/M6/M7 是前端 |
-| **z11** | M3 扁平会话（含 schema v21 索引）、M4b fork-to-agent + `parent_thread_id` | 新端点与新索引不改旧行为；旧 rail 可切回 |
-| **z12** | M5b 内置体验 provider + 掩码 + per-provider 限额 + 熔断 + CI 注入 | 熔断关 → 行为退回 z11 |
+| **z10** | M1 默认两栏（仅桌面单机形态）、M4a 放开 craft-only 的 @ 提及 + 空状态重写、M6 模板首屏 tab、M7 三处观感；M2 改成「nav 与权限目录对齐 + 开关换成权限」；M5a 改成「首启探测 Ollama」 | 逐项可退：M1 是一行默认值；其余是前端 |
+| ~~z11~~ | ~~M4b fork-to-agent~~ **停**，先回答"团队 / @mention 为什么不够"；M3 扁平会话**降级**（做则 `021_*.sql` + `021_*.pg.sql` 成对） | — |
+| ~~z12~~ | ~~M5b 内置体验 provider~~ **停**（与上游零 key 路线重复，且共享部署下账单风险更高） | — |
+
+**为什么先停手**：这份方案的靶子（专家多、设置多）有一半来自"单人桌面助理"的假设。
+上游定位是多用户平台，那么"员工看到太多"是**角色模板**问题、"专家列表长"是**共享可见性**问题，
+两者的修法都不在 UI 层。等 §0.0 末尾三个问题有答案再重排期。
 
 ---
 
