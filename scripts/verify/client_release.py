@@ -50,9 +50,12 @@ OUT_DIR = DOWNLOADS / "reports"
 BUNDLE_MARKERS = {
     "1.0.2b6+z03": 'function resolveInitialLocale(){return readStoredUiLocale()??"zh"}',
     "1.0.2b6+z06": "local-recovery",
+    "1.0.2b6+z08": "prefetch_enabled",
 }
 # Releases from which the login page carries the account hint and self-service reset.
 RECOVERY_UI_FROM = "1.0.2b6+z06"
+# Releases from which the knowledge dialog curates models and notes.
+CURATED_MODELS_FROM = "1.0.2b6+z08"
 
 
 def log(msg: str) -> None:
@@ -297,6 +300,53 @@ def stage_bundle(version: str) -> dict:
     return {"chunk": chunk, "markers": found}
 
 
+def _auth_token() -> str:
+    body = json.dumps(
+        {"username": "admin", "password": os.environ.get("ZC_VERIFY_PASSWORD", "")}
+    ).encode()
+    req = urllib.request.Request(
+        f"{BASE}/api/auth/login", data=body, headers={"Content-Type": "application/json"}
+    )
+    return str(json.load(urllib.request.urlopen(req, timeout=20))["access_token"])
+
+
+def stage_embedding_api(version: str) -> dict:
+    """Ask the running server what the knowledge dialog would actually show.
+
+    The 41-model dump and the missing per-model notes were both invisible in the
+    bundle, because they are data the endpoint returns, not code it ships.
+    """
+    if version < CURATED_MODELS_FROM:
+        return {"skipped": f"curated models exist from {CURATED_MODELS_FROM}"}
+    token = _auth_token()
+
+    def get(path: str) -> dict:
+        req = urllib.request.Request(f"{BASE}/api{path}")
+        req.add_header("Authorization", f"Bearer {token}")
+        return json.load(urllib.request.urlopen(req, timeout=30))
+
+    default = get("/knowledge-bases/embedding-options")["onnx"]
+    expanded = get("/knowledge-bases/embedding-options?all_onnx=true")["onnx"]
+    default_ids = [str(m["id"]) for m in default]
+    expanded_ids = [str(m["id"]) for m in expanded]
+    log(f"  default list: {len(default)} models -> {default_ids}")
+    log(f"  expanded list: {len(expanded)} models")
+
+    if len(default) > 4:
+        raise SystemExit(f"recommended list leaked {len(default)} models")
+    if any("clip" in mid.lower() for mid in expanded_ids):
+        raise SystemExit("CLIP model is still offered for knowledge bases")
+    if len(expanded) > 20:
+        raise SystemExit(f"advanced list still dumps the whole fastembed catalog ({len(expanded)})")
+    missing_notes = [str(m["id"]) for m in expanded if not (m.get("note_zh") and m.get("note_en"))]
+    if missing_notes:
+        raise SystemExit(f"models without a trade-off note: {missing_notes}")
+    e5 = "intfloat/multilingual-e5-large"
+    if e5 in default_ids:
+        raise SystemExit("e5-large is still recommended despite needing input prefixes")
+    return {"default": default_ids, "expanded_count": len(expanded), "all_notated": True}
+
+
 def stage_ui(version: str) -> dict:
     """Render the login page the way WebView2 does: English navigator, no storage."""
     from playwright.sync_api import sync_playwright
@@ -411,6 +461,7 @@ def main() -> int:
 
     report["runtime_after"] = stage_runtime(args.version, report["runtime_before"])
     report["bundle"] = stage_bundle(args.version)
+    report["embedding_api"] = stage_embedding_api(args.version)
     report["ui"] = stage_ui(args.version)
     report.update(stage_icon(install_dir, args.version))
     return _finish(report)
