@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>首次启动设置向导 · 智策（静态演示界面）</title>
+    <link rel="stylesheet" href="./screen.css" />
+    <link rel="stylesheet" href="./guide-screens.css" />
+  </head>
+  <body>
+    <div class="app wizard-app">
+      <div class="window">
+        <div class="window-bar">
+          <span>智策</span>
+          <span class="dots"><i></i><i></i><i></i></span>
+        </div>
+        <div class="window-body">
+          <div class="wizard-side">
+            <div class="logo">
+              <img src="./icon.png" alt="" />
+              <span><b>智策</b> <i style="font-style: normal; color: var(--ink-3)">zcagent</i></span>
+            </div>
+            <p class="ver">v1.0.2b6+z09</p>
+            <ul class="steps">
+              <li class="is-done">
+                <span class="num">✓</span>
+                <span><b>选择数据目录</b>默认 <span class="id">~/.octop</span>，之后所有对话与文件都在这里</span>
+              </li>
+              <li class="is-active">
+                <span class="num">2</span>
+                <span><b>建立管理员账号</b>这台机器之后就用这套口令登录</span>
+              </li>
+              <li>
+                <span class="num">3</span>
+                <span><b>配置模型</b>没有模型，助手无法回答任何问题</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="wizard-card">
+            <h2>建立管理员账号</h2>
+            <p class="lede">
+              用户名与密码由你自己设定，系统不预置任何通用口令。请记牢，忘记后可以在本机的登录页重设。
+            </p>
+            <div class="field">
+              <label>用户名</label>
+              <div class="ctl">admin</div>
+            </div>
+            <div class="field">
+              <label>密码</label>
+              <div class="ctl is-placeholder">至少 10 位，建议用密码管理器生成</div>
+            </div>
+            <div class="field">
+              <label>确认密码</label>
+              <div class="ctl is-placeholder">再输入一次</div>
+              <p class="hint">这台机器上已有智策数据时，这一步会变成"输入现有账号的口令"。</p>
+            </div>
+            <div class="card-actions">
+              <span class="btn">上一步</span>
+              <span class="btn btn-primary">下一步：配置模型</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

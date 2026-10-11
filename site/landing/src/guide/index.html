@@ -145,7 +145,11 @@
             跳过模型这一步能进界面，但对话起不来——向导里的模型步骤是必做项，不是可选项。
             之后想补，随时可以在 <span class="ui">管理 → 模型</span> 里加。
           </div>
-          <p>装完之后要改密码、忘记口令，见 <a href="#account">账号、密码与备份</a>。</p>
+          <figure class="guide-figure">
+            <img src="../assets/screens/install-wizard.png" alt="首次启动设置向导：左侧三步进度，右侧建立管理员账号的表单" width="1600" height="1000" />
+            <figcaption>设置向导的第二步。口令由你自己定，系统不预置任何通用账号密码。</figcaption>
+          </figure>
+
         </section>
 
         <section class="guide-chapter" id="interface">
@@ -204,6 +208,10 @@
             但请注意：专家工作区可以自己写 <code>.env</code> 存放凭据，那是<strong>明文文件</strong>——
             对凭据有合规要求的客户请单独评估，不要承诺「密钥不落盘」。
           </div>
+          <figure class="guide-figure">
+            <img src="../assets/screens/models.png" alt="管理 → 模型：供应商卡片与模型连接状态表" width="1600" height="1000" />
+            <figcaption>管理 → 模型。每行的「测试连接」真的发一次请求，地址或 Key 写错当场就露出来。</figcaption>
+          </figure>
           <p>
             模型能力直接决定助手表现：技能（Skill）是否被严格遵循、长上下文里能否守住指令，与模型档位相关。
             交付时请按现场模型实测，不要拿演示环境的结论当承诺。
@@ -262,6 +270,10 @@
           <figure class="guide-figure">
             <img src="../assets/screens/knowledge.png" alt="知识库页：模型选择与建库入口" width="1600" height="1000" />
             <figcaption>知识库设置页。默认只露出中文可用的几个模型，其余收在「高级选项」里。</figcaption>
+          </figure>
+          <figure class="guide-figure">
+            <img src="../assets/screens/kb-models.png" alt="知识库设置里的向量模型列表，含体积与一句话优缺点" width="1600" height="1000" />
+            <figcaption>知识库设置。默认只列中文可用的模型并写明代价，其余收在「高级选项」里。</figcaption>
           </figure>
           <h3>向量模型怎么选</h3>
           <p>默认列表<strong>只推荐中文可用的模型</strong>，每一个都标了体积和一句话优缺点；点「高级选项」才会展开其余。</p>
@@ -377,6 +389,10 @@
             <code>127.0.0.1</code> 或 <code>localhost</code>），它可以在界面里直接重设管理员口令，
             不需要打开终端；从别的机器访问时这个入口不会出现。
           </p>
+          <figure class="guide-figure">
+            <img src="../assets/screens/forgot-password.png" alt="登录页上的忘记密码弹窗" width="1600" height="1000" />
+            <figcaption>在本机打开时，重设口令直接在登录页完成，不需要终端。</figcaption>
+          </figure>
           <p>命令行也能做到同样的事，作为兜底：先停服务，再执行 <code>octop user passwd &lt;用户名&gt;</code>。</p>
           <h3>数据在哪、怎么迁</h3>
           <table>

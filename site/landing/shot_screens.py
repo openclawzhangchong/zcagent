@@ -34,7 +34,16 @@ VIEWPORT = {"width": 1600, "height": 1000}
 SCALE = 2
 
 # Which sidebar entry reads as "current" on each screen.
-PAGES = ["chat", "experts", "knowledge", "channels"]
+PAGES = [
+    "chat",
+    "experts",
+    "knowledge",
+    "channels",
+    "install-wizard",
+    "models",
+    "kb-models",
+    "forgot-password",
+]
 
 
 def stage_icon() -> None:

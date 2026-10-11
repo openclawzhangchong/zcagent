@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>模型 · 智策控制台（静态演示界面）</title>
+    <link rel="stylesheet" href="./screen.css" />
+    <link rel="stylesheet" href="./guide-screens.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar">
+        <div class="brand">
+          <img src="./icon.png" alt="" />
+          <span><b>智策</b><i>zcagent</i></span>
+        </div>
+        <span class="version">v1.0.2b6+z09</span>
+
+        <div class="nav">
+          <div class="nav-group">
+            <h4>常用</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chat" /></svg>对话</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-expert" /></svg>专家</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-zap" /></svg>自动化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chart" /></svg>Token 统计</div>
+          </div>
+          <div class="nav-group">
+            <h4>设置</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-sparkle" /></svg>个性化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-radio" /></svg>通道</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-link" /></svg>连接器</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-box" /></svg>技能包</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-book" /></svg>知识库</div>
+          </div>
+          <div class="nav-group">
+            <h4>控制</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-grid" /></svg>工作台</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-monitor" /></svg>远程桌面</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-plug" /></svg>ACP</div>
+          </div>
+          <div class="nav-group">
+            <h4>管理</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-users" /></svg>用户</div>
+            <div class="nav-item is-active"><svg><use href="./sprite.svg#i-cpu" /></svg>模型</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-shield" /></svg>安全防护</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-settings" /></svg>应用设置</div>
+          </div>
+        </div>
+
+        <div class="who">
+          <span class="ava"><svg><use href="./sprite.svg#i-users" /></svg></span>
+          产品负责人
+        </div>
+      </nav>
+
+      <main class="page">
+        <h1>模型</h1>
+        <p class="sub">先接一个供应商，再选具体模型。测试连接会真的发一次请求，能立刻暴露地址或 Key 写错。</p>
+
+        <div class="panel">
+          <div class="toolbar">
+            <span class="count">已接入 2 个供应商</span>
+            <span class="spacer"></span>
+            <span class="btn btn-soft"><svg><use href="./sprite.svg#i-plus" /></svg>自定义 OpenAI 兼容端点</span>
+            <span class="btn btn-primary"><svg><use href="./sprite.svg#i-plus" /></svg>添加供应商</span>
+          </div>
+
+          <div class="provider-row">
+            <div class="provider is-picked">
+              <b>通义千问</b>
+              <span class="sub">预设 · API Key 已保存 · 默认供应商</span>
+            </div>
+            <div class="provider">
+              <b>内网推理网关</b>
+              <span class="sub">自定义 · https://llm.intranet.local/v1</span>
+            </div>
+            <div class="provider">
+              <b>离线不可用时</b>
+              <span class="sub">未启用 · 复制上面一张卡的地址改一行即可</span>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 34%">模型</th>
+                <th style="width: 22%">用途</th>
+                <th style="width: 20%">连接状态</th>
+                <th style="width: 24%"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>qwen-max</b><span class="sub" style="display: block">长上下文，指令遵循最稳</span></td>
+                <td>默认对话模型</td>
+                <td><span class="pill">已连通 · 412 ms</span></td>
+                <td>
+                  <span class="row-actions">
+                    <span class="btn btn-soft">测试连接</span>
+                    <span class="icon-btn"><svg><use href="./sprite.svg#i-settings" /></svg></span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td><b>qwen-plus</b><span class="sub" style="display: block">日常问答，成本更低</span></td>
+                <td>专家可单独指定</td>
+                <td><span class="pill">已连通 · 268 ms</span></td>
+                <td>
+                  <span class="row-actions">
+                    <span class="btn btn-soft">测试连接</span>
+                    <span class="icon-btn"><svg><use href="./sprite.svg#i-settings" /></svg></span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td><b>一个填错了名字的模型</b><span class="sub" style="display: block">id 拼错时不会猜，直接报错</span></td>
+                <td>—</td>
+                <td><span class="pill off">未连通 · model not found</span></td>
+                <td>
+                  <span class="row-actions">
+                    <span class="btn btn-soft">测试连接</span>
+                    <span class="icon-btn"><svg><use href="./sprite.svg#i-pencil" /></svg></span>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="note">
+            Key 只写进本机数据目录里的配置，不下发到浏览器。技能是否被严格遵循与模型档位相关，交付时按现场模型实测。
+          </p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

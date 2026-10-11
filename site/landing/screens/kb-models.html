@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>知识库设置 · 智策控制台（静态演示界面）</title>
+    <link rel="stylesheet" href="./screen.css" />
+    <link rel="stylesheet" href="./guide-screens.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar">
+        <div class="brand">
+          <img src="./icon.png" alt="" />
+          <span><b>智策</b><i>zcagent</i></span>
+        </div>
+        <span class="version">v1.0.2b6+z09</span>
+
+        <div class="nav">
+          <div class="nav-group">
+            <h4>常用</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chat" /></svg>对话</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-expert" /></svg>专家</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-zap" /></svg>自动化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chart" /></svg>Token 统计</div>
+          </div>
+          <div class="nav-group">
+            <h4>设置</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-sparkle" /></svg>个性化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-radio" /></svg>通道</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-link" /></svg>连接器</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-box" /></svg>技能包</div>
+            <div class="nav-item is-active"><svg><use href="./sprite.svg#i-book" /></svg>知识库</div>
+          </div>
+          <div class="nav-group">
+            <h4>管理</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-users" /></svg>用户</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-cpu" /></svg>模型</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-settings" /></svg>应用设置</div>
+          </div>
+        </div>
+
+        <div class="who">
+          <span class="ava"><svg><use href="./sprite.svg#i-users" /></svg></span>
+          产品负责人
+        </div>
+      </nav>
+
+      <main class="page">
+        <h1>知识库</h1>
+        <p class="sub">启用实例开关，并选择本地向量模型。第一次不用干等下载——客户端会在空闲时先下好默认模型。</p>
+
+        <div class="panel">
+          <div class="toolbar">
+            <span class="count">启用知识库</span>
+            <span class="spacer"></span>
+            <span class="pill">已启用</span>
+          </div>
+
+          <h3 style="margin: 6px 0 10px; font-size: 15px">向量模型</h3>
+          <div class="model-list">
+            <div class="model-row is-picked">
+              <span class="radio"></span>
+              <span class="model-copy">
+                <b>BAAI/bge-small-zh-v1.5 <span class="tag">默认</span></b>
+                <span class="pro">中文制度问答的第一选择，桌面机器无需 GPU；只擅长中文，跨语言资料建议换更大的。</span>
+              </span>
+              <span class="model-size">92 MB<span class="sub" style="display: block">已下载</span></span>
+            </div>
+            <div class="model-row">
+              <span class="radio"></span>
+              <span class="model-copy">
+                <b>jinaai/jina-embeddings-v2-base-zh</b>
+                <span class="pro">中英混排的公司资料检索更稳；体积与首次索引时间明显上升。</span>
+              </span>
+              <span class="model-size">640 MB<span class="sub" style="display: block">未下载</span></span>
+            </div>
+            <div class="model-row">
+              <span class="radio"></span>
+              <span class="model-copy">
+                <b>paraphrase-multilingual-mpnet-base-v2</b>
+                <span class="pro">约 50 种语言、无需调用侧配合；本地算力要求最高。</span>
+              </span>
+              <span class="model-size">1.0 GB<span class="sub" style="display: block">未下载</span></span>
+            </div>
+            <div class="advanced">
+              <svg style="width: 14px; height: 14px"><use href="./sprite.svg#i-zap" /></svg>
+              高级选项：展开其余 10 个模型（多为英文模型，含需要输入前缀的 e5 系列，请先小范围验证）
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <span class="btn btn-primary">保存并启用</span>
+            <span class="btn btn-soft">测试连接</span>
+            <span class="link">为什么默认只有三个？</span>
+          </div>
+
+          <p class="note">
+            三个下载源都连不通时，后台预下载会静默放弃、不弹错，最多再试两次；也可以在启动前设
+            <span class="id">OCTOP_KNOWLEDGE_MODEL_PREFETCH=0</span> 彻底关掉。
+          </p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
