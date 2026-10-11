@@ -287,10 +287,20 @@ def registry_version() -> str:
 
 def stage_launch(install_dir: Path) -> None:
     if http_status(f"{BASE}/login") == "200":
-        raise SystemExit(
-            "8088 already answers -- an older client or the dev server is running, "
-            "and every check below would read its bundle instead of the new one"
-        )
+        # Refusing outright was right for the reason it exists -- never read a
+        # server we did not start -- but it also made "--stage verify" impossible
+        # on a machine where the client is open, which is how it ships to users.
+        # So stop our own client and only give up if something else holds 8088.
+        stopped = _stop_installed_client()
+        deadline = time.time() + 60
+        while http_status(f"{BASE}/login") == "200" and time.time() < deadline:
+            time.sleep(2)
+        if http_status(f"{BASE}/login") == "200":
+            raise SystemExit(
+                f"8088 still answers after stopping {stopped or 'no zcagent process'} -- an "
+                "unrelated process holds it, and every check below would read its bundle"
+            )
+        log(f"stopped the client that was answering on 8088: pid {', '.join(map(str, stopped))}")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     log_file = OUT_DIR / "client-app.log"
     subprocess.Popen(
@@ -325,21 +335,47 @@ def expected_markers(version: str) -> dict:
     return {rel: needle for rel, needle in BUNDLE_MARKERS.items() if rel <= version}
 
 
+def _served(path: str) -> str:
+    return urllib.request.urlopen(f"{BASE}{path}", timeout=60).read().decode("utf-8", "replace")
+
+
 def stage_bundle(version: str) -> dict:
-    html = urllib.request.urlopen(f"{BASE}/login", timeout=30).read().decode("utf-8", "replace")
+    """Search the served module graph, not only the entry chunk.
+
+    Vite puts a route-level change in a lazily loaded chunk, and z08's knowledge
+    strings are in a second ``index.*.js`` the entry imports on demand -- so
+    "marker missing from the entry chunk" was this tool's blind spot, not a bad
+    release. The literals the entry uses for its dynamic imports name those
+    chunks, so follow them; stop as soon as every marker has a home.
+    """
+    html = _served("/login")
     match = re.search(r'src="(/assets/index\.[A-Za-z0-9_-]+\.js)"', html)
     if not match:
         raise SystemExit("no entry chunk in the served HTML")
-    chunk = match.group(1)
-    js = urllib.request.urlopen(f"{BASE}{chunk}", timeout=60).read().decode("utf-8", "replace")
-    found = {}
-    for release, needle in expected_markers(version).items():
-        present = needle in js
-        found[release] = present
-        log(f"  bundle carries the {release} change: {present}")
-        if not present:
-            raise SystemExit(f"served chunk {chunk} is missing the {release} change")
-    return {"chunk": chunk, "markers": found}
+    wanted = expected_markers(version)
+    entry = match.group(1)
+    seen = {entry}
+    queue = [entry]
+    markers: dict[str, str | None] = {}
+    searched = 0
+    while queue and len(markers) < len(wanted) and searched < 220:
+        path = queue.pop(0)
+        js = _served(path)
+        searched += 1
+        for release, needle in wanted.items():
+            if markers.get(release) is None and needle in js:
+                markers[release] = path
+        for ref in re.findall(r'"\.\/([A-Za-z0-9_.\-]+\.js)"', js):
+            nxt = f"/assets/{ref}"
+            if nxt not in seen:
+                seen.add(nxt)
+                queue.append(nxt)
+    for release in wanted:
+        home = markers.get(release)
+        log(f"  bundle carries the {release} change: {home or 'MISSING'}")
+        if home is None:
+            raise SystemExit(f"none of the {searched} served chunks carries the {release} change")
+    return {"chunk": entry, "chunks_searched": searched, "markers": markers}
 
 
 def _auth_token() -> str:
