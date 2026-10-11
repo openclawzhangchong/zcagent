@@ -29,9 +29,7 @@ def brand() -> dict:
     return yaml.safe_load((REPO / "brand" / "brand.yaml").read_text(encoding="utf-8"))
 
 
-def test_help_site_url_is_rewritten_but_the_channel_endpoint_survives(
-    rebrand, brand: dict
-) -> None:
+def test_help_site_url_is_rewritten_but_the_channel_endpoint_survives(rebrand, brand: dict) -> None:
     """`https://github.com/openclawzhangchong/zcagent` is a prefix of the upstream OctoBot endpoint.
 
     A plain literal swap would turn that endpoint into a dead host, so the rule
@@ -50,7 +48,7 @@ def test_help_site_url_is_rewritten_but_the_channel_endpoint_survives(
 
 def test_identifiers_the_token_rule_must_not_touch(rebrand, brand: dict) -> None:
     src = (
-        'X-Octop-Agent-Id\nOctopError\noctop-harness\n$OCTOP_HOME\n'
+        "X-Octop-Agent-Id\nOctopError\noctop-harness\n$OCTOP_HOME\n"
         'prefixCls="octop"\n~/octop-login.txt\ncn.jiuyeke.zcagent\n'
     )
     out = rebrand.transform(src, brand, "en")

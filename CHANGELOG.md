@@ -32,6 +32,49 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z06] — 2026-10-11
+
+### 新增：忘记密码不再需要开终端
+
+安装版复用 `%USERPROFILE%\.octop`，所以在**已经有数据的机器上**装新版，会直接落到一个登录页，
+而那个账号是当初初始化向导建的、用户并不记得。此前唯一的提示是"去跑 `octop user passwd`"——
+对普通用户就是死路。
+
+现在登录页会说清两件事：**这台机器已有智策数据、账号叫什么**，「忘记密码」弹窗在可自助时显示
+表单（账号 / 新密码 / 确认）而不是 shell 命令；不满足条件的服务端部署仍然显示原来的命令说明。
+
+### 新增：`POST /api/auth/local-reset` 与其权限边界
+
+这个接口**不做任何身份验证**就能改密码，所以它的成立条件被收窄到与 `octop user passwd` 完全等价——
+能访问到 loopback 上这个服务的人，本来就能读写同一个 SQLite 文件，接口没有多给任何权限。三条拒绝：
+
+| 条件 | 为什么必须拒 |
+|---|---|
+| TCP 对端不是 loopback | 用 `request.client.host`，**不用** `resolve_client_ip`（后者会信 `X-Forwarded-For`，否则一个头就能伪装成本机） |
+| 服务绑定地址不是回环 | 绑 `0.0.0.0` 时同机反代会把所有远程访客都呈现成 127.0.0.1 |
+| 账号数不等于 1 | 多用户实例上"按用户名重置"会变成互相夺号 |
+
+重置成功后会顺带清掉登录锁定（忘了密码试出来的锁定，不该在重置之后还挡着）。
+弱密码直接复用 `validate_password_policy` 抛 `OctopError`，因此错误文案走既有的本地化通道。
+
+改动落在新文件 `api/routers/local_recovery.py`（`app.py` 注册 + `deps.py` 免 JWT 各一行），
+没有去动 `auth.py`——它此前是干净的上游文件，不值得为这个功能增加冲突面。
+
+### 实测
+
+- 单元：`tests/unit/api/test_local_recovery_router.py` 10 条，覆盖上表三条拒绝、XFF 伪装、
+  无 socket 对端、用户名不符、弱密码、以及"状态接口不向外人泄露账号名"。
+- 全量 `tests/unit/api`：**340 passed / 10 skipped**，无回归。
+- 前端：`src/pages/Login` **23 passed**（新增 `Login.localReset.test.tsx` 断言表单里**不出现**
+  `octop user passwd`，并真的把新密码提交出去）。
+- 活服务（本机 `octop run`，回环 + 单账号）：
+  `GET /api/auth/local-recovery` → `{"available":true,"username":"admin"}`；
+  错用户名 → `404 no_such_user`；弱密码 → `400` 且消息是中文的
+  「密码过弱：至少 8 位，且同时包含字母和数字。」；正确重置 → `200`，
+  随后**新密码登录 200、旧密码登录 401**，再重置回原密码确认恢复。
+
+---
+
 ## [1.0.2b6+z05] — 2026-10-11
 
 ### 修复：托盘菜单与"首次启动正在解压…"仍是英文
@@ -61,7 +104,12 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 z04 只带上了运行时替换的修复；外壳语言是其后才提交的。而这两版对用户的表现是同一句话——"界面还是英文"——
 所以合并成一次可验证的交付：z05 同时验证"新客户端会替换旧运行时"（z04 引入的比较器）与"外壳中文"。
-实测见 [`site/download/VERIFICATION.md`](site/download/VERIFICATION.md)。
+实测见 [`site/download/VERIFICATION.md`](site/download/VERIFICATION.md)。**结果（本机实跑）**：
+保留 `~/.octop/portable` 停在 `1.0.2b6+z02` 的状态，启动 z05 的安装产物后该目录被替换成
+`1.0.2b6+z05`，`8088` 服务的入口 chunk 从 z02 的 `index.XAfRwQg_.js` 变成 `index.Scx49Zw2.js`，
+其中 `resolveInitialLocale(){return readStoredUiLocale()??"zh"}` 确认在产物内；用强制
+`navigator.language=en-US`、localStorage 为空的浏览器上下文渲染，登录页与"忘记密码"弹窗均为中文，
+logo 是边牧犬。安装包字节数与 SHA256 与 Release 的 `digest` 完全一致。
 
 ---
 
