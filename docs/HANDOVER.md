@@ -56,7 +56,7 @@ P0–P5 都已收尾，`v1.0.2b6-z01` 已发版。追版装置今天已**真跑�
 4. **z02 / z03 装机要人工换包**：比较器在 exe 里，不在解压出来的运行时里，所以已装过旧版的机器**不会**被自己的更新检查修好。凡是发过 z02/z03 安装包的地方，都要用最新版重装一次，界面语言、图标与启动动画才会对。一条命令验收：`.venv/Scripts/python.exe scripts/verify/client_release.py --version 1.0.2b6+zNN`（见 `scripts/verify/README.md`）。
 5. ~~**右键菜单只做到单元测试**~~ —— **z07 已人工确认**：装机版客户端里右键只剩「上一页 / 重新加载系统」两项。原生窗口截图在这台机器上拿不到有效画面，所以这条靠的是眼睛而不是自动化；后续再动右键菜单时仍需人工看一眼。
 
-排期与出口条件在 [`PLAN.md`](./PLAN.md)。**z08 已按 [`PLAN-z08.md`](./PLAN-z08.md) 实施并发版**（新手第一分钟：向量模型优缺点与空闲预下载、只推荐中文可用模型、表单默认值、首启行事历，外加两个已确认的静默缺陷 e5 前缀与体积兜底表），实测记录见 [`site/download/VERIFICATION.md`](../site/download/VERIFICATION.md)。z09 尚未立项。
+排期与出口条件在 [`PLAN.md`](./PLAN.md)。**z08 已按 [`PLAN-z08.md`](./PLAN-z08.md) 实施并发版**（新手第一分钟：向量模型优缺点与空闲预下载、只推荐中文可用模型、表单默认值、首启行事历，外加两个已确认的静默缺陷 e5 前缀与体积兜底表），实测记录见 [`site/download/VERIFICATION.md`](../site/download/VERIFICATION.md)。**z09** 是被 z08 的验收跑出来的单点修复：镜像下载的向量模型写在 `snapshots/cos-mirror` + 带换行的 `refs/main` 里，两处都不符合 `huggingface_hub` 的寻址规则，所以连不上 huggingface.co 的机器拿到的是一个永远加载不了的知识库；修法与"同一个 exe、同一批文件"的对照都在 VERIFICATION/CHANGELOG 里，没有单独的方案文档。
 一句话原则仍然成立：**每多手改一个上游文件，追版成本就永久上升**——所以能放进 `brand/brand.yaml` 的不要写进源码，能用运行时覆盖的不要构建期硬改，能加新文件的不要改旧文件。
 
 ## 4. 这次真踩过的坑（别重复踩）

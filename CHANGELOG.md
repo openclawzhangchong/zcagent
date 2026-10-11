@@ -32,6 +32,66 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z09] — 2026-10-11
+
+主题：**镜像下载的向量模型其实根本加载不了**。z08 的空闲预下载是把它逼出来的——
+因为它是整条发版链上第一个问"这个模型你现在真的能用吗"的检查。
+
+### 修复：94 MB 正确权重摆在机器上，客户端回 "Could not load model"
+
+本机实测（装好的 z08，不动代码只改缓存目录名就能复现两边）：
+
+| | 结果 |
+|---|---|
+| `POST /api/knowledge-bases/onnx-test`（修之前） | `{'ok': false, 'error': 'Could not load model BAAI/bge-small-zh-v1.5 from any source'}` |
+| 磁盘 | `~/.octop/embedding_models/models--Qdrant--bge-small-zh-v1.5/snapshots/cos-mirror/`，`model_optimized.onnx` = 94,781,076 字节，文件齐全 |
+| `POST …/onnx-test`（把同一批文件改成下面的布局后） | `{'ok': true, 'latency_ms': 219, 'dim': 512}` —— **同一个 exe、同一批文件** |
+
+根因是 `onnx_download.py` 写缓存的方式不符合 `huggingface_hub` 的寻址规则，而且是**两处同时错**：
+
+1. 快照写在 `snapshots/cos-mirror` 这种可读标签下，而 hub 只认 `refs/<分支>` 指向的
+   **40 位提交哈希**目录；
+2. `refs/main` 写的是 `"标签\n"`——hub 1.33 原样读取、**并不 strip**，多一个换行就等于
+   整个快照看不见。
+
+后果取决于网络：连得上 huggingface.co 的人等于把模型**下载两遍**（镜像一份、hub 再生成一份），
+连不上的人（内网与国内网络的常态，也正是我们卖这个产品的场景）拿到的是一个永远起不来的知识库。
+接口只报"字节数"和 `downloaded` 标志，所以两边都显示成功。
+
+改法：`mirror_revision()` 用 `sha1(hf_repo)` 生成 40 位哈希；`hf_cache_snapshot_dir()`
+只接受 40 位、按哈希目录写并把 `refs/main` 写成不带换行的哈希；
+`normalize_mirror_layout()` 就地修复存量缓存（改名或重写 ref，幂等），
+在 `_build_text_embedding()` 加载前调用——**已经下载过的老机器不用重新下载就能恢复**。
+
+原有那条 `test_onnx_download` 断言本身就写死了错的布局，并且用 `.strip()` 读 `refs/main`，
+换行这一半就是这么被遮住的；现在按精确相等比较，另加 `tests/unit/agents/test_onnx_cache_layout.py` 八条。
+
+### 新增：装机验收必须真加载一次
+
+`scripts/verify/client_release.py` 的 `stage_embedding_api` 现在会对默认列表里每一个标着
+"已下载"的模型 `POST /knowledge-bases/onnx-test`，拿不到 `ok=true` 就失败。缺这条断言，
+z08 才能带着上面那个缺陷出厂：下载成功、字节正确、界面显示"已下载"，全都对，
+只有"用它"这一步没人问过。
+
+### 顺带：这一轮装机验收拦下的都是工具自己的错
+
+产物是对的，四次失败全在验收工具里，但每一条留着就会在下次真坏掉时看不见：
+安装前没停掉在跑的客户端（句柄占用 → NSIS 静默留着旧构建）、用 mtime 判断装没装上
+（NSIS 把打包时间戳原样盖到释放文件上，装好了反而更"旧"）、只读入口 chunk
+（Vite 把路由级改动切进按需分片）、登录段没拖滑块验证码且把"知识库开关关着"当成断言目标。
+细节与对照写在 [`site/download/VERIFICATION.md`](./site/download/VERIFICATION.md) 的 z08 一节。
+
+### 空闲预下载：两趟对照已经跑通
+
+`scripts/verify/prefetch_watch.py` 用临时 `OCTOP_HOME` + 备用端口跑装好的运行时刻：
+开关打开时模型在启动约 130 秒后开始落地（>90 秒的空闲闸）、`attempts` 递增；
+设成 `0` 时观察 135 秒，一个字节都没落、一行状态都没写。
+`done` 那一条当时没出现，原因正是上面的加载缺陷——现在随 z09 一并验。
+
+### 冲突面积重测（z09）
+
+待发布后重跑 `scripts/classify_owned.py` 并更新本表。
+
 ## [1.0.2b6+z08] — 2026-10-11
 
 主题：**新手第一分钟**。方案与实测依据见 [`docs/PLAN-z08.md`](./docs/PLAN-z08.md)。
