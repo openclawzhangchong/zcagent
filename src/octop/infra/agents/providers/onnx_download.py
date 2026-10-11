@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -28,7 +29,21 @@ HF_ENDPOINT_MIRROR = "https://hf-mirror.com"
 COS_ENDPOINT_DEFAULT = "https://octop-1258344699.cos.ap-guangzhou.myqcloud.com"
 COS_PREFIX = "models/embedding"
 COS_MANIFEST_NAME = "files.json"
-COS_REVISION = "cos-mirror"
+# ``huggingface_hub`` only reuses a cached snapshot when ``refs/<branch>`` holds a
+# 40-character commit hash: a readable label makes it treat the cache as absent and
+# go back to the network. Every mirror download was therefore unusable on a machine
+# that cannot reach huggingface.co -- measured on the installed client, whose local
+# model probe answered "Could not load model ... from any source" with 94 MB of
+# correct weights on disk.
+LEGACY_COS_REVISION = "cos-mirror"
+_COS_REVISION_LENGTH = 40
+
+
+def mirror_revision(hf_repo: str) -> str:
+    """The deterministic stand-in commit hash a mirrored snapshot is filed under."""
+    return hashlib.sha1(hf_repo.encode("utf-8")).hexdigest()
+
+
 _COS_BASE_ENV = "OCTOP_ONNX_COS_BASE"
 
 _PROBE_TIMEOUT_S = 4.0
@@ -338,15 +353,65 @@ def write_cos_manifest(model_dir: Path, *, model_id: str, hf_repo: str) -> Path:
     return dest
 
 
-def hf_cache_snapshot_dir(cache_dir: Path, hf_repo: str, *, revision: str = COS_REVISION) -> Path:
-    """Create a Hugging Face cache snapshot that ``huggingface_hub`` will reuse."""
+def hf_cache_snapshot_dir(cache_dir: Path, hf_repo: str, *, revision: str | None = None) -> Path:
+    """Create a Hugging Face cache snapshot that ``huggingface_hub`` will reuse.
+
+    Two details decide whether the cache is found, and both were wrong before: the
+    revision has to look like a commit hash, and ``refs/main`` has to hold exactly
+    that hash -- hub 1.33 does not strip it, so a trailing newline makes the whole
+    snapshot invisible and the loader falls back to the network.
+    """
+    rev = revision or mirror_revision(hf_repo)
+    if len(rev) != _COS_REVISION_LENGTH:
+        raise ValueError(f"snapshot revision must be {_COS_REVISION_LENGTH} characters")
     repo_dir = cache_dir / ("models--" + hf_repo.replace("/", "--"))
     refs = repo_dir / "refs"
     refs.mkdir(parents=True, exist_ok=True)
-    (refs / "main").write_text(revision + "\n", encoding="utf-8")
-    dest = repo_dir / "snapshots" / revision
+    (refs / "main").write_text(rev, encoding="utf-8")
+    dest = repo_dir / "snapshots" / rev
     dest.mkdir(parents=True, exist_ok=True)
     return dest
+
+
+def normalize_mirror_layout(cache_dir: Path) -> int:
+    """Repair caches written before this fix, in place.
+
+    Installs that downloaded a model earlier keep an addressable-only-by-accident
+    layout on disk: either the snapshot sits under the readable label
+    ``cos-mirror``, or ``refs/main`` carries a trailing newline -- and the "already
+    downloaded" flag means nothing would refetch it. The files are correct in both
+    cases, so the repair is a rename and a rewritten ref. Idempotent: a healthy
+    cache is left untouched.
+    """
+    if not cache_dir.is_dir():
+        return 0
+    repaired = 0
+    for repo_dir in sorted(cache_dir.glob("models--*")):
+        hf_repo = repo_dir.name[len("models--") :].replace("--", "/", 1)
+        rev = mirror_revision(hf_repo)
+        changed = False
+
+        legacy = repo_dir / "snapshots" / LEGACY_COS_REVISION
+        if legacy.is_dir():
+            target = repo_dir / "snapshots" / rev
+            if target.exists():
+                shutil.rmtree(legacy, ignore_errors=True)
+            else:
+                legacy.rename(target)
+            changed = True
+
+        if (repo_dir / "snapshots" / rev).is_dir():
+            ref = repo_dir / "refs" / "main"
+            current = ref.read_text(encoding="utf-8") if ref.exists() else None
+            if current != rev:
+                (repo_dir / "refs").mkdir(parents=True, exist_ok=True)
+                ref.write_text(rev, encoding="utf-8")
+                changed = True
+
+        if changed:
+            repaired += 1
+            logger.info("ONNX cache %s repaired to the hub layout", repo_dir.name)
+    return repaired
 
 
 def _download_http_file(

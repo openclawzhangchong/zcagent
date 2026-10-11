@@ -28,7 +28,10 @@ from octop.infra.agents.providers.onnx_catalog import (
     get_onnx_model_meta,
     list_onnx_catalog_models,
 )
-from octop.infra.agents.providers.onnx_download import download_model_raced
+from octop.infra.agents.providers.onnx_download import (
+    download_model_raced,
+    normalize_mirror_layout,
+)
 from octop.infra.utils.paths import PathLayout
 from octop.infra.utils.runtime_packages import (
     PackageInstallSpec,
@@ -391,7 +394,12 @@ def require_embedding_prerequisites(settings_get: Any) -> OnnxServiceConfig:
 def _build_text_embedding(model: str) -> Any:
     from fastembed import TextEmbedding
 
-    return TextEmbedding(model_name=model, cache_dir=str(embedding_models_dir()))
+    cache = embedding_models_dir()
+    # A model fetched from a mirror used to be filed under snapshots/cos-mirror,
+    # which huggingface_hub does not recognise -- so loading it needed huggingface.co
+    # reachable anyway. Repair any such cache before handing it to fastembed.
+    normalize_mirror_layout(cache)
+    return TextEmbedding(model_name=model, cache_dir=str(cache))
 
 
 def embed_texts(model: str, texts: Sequence[str], *, role: str = PASSAGE_ROLE) -> list[list[float]]:

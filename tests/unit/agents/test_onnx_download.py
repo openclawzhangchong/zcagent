@@ -302,12 +302,18 @@ def test_cos_download_writes_hf_cache(monkeypatch, tmp_path: Path) -> None:
         ),
         cache,
     )
-    snapshot = cache / "models--Qdrant--bge-small-zh-v1.5" / "snapshots" / "cos-mirror"
+    from octop.infra.agents.providers.onnx_download import mirror_revision
+
+    rev = mirror_revision("Qdrant/bge-small-zh-v1.5")
+    snapshot = cache / "models--Qdrant--bge-small-zh-v1.5" / "snapshots" / rev
     assert (snapshot / "config.json").read_text(encoding="utf-8") == '{"hidden_size": 512}'
     assert (snapshot / "model.onnx").read_bytes() == b"onnx-bytes"
-    assert (cache / "models--Qdrant--bge-small-zh-v1.5" / "refs" / "main").read_text(
-        encoding="utf-8"
-    ).strip() == "cos-mirror"
+    # Compared exactly, not stripped: huggingface_hub reads refs/main verbatim, and a
+    # trailing newline hides the whole snapshot -- which is what made a complete
+    # mirror download unusable on a machine that cannot reach huggingface.co.
+    assert (
+        cache / "models--Qdrant--bge-small-zh-v1.5" / "refs" / "main"
+    ).read_text(encoding="utf-8") == rev
 
 
 def test_cos_download_rejects_parent_paths(monkeypatch, tmp_path: Path) -> None:
