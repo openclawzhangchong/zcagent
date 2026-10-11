@@ -32,6 +32,32 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z05] — 2026-10-11
+
+### 修复：托盘菜单与"首次启动正在解压…"仍是英文
+
+`desktop/src/settings.go` 的 `defaultSettings()` 把 `Locale` 钉在 `LocaleEN`，而桌面壳的文案（托盘右键菜单、
+设置窗、启动状态条、健康检查失败提示）在**任何网页出现之前**就要渲染，所以它拿不到前端的语言状态。
+结果是：仪表盘已经中文了，托盘和"First launch: unpacking the bundled runtime…"还是英文。
+
+**先量了再改**：本来准备按系统界面语言取默认值（`GetUserDefaultUILanguage`，`golang.org/x/sys/windows`
+已是依赖，本机 Go 1.25.1 实测可编译）。探针跑出来这台中文 Windows 的**显示语言是 en-US**——照它走会得到
+"仪表盘中文、外壳英文"的分裂状态，比现在更糟。所以最终决定与前端 `resolveInitialLocale()` 保持一致：
+**默认中文**，用户在设置窗里选的语言写进 `desktop-settings.json` 后优先。实测本机此前根本没有
+`desktop-settings.json`，即外壳一直在跑硬编码的英文默认值。
+
+新增 `desktop_copy_locale_test.go` 三条守卫：中英文案表**键集合必须相同**（只加一头会静默回落英文，
+正是"能汉化的都汉化"这条承诺无声失效的方式）、`%s` / `%d` 占位符数量两侧一致、默认 `Locale` 为 `zh`。
+`go vet` + `go test ./...` 本机与 CI 均通过。
+
+### 为什么紧接着 z04 又发一版
+
+z04 只带上了运行时替换的修复；外壳语言是其后才提交的。而这两版对用户的表现是同一句话——"界面还是英文"——
+所以合并成一次可验证的交付：z05 同时验证"新客户端会替换旧运行时"（z04 引入的比较器）与"外壳中文"。
+实测见 [`site/download/VERIFICATION.md`](site/download/VERIFICATION.md)。
+
+---
+
 ## [1.0.2b6+z04] — 2026-10-11
 
 **这一版修的是"升级"本身**：从 z02 之后，每一个新客户端装上去跑的都还是第一次解压出来的旧运行时。
