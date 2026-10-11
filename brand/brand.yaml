@@ -116,6 +116,17 @@ poses:
     src: brand/assets/mascot-typing.png
     box: [856, 812]
     animate: { frames: 24, mode: nod, amplitude: 3, duration: 80 }
+  # 桌面客户端启动页用的是**自己那一份**吉祥物，不是 dashboard/public 下的。
+  # 上游把副本放在 desktop/src/assets/，所以换形象必须一起换，否则装出来的
+  # 启动动画还是上游的红色章鱼（z06 及之前就是这个状态）。
+  - out: desktop/src/assets/octop-mascot-peek.webp
+    src: brand/assets/mascot-peek.png
+    box: [352, 320]
+    animate: { frames: 30, mode: bob, amplitude: 12, duration: 60 }
+  - out: desktop/src/assets/octop-mascot-type.webp
+    src: brand/assets/mascot-typing.png
+    box: [352, 320]
+    animate: { frames: 24, mode: nod, amplitude: 3, duration: 80 }
 
 # 字标字体（留空则按平台自动找：Windows 雅黑 / macOS 苹方 / Linux Noto CJK）
 fonts: {}
