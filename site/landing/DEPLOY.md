@@ -102,4 +102,30 @@ $env:GH_TOKEN = gh auth token
 | wrangler 报 10000 / 认证失败 | `CLOUDFLARE_API_TOKEN` 没生效，确认 `.cloudflare.env` 里有值且 `$env:` 已设置 |
 | wrangler 报 10090 / 项目不存在 | 先 `pages project create zcagent` |
 | 域名绑定后打不开 | 看 Pages 的 **Custom domains** 状态是否变成 Active；未 Active 时检查 DNS 里有没有同名冲突记录 |
+| 页面内容更新了但线上还是旧的 | 直传时要带 `--branch main` 才进 production；不带只会得到一个 preview 别名，线上看不出任何变化 |
+| 想比"线上和本地 dist 是不是同一份"，字节数对不上 | **别用字节数或 sha 比**。Pages 会压缩 HTML（实测本地 `index.html` 36,145 字节 → 线上 16,867 字节）。比结构标记：`<title>`、版本号、产物摘要串 |
+| 刚部署完 curl 还是旧内容 | 生效有几十秒延迟。轮询到出现新标记为止，不要 sleep 一次就下结论 |
+| `npx wrangler` 报找不到 node / 命令无输出 | 本机 `which node` 是空的，但 `C:\Program Files\nodejs\node.exe` 存在（v24.20.0）。每条命令显式前置：`PATH="/c/Program Files/nodejs:$PATH" npx --yes wrangler@4 …` |
+
+## Git Bash 版（本仓库日常实际用的那条路）
+
+PowerShell 那套在前一节；下面这条是这台机器上真正跑通的序列，
+令牌仍然只在 `site/landing/.cloudflare.env`（被 git 忽略，**永远不要写进任何 .md 或提交**）：
+
+```bash
+cd /d/otp/Octop
+PATH="/c/Program Files/nodejs:$PATH" .venv/Scripts/python.exe site/landing/build.py
+set -a && . site/landing/.cloudflare.env && set +a
+PATH="/c/Program Files/nodejs:$PATH" npx --yes wrangler@4 pages deploy site/landing/dist \
+  --project-name zcagent --branch main
+
+# 部署后核验：读 API + 读线上，不信上传回显
+curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/zcagent" \
+  | .venv/Scripts/python.exe -c "import json,sys; r=json.load(sys.stdin)['result']; print(r['production_branch'], r['domains'])"
+curl -sSL "https://zcagent.jiuyeke.cn/?v=$(date +%s)" | grep -o "1\.0\.2b6+z[0-9][0-9]" | sort | uniq -c
+```
+
+实测一次的成本：构建 29 个文件、上传 1.3 秒（26 个文件命中缓存），
+线上约 40 秒后切过去。
 | 页面白屏、控制台报 CSP | `_headers` 里的 `Content-Security-Policy` 只允许同源资源；新加外链资源时要一起放开 |
