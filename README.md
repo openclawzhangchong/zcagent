@@ -31,10 +31,10 @@ MCP 的主路径），因此任何文案都不声称"密钥不落盘"。详见 [
 <!-- client-downloads:start -->
 | 产物 | 大小 | SHA256 | 适合谁 |
 |---|---|---|---|
-| [`zcagent-desktop-windows-amd64-1.0.2b6+z03.exe`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z03/zcagent-desktop-windows-amd64-1.0.2b6%2Bz03.exe) | 183.5 MiB（192,378,564 字节） | `d7dd3060…98197f` | 日常使用：开始菜单图标 + 桌面窗口（需 WebView2 运行时） |
-| [`zcagent-portable-windows-amd64-1.0.2b6+z03.zip`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z03/zcagent-portable-windows-amd64-1.0.2b6%2Bz03.zip) | 187.4 MiB（196,534,301 字节） | `60960009…183be4` | 内网批量部署：解压 → `start.bat`，自带 CPython，不需要装 Python / Node |
+| [`zcagent-desktop-windows-amd64-1.0.2b6+z07.exe`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z07/zcagent-desktop-windows-amd64-1.0.2b6%2Bz07.exe) | 183.3 MiB（192,187,491 字节） | `b1b5effe…dd96a0` | 日常使用：开始菜单图标 + 桌面窗口（需 WebView2 运行时） |
+| [`zcagent-portable-windows-amd64-1.0.2b6+z07.zip`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z07/zcagent-portable-windows-amd64-1.0.2b6%2Bz07.zip) | 187.5 MiB（196,604,961 字节） | `d822594b…6f0305` | 内网批量部署：解压 → `start.bat`，自带 CPython，不需要装 Python / Node |
 
-下载页：<https://zcagent-download-igdker4k5y4.qoder.website/> ｜ 全部产物：[GitHub Releases](https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z03)
+下载页：<https://zcagent-download-igdker4k5y4.qoder.website/> ｜ 全部产物：[GitHub Releases](https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z07)
 <!-- client-downloads:end -->
 
 装完第一次启动会走初始化向导（验证口令 → 数据库 → 建管理员 → 配模型，模型可跳过）。一次性口令在
@@ -46,8 +46,8 @@ MCP 的主路径），因此任何文案都不声称"密钥不落盘"。详见 [
 `octop user passwd <用户名>` 重置，或把 `%USERPROFILE%\.octop` 改名移走、当作新机器重走一遍向导
 （会重新生成一次性口令并写进 `octop-login.txt`）。
 
-**装过 z02 / z03 的机器要用 z04 的安装包重装一次**：判断"要不要换运行时"的比较器在 exe 里，旧 exe 修不好
-自己，只会一直跑第一次解压出来的那份包（图标与界面语言都跟着停在旧版）。
+**装过 z02 / z03 的机器要用 z04 之后的安装包重装一次**：判断"要不要换运行时"的比较器在 exe 里，旧 exe
+修不好自己，只会一直跑第一次解压出来的那份包（图标、启动动画与界面语言都跟着停在旧版）。
 
 安装包**未做 Windows 代码签名**（上游同样未签名发布），首次运行 SmartScreen 会拦一次：
 「更多信息 → 仍要运行」。实测记录（含哈希核对、静默安装/启动/卸载、以及卸载后 `~/.octop/portable`

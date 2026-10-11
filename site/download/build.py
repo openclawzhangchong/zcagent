@@ -67,6 +67,23 @@ def flatten(data: dict) -> dict[str, str]:
     return out
 
 
+def retag(data: dict, tag: str) -> dict:
+    """Point the page at a different release, keeping the old one as ``previous``.
+
+    Without this, ``--from-github`` happily refreshes whatever tag is already
+    pinned and prints success -- which is how the page sat on z03 through the
+    z04..z07 releases.
+    """
+    if tag == data["tag"]:
+        return data
+    old = {"version": data["version"], "tag": data["tag"]}
+    data["previous"] = {**old, "reason": data.get("previous", {}).get("reason", "")}
+    data["tag"] = tag
+    data["version"] = tag[1:].replace("-", "+", 1)
+    data["release_url"] = f"https://github.com/{data['repo']}/releases/tag/{tag}"
+    return data
+
+
 def from_github(data: dict) -> dict:
     """Rewrite release.json from the GitHub Release API for the pinned tag."""
     api = f"https://api.github.com/repos/{data['repo']}/releases/tags/{data['tag']}"
@@ -104,6 +121,9 @@ def from_github(data: dict) -> dict:
         found += 1
     if found != len(data["assets"]):
         raise SystemExit(f"expected {len(data['assets'])} assets on {data['tag']}, matched {found}")
+    published = (rel.get("published_at") or "")[:10]
+    if published:
+        data["date"] = published
     return data
 
 
@@ -179,11 +199,17 @@ def main() -> int:
         "--from-github", action="store_true", help="refresh release.json from the Release API"
     )
     ap.add_argument(
+        "--tag",
+        help="pin the page to this release tag first, e.g. v1.0.2b6-z07 (old tag becomes previous)",
+    )
+    ap.add_argument(
         "--check", action="store_true", help="fail if dist/ does not match the template + data"
     )
     args = ap.parse_args()
 
     data = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    if args.tag:
+        data = retag(data, args.tag)
     if args.from_github:
         data = from_github(data)
         DATA_FILE.write_text(

@@ -2,6 +2,46 @@
 
 智策 Windows 客户端的实测记录。每次改动产物时追加一节，不覆盖历史。
 
+## 1.0.2b6+z07 · 2026-10-11（首次用 `scripts/verify/client_release.py` 一条命令跑完）
+
+```
+resolved zcagent-desktop-windows-amd64-1.0.2b6+z07.exe: 192,187,491 bytes, sha256 b1b5effeda882464...
+download verified: 192,187,491 bytes, hash matches the release digest
+reusing the existing install at C:\Program Files\zcagent
+unpacked runtime: 1.0.2b6+z05 -> 1.0.2b6+z07
+  bundle carries the 1.0.2b6+z03 change: True
+  bundle carries the 1.0.2b6+z06 change: True
+  stored_locale: None
+  login_is_chinese: True
+  login_has_english_signin: False
+  account_hint: 这台机器上已有智策数据，登录账号是 admin。
+  recovery_form: True
+  modal_shows_cli_command: False
+  installed icon: .zc-verify/reports/icon-1.0.2b6+z07.png sha256 62a05850012c9506...
+ALL ASSERTIONS HELD
+```
+
+要点：**升级链在真机上恢复了**——这台机器停在 `+z05` 的解压运行时，装上 z07 后被替换成 `+z07`。
+图标从**装好的 exe** 里抠出来确认是边牧（z02 那台是上游红章鱼）。登录页点名账号、
+「忘记密码」是表单且不含 `octop user passwd`。
+
+### 过程中被工具拦住的一次假验收
+
+第一次跑链条时，负责"释放 8088"的 PowerShell 里 `$_` 被 bash 展开掉了，开发实例没被杀，
+`8088` 仍在应答。工具的启动前置检查直接拒绝：
+
+> `8088 already answers -- an older client or the dev server is running, and every check below
+> would read its bundle instead of the new one`
+
+没有这条断言，那一轮会**全绿**——因为读的是旧服务的 chunk。这正是当初 z03 修复"在产物里却看不见"
+的同型问题，工具把它变成了硬失败。
+
+### 仍未自动验证的一项
+
+WebView2 里右键菜单**实际弹出来的样子**没有自动化验证（原生窗口截图在这台机器拿不到有效画面）。
+`context_menu.go` 的内容、"不许出现 save/print/另存/打印"、以及两个窗口都关掉内建菜单，
+都由 Go 测试锁住；装机后请人工右键看一眼。
+
 ## 1.0.2b6+z05 · 2026-10-11（装机全流程，含"新客户端能否替换旧运行时"的验收）
 
 这一节验的是 z04 那个比较器修复：**保留一台机器上第一次解压出来的旧运行时，再装新版，看它会不会换掉。**

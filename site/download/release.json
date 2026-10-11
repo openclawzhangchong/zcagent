@@ -1,32 +1,32 @@
 {
-  "version": "1.0.2b6+z03",
-  "tag": "v1.0.2b6-z03",
-  "date": "2026-10-10",
+  "version": "1.0.2b6+z07",
+  "tag": "v1.0.2b6-z07",
+  "date": "2026-10-11",
   "repo": "openclawzhangchong/zcagent",
-  "release_url": "https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z03",
+  "release_url": "https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z07",
   "site_url": "https://zcagent-download-igdker4k5y4.qoder.website/",
   "tested_on": "Windows 10 10.0.19045",
   "runtime": "CPython 3.12.12",
   "portable_extracted_mib": 658,
   "previous": {
-    "version": "1.0.2b6+z02",
-    "tag": "v1.0.2b6-z02",
-    "reason": "可继续用，但客户端图标仍是上游的、安装版首启会开成英文"
+    "version": "1.0.2b6+z03",
+    "tag": "v1.0.2b6-z03",
+    "reason": "可用，但 z03 及更早的客户端不会替换已解压的旧运行时（升级链失效），启动动画与图标仍是上游的"
   },
   "assets": {
     "exe": {
-      "name": "zcagent-desktop-windows-amd64-1.0.2b6+z03.exe",
-      "bytes": 192378564,
-      "sha256": "d7dd30607f90aa820c6fdcedf7e16d4bc4580eb28651094820f1c2f8a898197f",
-      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z03/zcagent-desktop-windows-amd64-1.0.2b6%2Bz03.exe",
-      "id": 628148267
+      "name": "zcagent-desktop-windows-amd64-1.0.2b6+z07.exe",
+      "bytes": 192187491,
+      "sha256": "b1b5effeda882464fdc24cfc64bcabc52a08807f0e7be101608e502b94dd96a0",
+      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z07/zcagent-desktop-windows-amd64-1.0.2b6%2Bz07.exe",
+      "id": 629538176
     },
     "zip": {
-      "name": "zcagent-portable-windows-amd64-1.0.2b6+z03.zip",
-      "bytes": 196534301,
-      "sha256": "60960009e25657420c86fc351beb28bf3bbdd7ebf29137b434a74c311b183be4",
-      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z03/zcagent-portable-windows-amd64-1.0.2b6%2Bz03.zip",
-      "id": 628148273
+      "name": "zcagent-portable-windows-amd64-1.0.2b6+z07.zip",
+      "bytes": 196604961,
+      "sha256": "d822594b12f611c07c7275c2f3f86459ffc3d45f5a78ccede0a64ebf7a6f0305",
+      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z07/zcagent-portable-windows-amd64-1.0.2b6%2Bz07.zip",
+      "id": 629538174
     }
   }
 }
