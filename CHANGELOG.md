@@ -90,7 +90,19 @@ z08 才能带着上面那个缺陷出厂：下载成功、字节正确、界面�
 
 ### 冲突面积重测（z09）
 
-待发布后重跑 `scripts/classify_owned.py` 并更新本表。
+`scripts/classify_owned.py` 在 `0c5a46ab..bd7b003c` 上重跑：**437 = 294 纯生成 + 62 承载手工改动 + 81 我们新增**
+（与 z08 那次同口径：两次都是"prettier ran over 53 rewritten dashboard file(s)"）。
+
+z09 自己的足迹只有 **+2 个手工文件**：`onnx_download.py`（缓存寻址规则写在这里）与
+`tests/unit/agents/test_onnx_download.py`（这条测试原来把错误布局当断言写死了，还把 `refs/main`
+用 `.strip()` 读，换行那一半就是这么被遮住的）。新增那一栏 +27 里只有 2 个是 z09 的
+（`scripts/verify/prefetch_watch.py`、`tests/unit/agents/test_onnx_cache_layout.py`），
+其余 25 个是同一分支上并行落地的营销站 `site/landing/**`。
+
+一条测量口径的教训，值得记下来：**第一次跑出来的数是 288 + 68 + 81**，看着像"手工又涨了 8 个"。
+真相是那次基线 worktree 里 `format SKIPPED (no node/prettier)`（本机 `C:\Program Files\nodejs` 有 node
+但不在 PATH 上），6 个纯生成的 dashboard 文件因此被误判成手工。把 node 加进 PATH 重跑才是可比数字。
+以后凡是输出里出现"format SKIPPED"的测量，一律先当不可信，重来一遍再写进表格。
 
 ## [1.0.2b6+z08] — 2026-10-11
 

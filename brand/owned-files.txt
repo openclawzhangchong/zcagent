@@ -55,12 +55,14 @@ src/octop/api/routers/knowledge_bases.py
 src/octop/api/routers/onnx_models.py
 src/octop/api/routers/update.py
 src/octop/infra/agents/providers/onnx_catalog.py
+src/octop/infra/agents/providers/onnx_download.py
 src/octop/infra/agents/providers/onnx_service.py
 src/octop/infra/knowledge/embed.py
 src/octop/infra/knowledge/gate.py
 src/octop/infra/knowledge/retrieve.py
 src/octop/infra/server.py
 src/octop/infra/setup/self_update.py
+tests/unit/agents/test_onnx_download.py
 tests/unit/api/test_update_router.py
 tests/unit/infra/setup/test_self_update.py
 tests/unit/knowledge/test_gate.py
@@ -105,6 +107,7 @@ tests/unit/knowledge/test_retrieve.py
 # scripts/sync_check.py
 # scripts/verify/README.md
 # scripts/verify/client_release.py
+# scripts/verify/prefetch_watch.py
 # site/download/README.md
 # site/download/VERIFICATION.md
 # site/download/build.py
@@ -112,11 +115,37 @@ tests/unit/knowledge/test_retrieve.py
 # site/download/src/app.js
 # site/download/src/index.html
 # site/download/src/styles.css
+# site/landing/.gitignore
+# site/landing/DEPLOY.md
+# site/landing/README.md
+# site/landing/build.py
+# site/landing/screens/channels.html
+# site/landing/screens/chat.html
+# site/landing/screens/experts.html
+# site/landing/screens/knowledge.html
+# site/landing/screens/screen.css
+# site/landing/screens/sprite.svg
+# site/landing/shot_screens.py
+# site/landing/site.json
+# site/landing/src/_headers
+# site/landing/src/app.js
+# site/landing/src/assets/mascot-empty.png
+# site/landing/src/assets/mascot-peek.png
+# site/landing/src/assets/mascot-typing.png
+# site/landing/src/assets/screens/channels.png
+# site/landing/src/assets/screens/chat.png
+# site/landing/src/assets/screens/experts.png
+# site/landing/src/assets/screens/knowledge.png
+# site/landing/src/index.html
+# site/landing/src/manifest.webmanifest
+# site/landing/src/robots.txt
+# site/landing/src/styles.css
 # site/offline-kit/guide.md
 # site/offline-kit/make_kit.py
 # src/octop/api/routers/branding.py
 # src/octop/api/routers/local_recovery.py
 # src/octop/infra/knowledge/prefetch.py
+# tests/unit/agents/test_onnx_cache_layout.py
 # tests/unit/agents/test_onnx_catalog.py
 # tests/unit/api/test_branding_router.py
 # tests/unit/api/test_local_recovery_router.py
