@@ -45,12 +45,13 @@ PORTABLE = Path.home() / ".octop" / "portable"
 DOWNLOADS = Path(os.environ.get("ZC_VERIFY_DIR", str(Path.cwd() / ".zc-verify")))
 OUT_DIR = DOWNLOADS / "reports"
 
-# Strings that must appear in the served entry chunk, keyed by the release that
-# introduced them so an older build can still be verified honestly.
+# Strings that must appear in the served chunks, keyed by the release that
+# introduced them so an older build can still be verified honestly. A release may
+# carry more than one needle.
 BUNDLE_MARKERS = {
-    "1.0.2b6+z03": 'function resolveInitialLocale(){return readStoredUiLocale()??"zh"}',
-    "1.0.2b6+z06": "local-recovery",
-    "1.0.2b6+z08": "prefetch_enabled",
+    "1.0.2b6+z03": ('function resolveInitialLocale(){return readStoredUiLocale()??"zh"}',),
+    "1.0.2b6+z06": ("local-recovery",),
+    "1.0.2b6+z08": ("prefetch_enabled", "智策科技公司制度知识库"),
 }
 # Releases from which the login page carries the account hint and self-service reset.
 RECOVERY_UI_FROM = "1.0.2b6+z06"
@@ -354,27 +355,37 @@ def stage_bundle(version: str) -> dict:
         raise SystemExit("no entry chunk in the served HTML")
     wanted = expected_markers(version)
     entry = match.group(1)
+    missing = [(rel, needle) for rel, needles in wanted.items() for needle in needles]
+    home: dict[tuple[str, str], str] = {}
     seen = {entry}
     queue = [entry]
-    markers: dict[str, str | None] = {}
     searched = 0
-    while queue and len(markers) < len(wanted) and searched < 220:
+    while queue and missing and searched < 220:
         path = queue.pop(0)
         js = _served(path)
         searched += 1
-        for release, needle in wanted.items():
-            if markers.get(release) is None and needle in js:
-                markers[release] = path
+        for key in list(missing):
+            if key[1] in js:
+                home[key] = path
+                missing.remove(key)
+        if not missing:
+            break
         for ref in re.findall(r'"\.\/([A-Za-z0-9_.\-]+\.js)"', js):
             nxt = f"/assets/{ref}"
             if nxt not in seen:
                 seen.add(nxt)
                 queue.append(nxt)
-    for release in wanted:
-        home = markers.get(release)
-        log(f"  bundle carries the {release} change: {home or 'MISSING'}")
-        if home is None:
-            raise SystemExit(f"none of the {searched} served chunks carries the {release} change")
+
+    markers: dict[str, dict[str, str | None]] = {}
+    for rel, needles in wanted.items():
+        places = {needle: home.get((rel, needle)) for needle in needles}
+        markers[rel] = places
+        for needle, where in places.items():
+            log(f"  {rel} carries {needle[:22]!r}: {where or 'MISSING'}")
+            if where is None:
+                raise SystemExit(
+                    f"none of the {searched} served chunks carries {needle[:40]!r} from {rel}"
+                )
     return {"chunk": entry, "chunks_searched": searched, "markers": markers}
 
 
@@ -386,6 +397,15 @@ def _auth_token() -> str:
         f"{BASE}/api/auth/login", data=body, headers={"Content-Type": "application/json"}
     )
     return str(json.load(urllib.request.urlopen(req, timeout=20))["access_token"])
+
+
+def _api(method: str, token: str, path: str, body: dict | None = None) -> dict:
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(f"{BASE}/api{path}", data=data, method=method)
+    req.add_header("Authorization", f"Bearer {token}")
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    return json.load(urllib.request.urlopen(req, timeout=60))
 
 
 def stage_embedding_api(version: str) -> dict:
@@ -481,14 +501,52 @@ def stage_ui(version: str) -> dict:
     return result
 
 
-def stage_signed_ui(version: str) -> dict:
-    """Log in for real and check the two surfaces that only exist behind auth.
+def _solve_slide_captcha(page) -> None:
+    """Drag the login slider, because it is what enables the submit button.
 
-    The default knowledge-base name/description is a form default, and the
-    first-run checklist is a *negative* feature -- it must disappear for a user
-    who already has models, an expert and a conversation. Neither is visible in
-    the bundle text or in a unit test; both are exactly what a release can break
-    silently, so they are checked in the browser.
+    The widget ships ``data-testid`` hooks, which survive the CSS-module hash
+    renaming that makes class selectors useless; button labels do not (AntD puts
+    a space between two CJK characters, so the login button reads "登 录").
+    """
+    thumb = page.get_by_test_id("slide-captcha-thumb")
+    if thumb.count() == 0:
+        return
+    track = page.get_by_test_id("slide-captcha-track")
+    box, knob = track.bounding_box(), thumb.bounding_box()
+    if not box or not knob:
+        raise SystemExit("the slide captcha is on screen but reports no geometry")
+    page.mouse.move(knob["x"] + knob["width"] / 2, knob["y"] + knob["height"] / 2)
+    page.mouse.down()
+    target = box["x"] + box["width"] - knob["width"] / 2
+    for step in range(1, 13):
+        page.mouse.move(
+            knob["x"] + (target - knob["x"]) * step / 12,
+            knob["y"] + knob["height"] / 2,
+        )
+    page.mouse.up()
+    # ``aria-valuenow`` reaches 100 when the slider counts the drag as complete.
+    # The thumb is still in the DOM afterwards, so "it disappeared" is not a signal.
+    deadline = time.time() + 8
+    while time.time() < deadline:
+        if track.get_attribute("aria-valuenow") == "100":
+            return
+        time.sleep(0.4)
+    raise SystemExit(
+        f"the slide captcha ended at aria-valuenow="
+        f"{track.get_attribute('aria-valuenow')!r} -- login would be blocked"
+    )
+
+
+def stage_signed_ui(version: str) -> dict:
+    """Log in for real and look at what only exists behind auth.
+
+    Three things, none of them visible in a chunk's text alone: a person can
+    actually get through the login form (slider captcha included), the sidebar
+    badge under the logo carries the short ``+zNN`` version, and -- when the
+    knowledge-base feature is switched on -- the create dialog opens with its
+    name and description already filled. The first-run checklist is *not*
+    asserted here: whether it should be on screen depends on how far this
+    machine has got, so its rules stay covered by unit tests instead.
     """
     if version < CURATED_MODELS_FROM:
         return {"skipped": f"signed-in checks exist from {CURATED_MODELS_FROM}"}
@@ -499,68 +557,83 @@ def stage_signed_ui(version: str) -> dict:
 
     user_field = re.compile("用户名|Username", re.I)
     pw_re = re.compile("密码|Password", re.I)
-    submit = re.compile("登录|Sign in|Log in", re.I)
+    submit = re.compile(r"登\s*录|Sign in|Log in", re.I)
     create_btn = re.compile("创建知识库|Create knowledge", re.I)
     name_label = re.compile("^名称$|^Name$", re.I)
     desc_label = re.compile("^描述$|^Description$", re.I)
-    checklist_re = re.compile("发出第一条消息|Send your first message")
 
     with sync_playwright() as p:
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
         browser = p.chromium.launch(channel="msedge")
         page = browser.new_context(viewport={"width": 1280, "height": 900}).new_page()
         page.add_init_script("Object.defineProperty(navigator,'language',{get:()=>'zh-CN'});")
         page.goto(f"{BASE}/login", wait_until="networkidle", timeout=90_000)
         page.get_by_placeholder(user_field).first.fill("admin")
         page.get_by_placeholder(pw_re).first.fill(os.environ["ZC_VERIFY_PASSWORD"])
+        _solve_slide_captcha(page)
         page.get_by_role("button", name=submit).first.click()
-        page.wait_for_url(lambda url: "/login" not in url, timeout=45_000)
+        left = time.time() + 45
+        while "/login" in page.url and time.time() < left:
+            page.wait_for_timeout(500)
+        if "/login" in page.url:
+            page.screenshot(path=str(OUT_DIR / "signed-in-login-failed.png"))
+            raise SystemExit(
+                "login did not take -- still on /login. Wrong ZC_VERIFY_PASSWORD, "
+                f"or the form blocked the submit (see {OUT_DIR / 'signed-in-login-failed.png'})"
+            )
 
         page.goto(f"{BASE}/knowledge-bases", wait_until="networkidle", timeout=90_000)
         page.wait_for_timeout(2000)
-        page.get_by_role("button", name=create_btn).first.click()
-        page.wait_for_timeout(1500)
-        modal = page.locator(".octop-modal, [role='dialog']").first
-        name_field = modal.get_by_label(name_label)
-        desc_field = modal.get_by_label(desc_label)
-        if name_field.count() == 0 or desc_field.count() == 0:
-            raise SystemExit(
-                "the create dialog did not open: no 名称/描述 field in the modal -- "
-                "check the button selector against the served build"
-            )
-        kb_name = name_field.first.input_value()
-        kb_desc = desc_field.first.input_value()
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        page.screenshot(path=str(OUT_DIR / "kb-create.png"))
-        modal.press("Escape")
+        create = page.get_by_role("button", name=create_btn)
+        kb_name = None
+        kb_desc = None
+        if create.count() == 0:
+            # The feature is off on this install. Turning it on would change the
+            # user's settings to satisfy the checker, so instead the default
+            # strings are proven where they actually ship: the served locale
+            # chunk (stage_bundle) and the component test.
+            log("  knowledge bases are off here -- create dialog not opened")
+        else:
+            create.first.click()
+            page.wait_for_timeout(1500)
+            modal = page.locator(".octop-modal, [role='dialog']").first
+            name_field = modal.get_by_label(name_label)
+            desc_field = modal.get_by_label(desc_label)
+            if name_field.count() == 0 or desc_field.count() == 0:
+                raise SystemExit(
+                    "the create dialog did not open: no 名称/描述 field in the modal -- "
+                    "check the button selector against the served build"
+                )
+            kb_name = name_field.first.input_value()
+            kb_desc = desc_field.first.input_value()
+            page.screenshot(path=str(OUT_DIR / "kb-create.png"))
+            modal.press("Escape")
 
         page.goto(f"{BASE}/chat", wait_until="networkidle", timeout=90_000)
-        # Positive control first: a page that never rendered would also have no
-        # checklist, and "assertion passed on a blank screen" is the exact false
-        # green this tool was written to refuse.
+        page.wait_for_timeout(2500)
+        # Positive control: a page that never rendered would also have no badge,
+        # and "assertion passed on a blank screen" is the false green this tool
+        # was written to refuse.
         if page.locator("textarea").count() == 0:
-            raise SystemExit("/chat did not render its composer, so the checklist check is void")
-        # A completed checklist is allowed to show its ticks for 1.6 s before it
-        # dismisses itself, so wait past that window before calling it absent.
-        page.wait_for_timeout(4000)
-        checklist = page.get_by_text(checklist_re).count()
-        page.screenshot(path=str(OUT_DIR / "chat-old-user.png"))
+            raise SystemExit("/chat did not render its composer")
+        badge = page.get_by_text(re.compile(r"^v1\.0\.2b6\+z\d{2}$")).count()
+        page.screenshot(path=str(OUT_DIR / "chat-signed-in.png"))
         browser.close()
 
     result = {
         "kb_default_name": kb_name,
         "kb_default_description": kb_desc,
-        "checklist_visible_for_existing_user": checklist > 0,
+        "version_badge_under_logo": badge,
     }
     for key, value in result.items():
         log(f"  {key}: {value}")
-    if not kb_name.strip() or not any("一" <= ch <= "鿿" for ch in kb_name):
-        raise SystemExit("the create dialog's name field is not pre-filled with a Chinese default")
-    if not kb_desc.strip():
-        raise SystemExit("the create dialog's description field is empty")
-    if result["checklist_visible_for_existing_user"]:
-        raise SystemExit(
-            "the first-run checklist still renders for a machine that finished all 3 steps"
-        )
+    if kb_name is not None:
+        if not kb_name.strip() or not any("一" <= ch <= "鿿" for ch in kb_name):
+            raise SystemExit("the create dialog's name field is not pre-filled in Chinese")
+        if not kb_desc or not kb_desc.strip():
+            raise SystemExit("the create dialog's description field is empty")
+    if badge == 0:
+        raise SystemExit("no short vN.N.NbN+zNN badge under the brand mark")
     return result
 
 
