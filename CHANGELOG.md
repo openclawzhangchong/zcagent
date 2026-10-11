@@ -50,6 +50,13 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 正是"能汉化的都汉化"这条承诺无声失效的方式）、`%s` / `%d` 占位符数量两侧一致、默认 `Locale` 为 `zh`。
 `go vet` + `go test ./...` 本机与 CI 均通过。
 
+### 冲突面积重测（z05）
+
+`scripts/classify_owned.py` 在 `0c5a46ab..39e13282` 上重跑：**374 个文件 = 296 纯生成 + 33 承载手工改动 + 45 我们新增**。
+手工那一栏从 25 涨到 33，涨的全是桌面壳的 Go 文件与流水线：`desktop/src/version.go`（判序）、
+`desktop/src/settings.go`（默认语言）、`desktop/src/download_test.go`（两条钉住旧判序的用例）、
+`.github/workflows/octop-desktop.yml`（`go test` 步骤）等。逐条清单见 `brand/owned-files.txt`。
+
 ### 为什么紧接着 z04 又发一版
 
 z04 只带上了运行时替换的修复；外壳语言是其后才提交的。而这两版对用户的表现是同一句话——"界面还是英文"——
@@ -391,6 +398,8 @@ is_newer("1.0.2b6+z9", "1.0.2b6+z1") -> False     # 修复前
 | 我们新增（无上游 counterpart） | **27** | 不会撞，除非上游以后新增同路径文件 |
 
 先前的"25"结果碰巧还对，但理由是错的：换行差异会让分类器把约 230 个生成物误判成手工改动，格式化一进管线就会立刻暴露。
+
+> 这张表是**当时**的快照。z05 之后重测为 **374 = 296 生成 + 33 手工 + 45 新增**，见本文最上方 z05 一节。
 
 ### 已知问题
 

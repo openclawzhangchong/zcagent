@@ -25,6 +25,9 @@ dashboard/src/utils/locale.ts
 dashboard/src/utils/localePrefs.test.ts
 dashboard/src/utils/localePrefs.ts
 dashboard/src/utils/permissions.ts
+desktop/src/download_test.go
+desktop/src/settings.go
+desktop/src/version.go
 fnos/docker/manifest
 fnos/native/manifest
 pyproject.toml
@@ -56,6 +59,8 @@ tests/unit/infra/setup/test_self_update.py
 # dashboard/src/branding/runtime.ts
 # dashboard/src/pages/Settings/AdvancedSettings/BrandingSettings.tsx
 # dashboard/src/pages/Settings/AdvancedSettings/ClientDownloads.tsx
+# desktop/src/desktop_copy_locale_test.go
+# desktop/src/version_test.go
 # docs/CONVENTIONS.md
 # docs/HANDOVER.md
 # docs/PLAN.md
@@ -76,6 +81,8 @@ tests/unit/infra/setup/test_self_update.py
 # site/download/src/assets/pwa-512.png
 # site/download/src/index.html
 # site/download/src/styles.css
+# site/offline-kit/guide.md
+# site/offline-kit/make_kit.py
 # src/octop/api/routers/branding.py
 # tests/unit/api/test_branding_router.py
 # tests/unit/scripts/test_rebrand_transform.py
