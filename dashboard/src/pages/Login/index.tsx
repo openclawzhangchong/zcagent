@@ -88,6 +88,7 @@ export default function LoginPage() {
   const [captchaReady, setCaptchaReady] = useState(false);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [showForgotHelp, setShowForgotHelp] = useState(false);
+  const [localAccount, setLocalAccount] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState<PublicCaptchaConfig>({
     provider: "slider",
   });
@@ -95,6 +96,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     void applyGuestLocale();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    authApi
+      .getLocalRecovery()
+      .then((next) => {
+        if (!cancelled && next.available) setLocalAccount(next.username);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -295,6 +309,25 @@ export default function LoginPage() {
         >
           {t("login.title")}
         </h2>
+
+        {localAccount ? (
+          <p
+            data-testid="login-existing-install-hint"
+            style={{
+              margin: 0,
+              fontSize: 12,
+              lineHeight: 1.5,
+              textAlign: "center",
+              color: "var(--fn-text-tertiary)",
+            }}
+          >
+            {t(
+              "login.existingInstallHint",
+              "This machine already has zcagent data — signing in as {{username}}.",
+              { username: localAccount },
+            )}
+          </p>
+        ) : null}
 
         <div style={{ width: "100%" }}>
           <Input

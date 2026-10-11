@@ -292,6 +292,20 @@ export const authApi = {
 
   deleteAvatar: () => request<void>("/auth/me/avatar", { method: "DELETE" }),
 
+  // --- Loopback-only password recovery (desktop / single-owner installs) ---
+
+  /** Whether this machine may reset its own account password from the browser. */
+  getLocalRecovery: () =>
+    request<{ available: boolean; username: string | null }>(
+      "/auth/local-recovery",
+    ),
+
+  localReset: (username: string, password: string) =>
+    request<{ username: string; reset: boolean }>("/auth/local-reset", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
+
   // --- Legacy stubs kept so finnie-era components compile ----------------
   // These call paths are removed in octop's data model; the actual
   // settings UI is rewritten in phase 14.6. Stubs return rejected
