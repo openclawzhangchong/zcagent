@@ -37,6 +37,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from contextlib import suppress
 from pathlib import Path
 
 REPO = os.environ.get("ZC_VERIFY_REPO", "openclawzhangchong/zcagent")
@@ -61,6 +62,14 @@ CURATED_MODELS_FROM = "1.0.2b6+z08"
 
 def log(msg: str) -> None:
     print(msg, flush=True)
+
+
+if sys.stdout is not None and sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    # The console on this box is cp936, and the Chinese assertions print Chinese:
+    # garbled transcript lines are useless as release evidence, and the transcript
+    # is what gets pasted into site/download/VERIFICATION.md.
+    with suppress(Exception):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def tag_of(version: str) -> str:
