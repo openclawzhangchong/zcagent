@@ -267,12 +267,20 @@ func (a *App) installDragOverlay() {
 	a.window.ExecJS(dragOverlayJS())
 }
 
+func (a *App) installContextMenu() {
+	if a.window == nil {
+		return
+	}
+	a.window.ExecJS(contextMenuJS())
+}
+
 func (a *App) scheduleDragOverlay() {
 	go func() {
 		for range 40 {
 			time.Sleep(250 * time.Millisecond)
 			a.installDragOverlay()
 			a.installExternalLinks()
+			a.installContextMenu()
 		}
 	}()
 }
@@ -326,6 +334,9 @@ func main() {
 		Frameless:            true,
 		AllowSimpleEventEmit: true,
 		BackgroundColour:     application.NewRGB(247, 248, 250),
+		// Replaced by contextMenuJS(): the native menu cannot be relabelled and
+		// offers Save-as / Print, which mean nothing inside a local app.
+		DefaultContextMenuDisabled: true,
 	})
 	api.window = win
 	app.Event.On("desktop:toggle-maximise", func(_ *application.CustomEvent) {
@@ -342,15 +353,16 @@ func main() {
 	win.OnWindowEvent(events.Windows.WebViewNavigationCompleted, installDragOverlay)
 	win.OnWindowEvent(events.Linux.WindowLoadFinished, installDragOverlay)
 	settingsWin := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:            "zcagent 设置",
-		Width:            settingsWindowWidth,
-		Height:           settingsWindowOuterHeight(),
-		URL:              "/?settings=1",
-		Hidden:           true,
-		Frameless:        true,
-		AlwaysOnTop:      true,
-		DisableResize:    true,
-		BackgroundColour: application.NewRGB(255, 255, 255),
+		Title:                      "zcagent 设置",
+		Width:                      settingsWindowWidth,
+		Height:                     settingsWindowOuterHeight(),
+		URL:                        "/?settings=1",
+		Hidden:                     true,
+		Frameless:                  true,
+		AlwaysOnTop:                true,
+		DisableResize:              true,
+		DefaultContextMenuDisabled: true,
+		BackgroundColour:           application.NewRGB(255, 255, 255),
 		Windows: application.WindowsWindow{
 			HiddenOnTaskbar: true,
 		},
