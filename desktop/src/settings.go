@@ -26,7 +26,10 @@ type Settings struct {
 
 func defaultSettings() Settings {
 	return Settings{
-		Locale:         LocaleEN,
+		// Tray and status copy renders before any page exists, so it cannot follow
+		// the browser locale the dashboard does; 智策 ships Chinese and the settings
+		// window's choice is what overrides it.
+		Locale:         LocaleZH,
 		Autostart:      false,
 		MinimizeToTray: true,
 		PreventSleep:   false,
