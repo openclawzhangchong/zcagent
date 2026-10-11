@@ -91,22 +91,6 @@ def settings_rows(home: Path) -> dict[str, str]:
     return {str(k): str(v) for k, v in rows}
 
 
-def settle(home: Path, rows: dict[str, str]) -> dict[str, str]:
-    """Wait for the state row after the weights have landed.
-
-    ``prefetch_default_model`` follows the download manager, which itself polls on
-    a two-second timer, so the full model is on disk a beat before ``done`` is
-    written. Breaking at the first complete byte count would kill the server
-    before that write and report a working feature as broken -- which is exactly
-    what happened on the first z08 run.
-    """
-    deadline = time.time() + 30
-    while rows.get(STATE_KEY) != DONE and time.time() < deadline:
-        time.sleep(3)
-        rows = settings_rows(home)
-    return rows
-
-
 def run_once(
     *,
     argv_head: list[str],
@@ -166,14 +150,16 @@ def run_once(
                 if first_bytes_at is None:
                     first_bytes_at = time.time()
             rows = settings_rows(home)
-            done = rows.get(STATE_KEY) == DONE
-            if done or size >= WEIGHTS_FLOOR:
-                if not done:
-                    rows = settle(home, rows)
+            # Only the state row ends this wait. The weights file lands first and
+            # fastembed still has to pull the tokenizer and config -- falling back
+            # through three sources can take minutes -- so crossing a byte floor
+            # is not proof the download finished. On the first z08 run that
+            # mistake killed the server mid-download and reported a working
+            # feature as broken.
+            if rows.get(STATE_KEY) == DONE:
                 outcome.update(
                     {
                         "downloaded": True,
-                        # Re-measure: the last polled size can predate the final file.
                         "bytes": weights_bytes(home),
                         "settings": rows,
                         "seconds_to_finish": int(time.time() - boot),
