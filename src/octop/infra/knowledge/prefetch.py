@@ -10,6 +10,12 @@ Deliberately Python-side only: the source race, the on-disk layout, the state
 machine and the settings KV all live in the backend, and a second
 implementation in the desktop shell would be this repo's third
 "same rule written twice" incident.
+
+The timer starts when the control plane is bound, not when the process starts:
+``_boot_runtime`` schedules this, and a greenfield install defers that call until
+the first-run wizard picks a database backend. So a brand-new client begins the
+idle wait after setup finishes -- which is the moment its data dir exists to
+write the state into.
 """
 
 from __future__ import annotations
@@ -39,9 +45,11 @@ DEFAULT_PREFETCH_MODEL = ONNX_PRESET_MODEL_IDS[0]
 PREFETCH_STATE_KEY = "knowledge_onnx_prefetch"
 PREFETCH_ATTEMPTS_KEY = "knowledge_onnx_prefetch_attempts"
 
-# Kill switch for deployments with no outbound access. On by default: the
-# offline kit passes an explicit "0" through its generated start script rather
-# than relying on a probe that would burn four seconds on every boot.
+# Kill switch for deployments with no outbound access. On by default, because
+# the desktop client is the common case and it should not ask the user to
+# configure anything. The offline kit leaves it unset too -- its guide.md tells
+# ops to set "0" before launching on a machine with strict egress rules, since
+# that costs four seconds of probing per boot and nothing else.
 PREFETCH_ENV = "OCTOP_KNOWLEDGE_MODEL_PREFETCH"
 
 STARTUP_DELAY_S = 90.0

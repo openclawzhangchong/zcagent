@@ -28,13 +28,36 @@
 | 服务的入口 chunk 必须含各版本引入的标记串 | z03 的中文修复确实在产物里，却因为上一条到不了用户手上 |
 | 用 `navigator.language=en-US` + 空 localStorage 渲染，登录页必须中文 | WebView2 在中文 Windows 上报 en-US，界面开成了英文 |
 | 从 z06 起：登录页要点名已有账号，「忘记密码」必须是表单而不是 shell 命令 | 装到已有数据的机器上，用户既不知道密码也打不出终端 |
+| 从 z08 起：接口返回的默认向量模型 ≤4、展开后 ≤20，且每条必须带一句话优缺点 | `all_onnx=true` 曾把 fastembed 全部 41 个模型（含 CLIP 塔）直接倒进知识库设置页 |
+| 从 z08 起：能力检查里必须带 `prefetch_enabled` / `prefetch_state` | 后台下载是"看不见的功能"，不在接口里露出来就没人知道它到底开没开 |
 | 从 exe 里抠出内嵌图标 | `.ico` 是构建时生成的，仓库里没有，`git diff` 看不出图标没换 |
 
 产物落在 `.zc-verify/reports/<版本>.json` 与同目录的截图；失败信息点名的是**断言**，不是阶段。
 
-前置：项目 venv（已含 playwright、Pillow）、装有 Edge 的 Windows、以及 `GH_TOKEN`
-（不设也能跑，但 api.github.com 的资产下载会慢）。下载走 `github.com` 与
-`api.github.com` 交替——本机前者快但常连不通，后者稳但慢。
+前置：项目 venv（已含 playwright、Pillow）、装有 Edge 的 Windows、`GH_TOKEN`
+（不设也能跑，但 api.github.com 的资产下载会慢），以及 z08 起需要 `ZC_VERIFY_PASSWORD`
+——向量模型那一段要真的登录才能问接口。口令是装机时你自己设的管理员口令，**不要写进仓库**。
+下载走 `github.com` 与 `api.github.com` 交替——本机前者快但常连不通，后者稳但慢。
+
+## prefetch_watch.py —— 空闲预下载到底有没有跑
+
+`client_release.py` 在服务起来几秒内就跑完断言，而预下载故意等 90 秒才动，所以它需要自己的一次运行。
+难点是**别把"什么都没发生"读成两种意思**：机器上已经有模型时，正确行为就是什么都不做，而"功能坏了"
+看起来一模一样。于是这个脚本从不碰共享的 `~/.octop`：它用**装好的运行时刻**配一个临时
+`OCTOP_HOME` 和一个备用端口启动，空缓存里落下的任何字节都只能是这一次的运行干的。
+
+```bash
+# 两趟：开关打开必须下载并写 done；设成 0 必须一个字节都不落、一行状态都不写
+.venv/Scripts/python.exe scripts/verify/prefetch_watch.py
+
+# 只跑其中一趟 / 用本仓库 venv 而不是装机产物快速自检
+.venv/Scripts/python.exe scripts/verify/prefetch_watch.py --only off
+.venv/Scripts/python.exe scripts/verify/prefetch_watch.py --runtime --home D:/tmp/prefetch
+```
+
+断言的东西：ONNX 权重 >90 MB、`knowledge_onnx_prefetch=done`、尝试次数有增加、磁盘增长单调、
+**首批字节出现在启动约 90 秒之后**（这一条把"空闲预下载"和"开机就下载"区分开），
+以及开关关闭时两趟都为空。报告写在 `<scratch>/prefetch-report.json`，旁边是两个服务各自的日志。
 
 ## 其它可复用的工具（不在本目录）
 
