@@ -196,6 +196,37 @@ def portable_version() -> str:
     return ""
 
 
+def _stop_installed_client() -> list[int]:
+    """Kill the running client by PID so the installer can replace its files.
+
+    A live ``zcagent.exe`` holds an open handle on itself: NSIS under ``/S`` does
+    not pop a "files in use" dialog, it just leaves the old build in place, and
+    the next stage would then read the previous release's bundle and call it a
+    pass.
+    """
+    listed = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            "Get-Process zcagent -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.split()
+    pids = [int(x) for x in listed if x.strip().isdigit()]
+    for pid in pids:
+        subprocess.run(
+            ["taskkill", "/PID", str(pid), "/T", "/F"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+        )
+    if pids:
+        time.sleep(6)
+    return pids
+
+
 def stage_install(exe: Path, install_dir: Path) -> None:
     """Run the NSIS installer silently.
 
@@ -203,8 +234,10 @@ def stage_install(exe: Path, install_dir: Path) -> None:
     silently ignored and the installer falls back to its default directory.
     """
     target = install_dir / "zcagent.exe"
-    if target.exists():
-        target.unlink()
+    stopped = _stop_installed_client()
+    if stopped:
+        log(f"stopped the running client first: pid {', '.join(str(p) for p in stopped)}")
+    started_at = time.time()
     log(f"installing silently into {install_dir} ...")
     subprocess.run(
         [
@@ -217,11 +250,17 @@ def stage_install(exe: Path, install_dir: Path) -> None:
     )
     deadline = time.time() + 300
     while time.time() < deadline:
-        if target.exists() and target.stat().st_size > 100_000_000:
+        # Freshness by mtime, not by size: the previous release is the same
+        # ballpark, and a file that predates this installer run is the old build.
+        if (
+            target.exists()
+            and target.stat().st_size > 100_000_000
+            and target.stat().st_mtime >= started_at
+        ):
             log(f"installed: {target} ({target.stat().st_size} bytes)")
             return
         time.sleep(3)
-    raise SystemExit(f"installer never produced {target}")
+    raise SystemExit(f"installer never produced a fresh {target}")
 
 
 def registry_version() -> str:
