@@ -419,10 +419,10 @@ def stage_signed_ui(version: str) -> dict:
 
     from playwright.sync_api import sync_playwright
 
-    zh = re.compile("用户名|Username", re.I)
+    user_field = re.compile("用户名|Username", re.I)
     pw_re = re.compile("密码|Password", re.I)
     submit = re.compile("登录|Sign in|Log in", re.I)
-    create_btn = re.compile("创建知识库|新建|Create", re.I)
+    create_btn = re.compile("创建知识库|Create knowledge", re.I)
     name_label = re.compile("^名称$|^Name$", re.I)
     desc_label = re.compile("^描述$|^Description$", re.I)
     checklist_re = re.compile("发出第一条消息|Send your first message")
@@ -432,7 +432,7 @@ def stage_signed_ui(version: str) -> dict:
         page = browser.new_context(viewport={"width": 1280, "height": 900}).new_page()
         page.add_init_script("Object.defineProperty(navigator,'language',{get:()=>'zh-CN'});")
         page.goto(f"{BASE}/login", wait_until="networkidle", timeout=90_000)
-        page.get_by_placeholder(zh).first.fill("admin")
+        page.get_by_placeholder(user_field).first.fill("admin")
         page.get_by_placeholder(pw_re).first.fill(os.environ["ZC_VERIFY_PASSWORD"])
         page.get_by_role("button", name=submit).first.click()
         page.wait_for_url(lambda url: "/login" not in url, timeout=45_000)
@@ -442,13 +442,25 @@ def stage_signed_ui(version: str) -> dict:
         page.get_by_role("button", name=create_btn).first.click()
         page.wait_for_timeout(1500)
         modal = page.locator(".octop-modal, [role='dialog']").first
-        kb_name = modal.get_by_label(name_label).first.input_value()
-        kb_desc = modal.get_by_label(desc_label).first.input_value()
+        name_field = modal.get_by_label(name_label)
+        desc_field = modal.get_by_label(desc_label)
+        if name_field.count() == 0 or desc_field.count() == 0:
+            raise SystemExit(
+                "the create dialog did not open: no 名称/描述 field in the modal -- "
+                "check the button selector against the served build"
+            )
+        kb_name = name_field.first.input_value()
+        kb_desc = desc_field.first.input_value()
         OUT_DIR.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(OUT_DIR / "kb-create.png"))
         modal.press("Escape")
 
         page.goto(f"{BASE}/chat", wait_until="networkidle", timeout=90_000)
+        # Positive control first: a page that never rendered would also have no
+        # checklist, and "assertion passed on a blank screen" is the exact false
+        # green this tool was written to refuse.
+        if page.locator("textarea").count() == 0:
+            raise SystemExit("/chat did not render its composer, so the checklist check is void")
         # A completed checklist is allowed to show its ticks for 1.6 s before it
         # dismisses itself, so wait past that window before calling it absent.
         page.wait_for_timeout(4000)
