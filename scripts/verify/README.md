@@ -62,6 +62,40 @@
 **首批字节出现在启动约 90 秒之后**（这一条把"空闲预下载"和"开机就下载"区分开），
 以及开关关闭时两趟都为空。报告写在 `<scratch>/prefetch-report.json`，旁边是两个服务各自的日志。
 
+## layout_probe.py —— 桌面宽度下到底有几栏、切 pane 会丢什么
+
+`PLAN-z10.md` M1 要把默认布局从三栏（导航 + 会话栏 + 内容）翻成两栏。两种布局早就存在，
+差别只在 `octop:layout-mode` 的默认值，所以"翻默认值对不对"只能靠**真实渲染**回答，读代码答不了：
+两栏下会话列表是左栏的下半部 pane，而 `Sidebar.tsx` 的
+`hidden={isRailCollapsed || minimalPane !== "records"}` 意味着切到设置 pane 时它可能整个消失。
+
+内置浏览器只有 465px 宽，看不到桌面布局；这个脚本因此自己起一个 scratch 控制面
+（独立 `OCTOP_HOME`、备用端口、走完向导），在 1280×800 下逐个布局状态量：可见列数、
+会话栏属于哪一列、pane 切换后还剩什么、左栏可见项数。
+
+```bash
+# 走完向导（默认塞一条假 provider 让专家真的 running，会话栏才有内容可量）
+.venv/Scripts/python.exe scripts/verify/layout_probe.py --python .venv/Scripts/python.exe --port 8097
+
+# 复现"新手跳过模型步"的死路：专家停在 failed，会话栏在任何布局下都是空的
+.venv/Scripts/python.exe scripts/verify/layout_probe.py --no-model
+
+# z10 M1 的验收门：切到设置视图后会话列表必须还在。今天退出码 1，M1 做完必须变 0
+.venv/Scripts/python.exe scripts/verify/layout_probe.py --expect-fixed
+```
+
+不带 `--expect-fixed` 的那趟只是**量现状**（把"设置 pane 会藏掉 records"当作期望值，退出码 0），
+别把它读成"已经修好"。
+
+专家没到 `running` 时**所有布局都量出空栏**，那种 verdict 没有意义，所以脚本会先等它起来
+（`agentError.ts` 判的是 `state === "running"`），起不来就直接失败退出。
+假 provider 能骗过就绪判定，是因为创建 provider 不做任何探测、`iter_usable_rows` 只看
+`enabled + base_url + api_key + 至少一个 chat 模型`——顺带说明：**首启行事历第 1 步的绿灯
+不代表模型能用**（`PLAN-z10.md` §1.8 第 2 条）。
+
+产物：`<out>/report.json` 与 `<out>/shots/{classic,minimal-records,minimal-settings}.png`，
+默认落在已被 gitignore 的 `.zc-verify/layout/`。
+
 ## 其它可复用的工具（不在本目录）
 
 | 命令 | 用途 |
