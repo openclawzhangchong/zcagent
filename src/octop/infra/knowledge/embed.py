@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from octop.infra.agents.providers.onnx_catalog import PASSAGE_ROLE
 from octop.infra.agents.providers.onnx_service import embed_texts
 from octop.infra.agents.providers.opencode_session import ensure_opencode_session_header
 from octop.infra.agents.providers.probe import provider_headers
@@ -14,13 +15,20 @@ from octop.infra.agents.providers.probe import provider_headers
 _KNOWLEDGE_EMBEDDING_BATCH_LIMIT = 20
 
 
-def embed_knowledge_texts(services: Any, texts: list[str]) -> list[list[float]]:
-    """Embed texts through the selected knowledge embedding backend."""
+def embed_knowledge_texts(
+    services: Any, texts: list[str], *, role: str = PASSAGE_ROLE
+) -> list[list[float]]:
+    """Embed texts through the selected knowledge embedding backend.
+
+    ``role`` distinguishes the indexed side (``passage``) from the search side
+    (``query``). Only the local ONNX backend acts on it; a remote provider is
+    assumed to have been configured for whatever convention its model uses.
+    """
     settings = services.settings_repo
     backend = (settings.get("knowledge_embedding_backend") or "onnx").strip().lower()
     model = (settings.get("knowledge_embedding_model") or "").strip()
     if backend != "remote":
-        return embed_texts(model, texts)
+        return embed_texts(model, texts, role=role)
 
     provider_id = (settings.get("knowledge_embedding_provider_id") or "").strip()
     provider = services.provider_repo.get(int(provider_id)) if provider_id.isdigit() else None

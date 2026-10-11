@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from octop.i18n import tr
+from octop.infra.agents.providers.onnx_catalog import QUERY_ROLE
 from octop.infra.knowledge.citations import append_citations_marker, citations_from_ranked
 from octop.infra.knowledge.embed import embed_knowledge_texts
 from octop.infra.knowledge.gate import assert_knowledge_usable
@@ -68,7 +69,7 @@ def _retrieve_context_sync(
     visible_bases: Sequence[Any] | None,
 ) -> str:
     assert_knowledge_usable(services.settings_repo.get, getattr(services, "provider_repo", None))
-    query_vectors = embed_knowledge_texts(services, [(query or "").strip()])
+    query_vectors = embed_knowledge_texts(services, [(query or "").strip()], role=QUERY_ROLE)
     if not query_vectors:
         return ""
 

@@ -46,9 +46,14 @@ def test_retrieve_context_filters_unreadable_knowledge_base(tmp_path, monkeypatc
     KnowledgeIndex(hidden.id).replace_doc_chunks(hidden_doc.id, ["secret fact"], [[1.0, 0.0]])
     services.settings_repo.set("knowledge_embedding_model", "test-model")
     monkeypatch.setattr(retrieve_module, "assert_knowledge_usable", lambda *_args: None)
-    monkeypatch.setattr(
-        retrieve_module, "embed_knowledge_texts", lambda _services, _texts: [[1.0, 0.0]]
-    )
+
+    def _embed(_services, _texts, *, role):
+        # The search side must ask for the query role, or e5-family models
+        # silently embed queries as if they were passages.
+        assert role == "query"
+        return [[1.0, 0.0]]
+
+    monkeypatch.setattr(retrieve_module, "embed_knowledge_texts", _embed)
 
     context = asyncio.run(
         retrieve_module.retrieve_context(

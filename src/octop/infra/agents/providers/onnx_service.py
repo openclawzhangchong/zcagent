@@ -23,6 +23,8 @@ from typing import Any
 
 from octop.infra.agents.providers.onnx_catalog import (
     ONNX_PRESET_MODEL_IDS,
+    PASSAGE_ROLE,
+    apply_role_prefix,
     get_onnx_model_meta,
     list_onnx_catalog_models,
 )
@@ -392,13 +394,19 @@ def _build_text_embedding(model: str) -> Any:
     return TextEmbedding(model_name=model, cache_dir=str(embedding_models_dir()))
 
 
-def embed_texts(model: str, texts: Sequence[str]) -> list[list[float]]:
+def embed_texts(model: str, texts: Sequence[str], *, role: str = PASSAGE_ROLE) -> list[list[float]]:
+    """Embed ``texts`` for either the indexed side or the search side.
+
+    ``role`` only changes anything for models that were trained with an input
+    prefix; see :func:`octop.infra.agents.providers.onnx_catalog.apply_role_prefix`.
+    """
     if not texts:
         return []
     require_local_embedding_deps()
     model = assert_catalog_model(model)
+    inputs = [apply_role_prefix(model, text, role) for text in texts]
     emb = _build_text_embedding(model)
-    out = [[float(x) for x in vec] for vec in emb.embed(list(texts))]
+    out = [[float(x) for x in vec] for vec in emb.embed(inputs)]
     if len(out) != len(texts):
         raise RuntimeError("embedding count mismatch")
     return out
