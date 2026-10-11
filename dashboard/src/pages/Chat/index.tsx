@@ -60,6 +60,7 @@ import ChatInput, { type ChatInputHandle } from "./components/ChatInput";
 import WelcomeScreen from "./components/WelcomeScreen";
 import AgentNotReadyScreen from "./components/AgentNotReadyScreen";
 import ModelConfigEmpty from "./components/ModelConfigEmpty";
+import FirstRunChecklist from "./components/FirstRunChecklist";
 import AgentProfileDrawer from "../../components/AgentProfileDrawer";
 import TrajectoryDrawer from "./components/TrajectoryDrawer";
 import { useExpertChatWelcome } from "./hooks/useExpertQuickCards";
@@ -1391,14 +1392,22 @@ function ChatPageInner() {
               ) : showWelcome && modelsReady && availableModels.length === 0 ? (
                 <ModelConfigEmpty canConfigure={canConfigureModels} />
               ) : showWelcome ? (
-                <WelcomeScreen
-                  agentName={activeAgent?.name ?? null}
-                  welcomeSuffix={welcomeSuffix}
-                  quickCards={expertQuickCards}
-                  onPromptClick={handlePromptClick}
-                  hideMascot={isStreaming || liveSpeakers.length > 0}
-                  isTeam={isTeamChat}
-                />
+                <>
+                  <WelcomeScreen
+                    agentName={activeAgent?.name ?? null}
+                    welcomeSuffix={welcomeSuffix}
+                    quickCards={expertQuickCards}
+                    onPromptClick={handlePromptClick}
+                    hideMascot={isStreaming || liveSpeakers.length > 0}
+                    isTeam={isTeamChat}
+                  />
+                  <FirstRunChecklist
+                    modelCount={availableModels.length}
+                    noAgents={noAgents}
+                    sessions={sessions}
+                    sessionsLoading={sessionsLoading}
+                  />
+                </>
               ) : (
                 <ChatAgentProfileProvider
                   canOpen={Boolean(resolvedAgentId) && !sharedExpertViewer}

@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
 import { Button, Tooltip } from "antd";
+import { Check, X } from "lucide-react";
 
 import styles from "./StreamSetupGuide.module.less";
 
 export interface SetupGuideStep {
   label: string;
   detail?: string;
+  /** Renders a check instead of the number, for a step already completed. */
+  done?: boolean;
 }
 
 export interface SetupGuideAction {
@@ -36,6 +39,9 @@ interface StreamSetupGuideProps {
    * Prefer for page-level empty guides that sit directly in PageShell.
    */
   plain?: boolean;
+  /** Shows a close affordance; for guides the user can opt out of permanently. */
+  onDismiss?: () => void;
+  dismissLabel?: string;
 }
 
 function ActionButton({ action }: { action: SetupGuideAction }) {
@@ -71,6 +77,8 @@ export default function StreamSetupGuide({
   className,
   wide,
   plain,
+  onDismiss,
+  dismissLabel,
 }: StreamSetupGuideProps) {
   const hasActions = primaryAction || secondaryAction || extraAction;
   const wrapClass = [
@@ -85,6 +93,17 @@ export default function StreamSetupGuide({
   return (
     <div className={wrapClass}>
       <div className={styles.card}>
+        {onDismiss ? (
+          <Button
+            type="text"
+            size="small"
+            className={styles.dismiss}
+            icon={<X size={14} />}
+            onClick={onDismiss}
+            aria-label={dismissLabel}
+            title={dismissLabel}
+          />
+        ) : null}
         <div className={styles.icon}>{icon}</div>
         {title ? <h3 className={styles.title}>{title}</h3> : null}
         {description ? (
@@ -94,9 +113,21 @@ export default function StreamSetupGuide({
           <ol className={styles.steps}>
             {steps.map((step, index) => (
               <li key={index} className={styles.step}>
-                <span className={styles.stepIndex}>{index + 1}</span>
+                <span
+                  className={`${styles.stepIndex}${
+                    step.done ? ` ${styles.stepIndexDone}` : ""
+                  }`}
+                >
+                  {step.done ? <Check size={12} /> : index + 1}
+                </span>
                 <div className={styles.stepBody}>
-                  <div className={styles.stepLabel}>{step.label}</div>
+                  <div
+                    className={`${styles.stepLabel}${
+                      step.done ? ` ${styles.stepLabelDone}` : ""
+                    }`}
+                  >
+                    {step.label}
+                  </div>
                   {step.detail ? (
                     <div className={styles.stepDetail}>{step.detail}</div>
                   ) : null}

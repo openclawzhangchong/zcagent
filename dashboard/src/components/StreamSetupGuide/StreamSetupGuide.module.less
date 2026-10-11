@@ -10,6 +10,7 @@
 }
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -120,6 +121,23 @@
   font-weight: 600;
   color: var(--fn-text-brand);
   background: var(--fn-color-brand-bg);
+}
+
+.stepIndexDone {
+  color: #fff;
+  background: var(--fn-color-success, #2f9e6f);
+}
+
+.stepLabelDone {
+  color: var(--fn-text-tertiary);
+  font-weight: 400;
+}
+
+.dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: var(--fn-text-tertiary);
 }
 
 .stepBody {
