@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>通道 · 智策控制台（静态演示界面）</title>
+    <link rel="stylesheet" href="./screen.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar">
+        <div class="brand">
+          <img src="./icon.png" alt="" />
+          <span><b>智策</b><i>zcagent</i></span>
+        </div>
+        <span class="version">v1.0.2b6+z07</span>
+
+        <div class="nav">
+          <div class="nav-group">
+            <h4>常用</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chat" /></svg>对话</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-expert" /></svg>专家</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-zap" /></svg>自动化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chart" /></svg>Token 统计</div>
+          </div>
+          <div class="nav-group">
+            <h4>设置</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-sparkle" /></svg>个性化</div>
+            <div class="nav-item is-active"><svg><use href="./sprite.svg#i-radio" /></svg>通道</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-link" /></svg>连接器</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-box" /></svg>技能包</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-book" /></svg>知识库</div>
+          </div>
+          <div class="nav-group">
+            <h4>控制</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-grid" /></svg>工作台</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-monitor" /></svg>远程桌面</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-plug" /></svg>ACP</div>
+          </div>
+          <div class="nav-group">
+            <h4>管理</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-users" /></svg>用户</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-cpu" /></svg>模型</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-shield" /></svg>安全防护</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-settings" /></svg>应用设置</div>
+          </div>
+        </div>
+
+        <div class="who">
+          <span class="ava"><svg><use href="./sprite.svg#i-users" /></svg></span>
+          产品负责人
+        </div>
+      </nav>
+
+      <main class="page">
+        <h1>通道</h1>
+        <p class="sub">把专家接到你已经在用的 IM 上。群里的提问和 Web 控制台走同一条处理链路。</p>
+
+        <div class="panel">
+          <div class="tabs">
+            <span class="tab is-active">已接入<span class="n">2</span></span>
+            <span class="tab">可添加</span>
+            <span class="tab">入站记录</span>
+          </div>
+
+          <div class="channel-grid">
+            <div class="channel">
+              <span class="logo" style="background: #3370ff">飞</span>
+              <span><b>飞书</b><i>群「研发日常」· 小通</i></span>
+              <span class="st">已连接</span>
+            </div>
+            <div class="channel">
+              <span class="logo" style="background: #0082ef">钉</span>
+              <span><b>钉钉</b><i>群「客户支持」· 小客</i></span>
+              <span class="st">已连接</span>
+            </div>
+            <div class="channel">
+              <span class="logo" style="background: #07c160">微</span>
+              <span><b>企业微信</b><i>群「周报播报」· 小周</i></span>
+              <span class="st">已连接</span>
+            </div>
+            <div class="channel">
+              <span class="logo" style="background: #6b7280">Q</span>
+              <span><b>QQ</b><i>尚未配置 AppID</i></span>
+              <span class="st off">未连接</span>
+            </div>
+            <div class="channel">
+              <span class="logo" style="background: #07c160">微</span>
+              <span><b>微信</b><i>扫码绑定</i></span>
+              <span class="st off">未连接</span>
+            </div>
+            <div class="channel">
+              <span class="logo" style="background: #0f766e">M</span>
+              <span><b>HTTP / SSE</b><i>开放给内部系统</i></span>
+              <span class="st">已连接</span>
+            </div>
+          </div>
+
+          <div class="grid grid-3" style="margin-top: 24px">
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava"><svg><use href="./sprite.svg#i-zap" /></svg></span>
+                <span>
+                  <b>定时任务</b>
+                  <span class="id">2 个已启用</span>
+                </span>
+              </div>
+              <p class="desc">
+                周五 17:30 让小周汇总本周进展，写进工作区并推到企业微信群。不用人守着。
+              </p>
+              <div class="row-actions">
+                <span class="btn btn-soft">查看任务 →</span>
+              </div>
+            </div>
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava g2"><svg><use href="./sprite.svg#i-lock" /></svg></span>
+                <span>
+                  <b>权限边界</b>
+                  <span class="id">按发送者校验</span>
+                </span>
+              </div>
+              <p class="desc">
+                群里的每条消息都带发送者身份，只有授权名单里的人能触发工具调用和写文件。
+              </p>
+              <div class="row-actions">
+                <span class="btn btn-soft">配置名单 →</span>
+              </div>
+            </div>
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava g3"><svg><use href="./sprite.svg#i-chatline" /></svg></span>
+                <span>
+                  <b>同一条链路</b>
+                  <span class="id">Web / IM / Cron</span>
+                </span>
+              </div>
+              <p class="desc">
+                三个入口共用同一套工具、技能与记忆。在控制台里能做的事，群里同样做得到。
+              </p>
+              <div class="row-actions">
+                <span class="btn btn-soft">查看轨迹 →</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="note">
+            通道凭据加密后存在这台服务器的 <code>~/.octop/secrets/</code> 下，不随对话外发。
+          </p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

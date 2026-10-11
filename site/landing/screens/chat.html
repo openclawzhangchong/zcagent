@@ -1,0 +1,138 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>对话 · 智策控制台（静态演示界面）</title>
+    <link rel="stylesheet" href="./screen.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar">
+        <div class="brand">
+          <img src="./icon.png" alt="" />
+          <span><b>智策</b><i>zcagent</i></span>
+        </div>
+        <span class="version">v1.0.2b6+z07</span>
+
+        <div class="nav">
+          <div class="nav-group">
+            <h4>常用</h4>
+            <div class="nav-item is-active"><svg><use href="./sprite.svg#i-chat" /></svg>对话</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-expert" /></svg>专家</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-zap" /></svg>自动化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chart" /></svg>Token 统计</div>
+          </div>
+          <div class="nav-group">
+            <h4>设置</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-sparkle" /></svg>个性化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-radio" /></svg>通道</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-link" /></svg>连接器</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-box" /></svg>技能包</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-book" /></svg>知识库</div>
+          </div>
+          <div class="nav-group">
+            <h4>控制</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-grid" /></svg>工作台</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-monitor" /></svg>远程桌面</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-plug" /></svg>ACP</div>
+          </div>
+          <div class="nav-group">
+            <h4>管理</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-users" /></svg>用户</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-cpu" /></svg>模型</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-shield" /></svg>安全防护</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-settings" /></svg>应用设置</div>
+          </div>
+        </div>
+
+        <div class="who">
+          <span class="ava"><svg><use href="./sprite.svg#i-users" /></svg></span>
+          产品负责人
+        </div>
+      </nav>
+
+      <aside class="sessions">
+        <div class="search"><svg><use href="./sprite.svg#i-search" /></svg>搜索会话</div>
+        <div class="agent-chip">
+          <span class="ava">通</span>
+          <span><b>小通 · 通用助手</b><i>友好、无特定技能，适合作为起点</i></span>
+        </div>
+        <div class="session is-active">
+          <div class="session-title"><svg><use href="./sprite.svg#i-chat" /></svg>季度复盘三条结论</div>
+          <p>已整理管理层 / 团队 / 个人三个版本</p>
+        </div>
+        <div class="session">
+          <div class="session-title"><svg><use href="./sprite.svg#i-chat" /></svg>客户回访话术整理</div>
+          <p>按行业分了三套开场白</p>
+        </div>
+        <div class="session">
+          <div class="session-title"><svg><use href="./sprite.svg#i-chat" /></svg>本周日程与待办</div>
+          <p>已生成并同步到日历</p>
+        </div>
+        <div class="session">
+          <div class="session-title"><svg><use href="./sprite.svg#i-chat" /></svg>在吗</div>
+          <p>在的，有什么需要帮忙的？</p>
+        </div>
+      </aside>
+
+      <section class="chat">
+        <header class="chat-chrome">
+          <span class="dot-live"></span>
+          <b>小通 · 通用助手</b>
+          <span>· 通用助手 · 本地工作区</span>
+        </header>
+
+        <div class="messages">
+          <div class="msg msg-me">
+            <span class="ava">负</span>
+            <div>
+              <div class="bubble">
+                帮我把这份季度复盘整理成三条结论：一条给管理层，一条给团队，一条给我自己。
+              </div>
+              <div class="stamp">09:41</div>
+            </div>
+          </div>
+
+          <div class="msg msg-bot">
+            <span class="ava"><svg><use href="./sprite.svg#i-bot" /></svg></span>
+            <div>
+              <div class="tool">
+                <svg><use href="./sprite.svg#i-file" /></svg>
+                读取工作区文件 Q3-复盘.md
+                <span class="tick">已完成</span>
+              </div>
+              <div class="bubble">
+                <h4>给管理层</h4>
+                <p>
+                  新签客户数环比增 34%，但客单价下降 8%；续约率稳在 91%，是本季度最扎实的一条线。
+                  风险集中在交付排期，Q4 需提前锁定实施资源。
+                </p>
+                <h4>给团队</h4>
+                <p>
+                  本周开始把方案模板化，三类客户复用同一套骨架，预计把单个方案的交付时间从 3 天压到 1 天。
+                  跨部门协作改为每日站会同步。
+                </p>
+                <h4>给你自己</h4>
+                <p>
+                  你最该盯的是客单价而不是新签数——线索够了，缺的是把价值讲贵一点。
+                  下周和两位老客户复盘定价话术，我把这三条都记进 MEMORY.md 了。
+                </p>
+              </div>
+              <div class="stamp">09:42 · 2,840 输入 / 412 缓存命中 / 286 输出</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer">
+          和 AI 小助手说点什么吧 ~
+          <div class="tools">
+            <svg><use href="./sprite.svg#i-plus" /></svg>
+            <svg><use href="./sprite.svg#i-paperclip" /></svg>
+            <svg><use href="./sprite.svg#i-mic" /></svg>
+            <span class="send"><svg><use href="./sprite.svg#i-send" /></svg></span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

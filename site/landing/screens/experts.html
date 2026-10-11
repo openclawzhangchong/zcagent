@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>专家 · 智策控制台（静态演示界面）</title>
+    <link rel="stylesheet" href="./screen.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar">
+        <div class="brand">
+          <img src="./icon.png" alt="" />
+          <span><b>智策</b><i>zcagent</i></span>
+        </div>
+        <span class="version">v1.0.2b6+z07</span>
+
+        <div class="nav">
+          <div class="nav-group">
+            <h4>常用</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chat" /></svg>对话</div>
+            <div class="nav-item is-active"><svg><use href="./sprite.svg#i-expert" /></svg>专家</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-zap" /></svg>自动化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chart" /></svg>Token 统计</div>
+          </div>
+          <div class="nav-group">
+            <h4>设置</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-sparkle" /></svg>个性化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-radio" /></svg>通道</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-link" /></svg>连接器</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-box" /></svg>技能包</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-book" /></svg>知识库</div>
+          </div>
+          <div class="nav-group">
+            <h4>控制</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-grid" /></svg>工作台</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-monitor" /></svg>远程桌面</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-plug" /></svg>ACP</div>
+          </div>
+          <div class="nav-group">
+            <h4>管理</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-users" /></svg>用户</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-cpu" /></svg>模型</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-shield" /></svg>安全防护</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-settings" /></svg>应用设置</div>
+          </div>
+        </div>
+
+        <div class="who">
+          <span class="ava"><svg><use href="./sprite.svg#i-users" /></svg></span>
+          产品负责人
+        </div>
+      </nav>
+
+      <main class="page">
+        <h1>专家</h1>
+        <p class="sub">创建与管理你的 AI 专家，也可从模板库挑选场景一键新建。</p>
+
+        <div class="panel">
+          <div class="tabs">
+            <span class="tab is-active">我的专家<span class="n">4</span></span>
+            <span class="tab">我的团队</span>
+            <span class="tab">内置专家</span>
+            <span class="tab">专家市场</span>
+          </div>
+
+          <div class="toolbar">
+            <span class="count">共 4 个专家</span>
+            <span class="spacer"></span>
+            <span class="input"><svg><use href="./sprite.svg#i-search" /></svg>搜索专家</span>
+            <span class="btn"><svg><use href="./sprite.svg#i-refresh" /></svg></span>
+            <span class="btn btn-primary"><svg><use href="./sprite.svg#i-plus" /></svg>新建专家</span>
+            <span class="btn btn-soft">从内置专家新建</span>
+          </div>
+
+          <div class="grid grid-3">
+            <div class="expert-card is-picked">
+              <div class="expert-head">
+                <span class="ava">通</span>
+                <span>
+                  <b>小通 · 通用助手</b>
+                  <span class="id">专家 ID 7K2M4Q</span>
+                </span>
+              </div>
+              <div class="pill-row">
+                <span class="pill">运行中</span>
+                <span class="pill grey">默认</span>
+              </div>
+              <p class="desc">
+                友好、无特定技能，适合作为起点或日常对话。默认接一个通用模型，随手就能问。
+              </p>
+              <div class="row-actions">
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-folder" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-refresh" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-pencil" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-copy" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-share" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-trash" /></svg></span>
+                <span class="btn btn-soft">对话 →</span>
+              </div>
+            </div>
+
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava g2">码</span>
+                <span>
+                  <b>小码 · 编程实战</b>
+                  <span class="id">专家 ID 3B9X7T</span>
+                </span>
+              </div>
+              <div class="pill-row">
+                <span class="pill">运行中</span>
+                <span class="pill blue">4 个技能</span>
+              </div>
+              <p class="desc">
+                帮你在仓库里定位问题、写补丁、跑回归。装了 Git / Node / Python 三个 MCP，
+                动手的事交给它。
+              </p>
+              <div class="row-actions">
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-folder" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-refresh" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-pencil" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-copy" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-share" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-trash" /></svg></span>
+                <span class="btn btn-soft">对话 →</span>
+              </div>
+            </div>
+
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava g3">客</span>
+                <span>
+                  <b>小客 · 售前支持</b>
+                  <span class="id">专家 ID 5D1P8V</span>
+                </span>
+              </div>
+              <div class="pill-row">
+                <span class="pill">运行中</span>
+                <span class="pill blue">知识库 1</span>
+              </div>
+              <p class="desc">
+                只读产品知识库回答售前问题，不擅自改价也不承诺交付日期。答不上来的会直接说不知道。
+              </p>
+              <div class="row-actions">
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-folder" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-refresh" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-pencil" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-copy" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-share" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-trash" /></svg></span>
+                <span class="btn btn-soft">对话 →</span>
+              </div>
+            </div>
+
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava">周</span>
+                <span>
+                  <b>小周 · 周报助手</b>
+                  <span class="id">专家 ID 8R4W2K</span>
+                </span>
+              </div>
+              <div class="pill-row">
+                <span class="pill grey">已停止</span>
+                <span class="pill blue">定时任务 2</span>
+              </div>
+              <p class="desc">
+                每周五下午自动汇总团队进展，生成一份给管理层看的周报，存到工作区并推送到企业微信群。
+              </p>
+              <div class="row-actions">
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-folder" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-play" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-pencil" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-copy" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-share" /></svg></span>
+                <span class="icon-btn"><svg><use href="./sprite.svg#i-trash" /></svg></span>
+                <span class="btn btn-soft">对话 →</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="note">
+            每位专家拥有独立的工作区、记忆、模型与通道。可以把配置好的专家共享给同事复用，
+            避免每个人都从零搭一遍。
+          </p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

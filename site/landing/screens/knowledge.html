@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>知识库 · 智策控制台（静态演示界面）</title>
+    <link rel="stylesheet" href="./screen.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar">
+        <div class="brand">
+          <img src="./icon.png" alt="" />
+          <span><b>智策</b><i>zcagent</i></span>
+        </div>
+        <span class="version">v1.0.2b6+z07</span>
+
+        <div class="nav">
+          <div class="nav-group">
+            <h4>常用</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chat" /></svg>对话</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-expert" /></svg>专家</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-zap" /></svg>自动化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-chart" /></svg>Token 统计</div>
+          </div>
+          <div class="nav-group">
+            <h4>设置</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-sparkle" /></svg>个性化</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-radio" /></svg>通道</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-link" /></svg>连接器</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-box" /></svg>技能包</div>
+            <div class="nav-item is-active"><svg><use href="./sprite.svg#i-book" /></svg>知识库</div>
+          </div>
+          <div class="nav-group">
+            <h4>控制</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-grid" /></svg>工作台</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-monitor" /></svg>远程桌面</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-plug" /></svg>ACP</div>
+          </div>
+          <div class="nav-group">
+            <h4>管理</h4>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-users" /></svg>用户</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-cpu" /></svg>模型</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-shield" /></svg>安全防护</div>
+            <div class="nav-item"><svg><use href="./sprite.svg#i-settings" /></svg>应用设置</div>
+          </div>
+        </div>
+
+        <div class="who">
+          <span class="ava"><svg><use href="./sprite.svg#i-users" /></svg></span>
+          产品负责人
+        </div>
+      </nav>
+
+      <main class="page">
+        <h1>知识库</h1>
+        <p class="sub">语料全部存放在这台服务器上。回答会被检索到的原文锚定，不会凭空发挥。</p>
+
+        <div class="panel">
+          <div class="tabs">
+            <span class="tab is-active">知识库<span class="n">2</span></span>
+            <span class="tab">共享语料</span>
+            <span class="tab">检索设置</span>
+          </div>
+
+          <div class="toolbar">
+            <span class="count">共 2 个知识库</span>
+            <span class="spacer"></span>
+            <span class="input"><svg><use href="./sprite.svg#i-search" /></svg>搜索知识库</span>
+            <span class="btn btn-primary"><svg><use href="./sprite.svg#i-plus" /></svg>新建知识库</span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 42%">知识库</th>
+                <th style="width: 18%">文档</th>
+                <th style="width: 18%">向量模型</th>
+                <th style="width: 12%">状态</th>
+                <th style="width: 10%"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 12px">
+                    <span class="doc-ico"></span>
+                    <span>
+                      <b>产品与交付手册</b>
+                      <span class="sub" style="display: block"
+                        >售前 FAQ、实施清单、验收标准 · 被 3 位专家引用</span
+                      >
+                    </span>
+                  </div>
+                </td>
+                <td>186 份<span class="sub" style="display: block">约 42 MB</span></td>
+                <td>bge-m3<span class="sub" style="display: block">本地运行</span></td>
+                <td><span class="pill">已就绪</span></td>
+                <td>
+                  <span class="icon-btn"><svg><use href="./sprite.svg#i-pencil" /></svg></span>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 12px">
+                    <span class="doc-ico"></span>
+                    <span>
+                      <b>合同与法务模板</b>
+                      <span class="sub" style="display: block"
+                        >标准合同、报价单、保密协议 · 仅管理员可见</span
+                      >
+                    </span>
+                  </div>
+                </td>
+                <td>54 份<span class="sub" style="display: block">约 9 MB</span></td>
+                <td>bge-m3<span class="sub" style="display: block">本地运行</span></td>
+                <td><span class="pill">已就绪</span></td>
+                <td>
+                  <span class="icon-btn"><svg><use href="./sprite.svg#i-pencil" /></svg></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="grid grid-3" style="margin-top: 22px">
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava"><svg><use href="./sprite.svg#i-upload" /></svg></span>
+                <span>
+                  <b>导入文档</b>
+                  <span class="id">PDF / Markdown / Word / 网页</span>
+                </span>
+              </div>
+              <p class="desc">
+                拖进来就自动切分与向量化，单次上传上限 100 MB。切分规则可以在检索设置里调。
+              </p>
+            </div>
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava g2"><svg><use href="./sprite.svg#i-lock" /></svg></span>
+                <span>
+                  <b>共享给团队</b>
+                  <span class="id">同实例内复用</span>
+                </span>
+              </div>
+              <p class="desc">
+                把知识库共享给指定成员，他们建专家时就能直接引用，不必每个人导一份。
+              </p>
+            </div>
+            <div class="expert-card">
+              <div class="expert-head">
+                <span class="ava g3"><svg><use href="./sprite.svg#i-bot" /></svg></span>
+                <span>
+                  <b>锚定原文</b>
+                  <span class="id">检索增强</span>
+                </span>
+              </div>
+              <p class="desc">
+                回答里会标出引用了哪几段原文，方便你当场核对，不用担心它编。
+              </p>
+            </div>
+          </div>
+
+          <p class="note">
+            语料与向量都存在本机：上传的文件不会离开这台服务器，向量模型也默认本地运行。
+          </p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "site_url": "https://zcagent.pages.dev",
+  "note": "官网自己的部署地址。与 site/download/release.json 分开：那份是发布产物的事实，这份是这个站点的事实。Cloudflare Pages 接自定义域名后改这里，重新 build 即可。"
+}

@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{NAME_ZH}} — 把 AI 助手，装在你自己的机器上</title>
+    <meta
+      name="description"
+      content="{{NAME_ZH}}（{{NAME_EN}}）是一套自托管的多用户 AI 助手平台。一次部署，每位同事都有一位懂自己工作的专属助手；对话、文件、记忆与凭据全部留在你自己的服务器上。"
+    />
+    <link rel="canonical" href="{{SITE_URL}}/" />
+
+    <meta property="og:url" content="{{SITE_URL}}/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{NAME_ZH}} — 把 AI 助手，装在你自己的机器上" />
+    <meta
+      property="og:description"
+      content="自托管的多用户 AI 助手平台。一次部署，人人有专属助手，数据不出内网。"
+    />
+    <meta property="og:image" content="./assets/og-cover.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="./assets/favico.svg" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#overview">跳到主要内容</a>
+
+    <header class="topbar" id="top">
+      <div class="wrap topbar-inner">
+        <a class="brandmark" href="#overview" aria-label="{{NAME_ZH}} 首页">
+          <img
+            src="./assets/logo_horizontal_dark.png"
+            alt="{{NAME_ZH}} {{NAME_EN}}"
+            width="140"
+            height="36"
+          />
+        </a>
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-label="打开菜单"
+          aria-expanded="false"
+          aria-controls="menu"
+        >
+          <span class="bars" aria-hidden="true"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="menu" id="menu" hidden>
+      <div class="menu-panel">
+        <a href="#overview">概览</a>
+        <a href="#download">下载</a>
+        <a href="#why">为什么选{{NAME_ZH}}</a>
+        <a href="#faq">常见问题</a>
+        <a href="{{REPO_URL}}/blob/product/main/CHANGELOG.md" rel="noopener"
+          >更新日志</a
+        >
+        <a href="{{REPO_URL}}" rel="noopener">项目文档
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="ext">
+            <path
+              d="M7 17 17 7M9 7h8v8"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <main>
+      <!-- ============================== HERO ============================== -->
+      <section class="hero" id="overview">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="wrap hero-inner">
+          <a class="pill" href="{{REPO_URL}}" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 3v18M3 12h18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+            开源 · MIT 协议 · 基于 {{UPSTREAM}}
+          </a>
+
+          <h1>
+            把 AI 助手，<br class="br-m" />
+            装在你自己的机器上
+            <img
+              class="hero-mascot"
+              src="./assets/mascot-peek.png"
+              alt=""
+              aria-hidden="true"
+              width="152"
+              height="88"
+            />
+          </h1>
+
+          <p class="hero-sum">
+            {{NAME_ZH}}是一套自托管的多用户 AI 助手平台。一次部署，每位同事都有一位懂自己工作的专属助手；
+            对话、文件、记忆与凭据，全部留在你自己的服务器上。
+          </p>
+
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#download">
+              下载 Windows 客户端
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M5 12h14m-6-6 6 6-6 6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </a>
+            <a class="btn btn-ghost" href="#start">看看怎么部署</a>
+          </div>
+
+          <p class="hero-meta">
+            当前版本 v{{VERSION}}
+            <span aria-hidden="true">·</span> {{RELEASE_DATE}}
+            <span aria-hidden="true">·</span> 实测环境 {{TESTED_ON}}
+          </p>
+
+          <figure class="shot shot-hero">
+            <div class="shot-frame">
+              <img
+                src="./assets/screens/chat.png"
+                alt="{{NAME_ZH}}控制台对话界面：左侧是侧边栏与会话列表，右侧是与小通的对话。"
+                width="1600"
+                height="1000"
+                loading="eager"
+                decoding="async"
+              />
+            </div>
+
+            <div class="float float-tr">
+              <div class="float-title">专家</div>
+              <div class="float-row">
+                <span class="dot"></span>
+                <div>
+                  <b>小通 · 通用助手</b>
+                  <i>运行中 · 默认</i>
+                </div>
+              </div>
+              <div class="float-row">
+                <span class="dot dot-b"></span>
+                <div>
+                  <b>小码 · 编程实战</b>
+                  <i>运行中</i>
+                </div>
+              </div>
+            </div>
+
+            <div class="float float-bl">
+              <div class="meter">
+                <div class="meter-head"><span>Memory</span><b>63%</b></div>
+                <div class="meter-bar"><i class="w63"></i></div>
+              </div>
+              <div class="meter">
+                <div class="meter-head"><span>本周对话</span><b>1,284</b></div>
+                <div class="meter-bar"><i class="w41"></i></div>
+              </div>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============================ 快速开始 ============================ -->
+      <section class="section" id="start">
+        <div class="wrap">
+          <h2 class="section-title">
+            两种装法，任选一种<svg class="squiggle" viewBox="0 0 220 14" aria-hidden="true">
+              <path
+                d="M3 9c34-7 66 3 100-1s70-8 114-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </h2>
+          <p class="section-sum">
+            装完在浏览器打开 <code>http://127.0.0.1:8088</code>，跟着初始化向导走完就能用。
+          </p>
+
+          <div class="tabs" data-tabs>
+            <div class="tabbar" role="tablist" aria-label="安装方式">
+              <button
+                class="tab is-active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="p-client"
+                id="t-client"
+                type="button"
+              >
+                Windows 客户端
+              </button>
+              <button
+                class="tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="p-source"
+                id="t-source"
+                type="button"
+              >
+                从源码安装
+              </button>
+            </div>
+
+            <div class="tabpanel" role="tabpanel" id="p-client" aria-labelledby="t-client">
+              <p class="panel-lead">
+                给日常使用的同事：下载安装版，一路下一步即可。不需要预装
+                Python 或 Node。
+              </p>
+              <div class="btn-row">
+                <a class="btn btn-primary" href="#download">看下载与校验步骤</a>
+              </div>
+              <ul class="plain">
+                <li>安装版需要 <b>Microsoft Edge WebView2</b> 运行时（较新的 Windows 10 已内置，缺失时安装器会提示）。</li>
+                <li>首次启动进入初始化向导：验证口令 → 数据库 → 建管理员 → 配模型（可跳过）。</li>
+                <li>模型 Key 支持任意 OpenAI 兼容端点，在「模型」页填即可。</li>
+              </ul>
+            </div>
+
+            <div
+              class="tabpanel"
+              role="tabpanel"
+              id="p-source"
+              aria-labelledby="t-source"
+              hidden
+            >
+              <p class="panel-lead">
+                给要审计代码或改造成自己产品的团队。脚本会在
+                <code>~/.octop</code> 下用 uv 建一个隔离的 Python 3.12 环境，不碰系统 Python。
+              </p>
+              <div class="cmd">
+                <pre id="src-cmd"><code>git clone {{REPO_URL}}.git
+cd zcagent
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -FromSource</code></pre>
+                <button
+                  class="copy"
+                  type="button"
+                  data-copy-target="#src-cmd"
+                  aria-label="复制源码安装命令"
+                >
+                  复制
+                </button>
+              </div>
+              <p class="panel-lead">装好后初始化并启动：</p>
+              <div class="cmd">
+                <pre id="run-cmd"><code>octop init
+octop run</code></pre>
+                <button
+                  class="copy"
+                  type="button"
+                  data-copy-target="#run-cmd"
+                  aria-label="复制启动命令"
+                >
+                  复制
+                </button>
+              </div>
+              <ul class="plain">
+                <li>
+                  <b><code>-FromSource</code> 不能省。</b>省掉它，脚本会去 PyPI 装名为
+                  <code>octop</code> 的包——那是上游
+                  <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>，不是智策。
+                </li>
+                <li>
+                  命令行入口仍然叫 <code>octop</code>：上游的协议头、数据目录
+                  <code>~/.octop</code> 与包名都被保留，改了会断掉数据兼容。
+                </li>
+                <li>我们不发布公共 PyPI 包；内网自建索引时在应用设置里填索引地址即可。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== 下载 ============================== -->
+      <section class="section section-alt" id="download">
+        <div class="wrap">
+          <h2 class="section-title">
+            Windows 客户端<svg class="squiggle" viewBox="0 0 220 14" aria-hidden="true">
+              <path
+                d="M3 9c34-7 66 3 100-1s70-8 114-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </h2>
+          <p class="section-sum">
+            当前版本 <b>v{{VERSION}}</b>，发布于 {{RELEASE_DATE}}，实测环境
+            {{TESTED_ON}}。两个安装包都<b>未做代码签名</b>。
+          </p>
+
+          <div class="cards">
+            <article class="card card-primary">
+              <div class="card-head">
+                <h3>安装版</h3>
+                <p>给日常使用的同事：装完在开始菜单里有图标，带桌面窗口。</p>
+              </div>
+              <ul class="specs">
+                <li>
+                  <span>文件</span><code>{{EXE_NAME}}</code>
+                </li>
+                <li><span>大小</span><b>{{EXE_MIB}} MiB</b>（{{EXE_BYTES}} 字节）</li>
+                <li>
+                  <span>SHA256</span
+                  ><code class="hash" title="{{EXE_SHA256}}">{{EXE_SHA_SHORT}}</code
+                  ><button
+                    class="copy"
+                    type="button"
+                    data-copy="{{EXE_SHA256}}"
+                    aria-label="复制安装版的 SHA256"
+                  >
+                    复制
+                  </button>
+                </li>
+                <li><span>依赖</span><b>Microsoft Edge WebView2</b></li>
+              </ul>
+              <a class="btn btn-primary btn-lg" href="{{EXE_URL}}" rel="noopener"
+                >下载安装版 .exe</a
+              >
+            </article>
+
+            <article class="card">
+              <div class="card-head">
+                <h3>便携版</h3>
+                <p>给内网批量部署：解压即用，自带 Python 运行时，不需要装任何东西。</p>
+              </div>
+              <ul class="specs">
+                <li>
+                  <span>文件</span><code>{{ZIP_NAME}}</code>
+                </li>
+                <li><span>大小</span><b>{{ZIP_MIB}} MiB</b>（{{ZIP_BYTES}} 字节）</li>
+                <li>
+                  <span>SHA256</span
+                  ><code class="hash" title="{{ZIP_SHA256}}">{{ZIP_SHA_SHORT}}</code
+                  ><button
+                    class="copy"
+                    type="button"
+                    data-copy="{{ZIP_SHA256}}"
+                    aria-label="复制便携版的 SHA256"
+                  >
+                    复制
+                  </button>
+                </li>
+                <li>
+                  <span>依赖</span
+                  ><b>无需安装 Python / Node</b>；包内含
+                  {{RUNTIME}} 与全部依赖
+                </li>
+              </ul>
+              <a class="btn btn-ghost btn-lg" href="{{ZIP_URL}}" rel="noopener"
+                >下载便携版 .zip</a
+              >
+              <p class="card-note">
+                便携版已实测跑通首启流程：解压约 {{PORTABLE_MIB}} MiB，
+                <code>start.bat</code> 直接起服务。
+              </p>
+            </article>
+          </div>
+
+          <p class="warn" role="note">
+            两个包都<b>未签名</b>，首次运行 SmartScreen 会拦一次：点
+            <b>「更多信息」→「仍要运行」</b>即可，这不是拦截。另外，<b>卸载不会删除数据目录</b>——
+            便携版解压出来的运行时约 {{PORTABLE_MIB}} MiB 会留在
+            <code>~/.octop</code> 里，重装后可以继续用。
+          </p>
+
+          <details class="history">
+            <summary>版本历史</summary>
+            <dl>
+              <dt>v{{VERSION}} · {{RELEASE_DATE}} · 当前</dt>
+              <dd>
+                逐条改动见
+                <a href="{{REPO_URL}}/blob/product/main/CHANGELOG.md" rel="noopener"
+                  >CHANGELOG</a
+                >；本次发布的全部产物与校验值在
+                <a href="{{RELEASE_URL}}" rel="noopener">GitHub Release</a>。
+              </dd>
+              <dt>v{{PREV_VERSION}} · 已废弃</dt>
+              <dd>{{PREV_REASON}}。<a href="{{PREV_URL}}" rel="noopener">该发布页</a>。</dd>
+              <dt>基线</dt>
+              <dd>
+                基于上游
+                <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>
+                <code>v1.0.2b6</code>（MIT License），以薄 fork 的方式定期合并上游稳定版本。
+              </dd>
+            </dl>
+          </details>
+        </div>
+      </section>
+
+      <!-- ========================== 为什么选智策 ========================== -->
+      <section class="section" id="why">
+        <div class="wrap">
+          <h2 class="section-title">
+            为什么选{{NAME_ZH}}<svg class="squiggle" viewBox="0 0 220 14" aria-hidden="true">
+              <path
+                d="M3 9c34-7 66 3 100-1s70-8 114-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </h2>
+
+          <article class="feature">
+            <div class="feature-copy">
+              <h3>一次部署，人人有专属助手</h3>
+              <p>
+                一台机器跑一套服务，全组共用。按岗位给每个人建一位专家——销售的小通、工程师的小码——
+                各自的记忆、模型与工作区互相独立，不用抢同一个上下文。
+              </p>
+            </div>
+            <figure class="shot">
+              <div class="shot-frame">
+                <img
+                  src="./assets/screens/experts.png"
+                  alt="{{NAME_ZH}}控制台的专家列表：显示每位专家的运行状态与快捷操作。"
+                  width="1600"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </figure>
+          </article>
+
+          <article class="feature feature-flip">
+            <figure class="shot">
+              <div class="shot-frame">
+                <img
+                  src="./assets/screens/knowledge.png"
+                  alt="{{NAME_ZH}}控制台的知识库页面：管理文档语料与检索设置。"
+                  width="1600"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </figure>
+            <div class="feature-copy">
+              <h3>知识留在公司里</h3>
+              <p>
+                知识库、文档与全部对话都存在你自己部署的那台机器上。需要接外部服务时，连接器与凭据同样由你保管；
+                敏感信息在离开工作区前会自动脱敏，高风险工具与命令要显式审批。
+              </p>
+            </div>
+          </article>
+
+          <article class="feature">
+            <div class="feature-copy">
+              <h3>不只能聊天，还能动手</h3>
+              <p>
+                接上飞书、钉钉、企业微信或 QQ，任务直接落到群里。定时任务、文件读写与工具调用走的是同一条处理链路——
+                你在控制台里看到的，它在 IM 里也做得到。
+              </p>
+            </div>
+            <figure class="shot">
+              <div class="shot-frame">
+                <img
+                  src="./assets/screens/channels.png"
+                  alt="{{NAME_ZH}}控制台的通道页面：配置飞书、钉钉、企业微信等 IM 接入。"
+                  width="1600"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </figure>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============================== FAQ =============================== -->
+      <section class="section section-alt" id="faq">
+        <div class="wrap faq-wrap">
+          <img
+            class="faq-mascot"
+            src="./assets/mascot-empty.png"
+            alt=""
+            aria-hidden="true"
+            width="150"
+            height="190"
+          />
+          <h2 class="section-title">
+            常见问题<svg class="squiggle" viewBox="0 0 220 14" aria-hidden="true">
+              <path
+                d="M3 9c34-7 66 3 100-1s70-8 114-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </h2>
+
+          <div class="faq">
+            <details>
+              <summary>{{NAME_ZH}}是开源的吗？</summary>
+              <p>
+                是。{{NAME_ZH}}基于 MIT 协议的
+                <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>
+                开发，保留了上游的许可与署名。代码公开，你可以自行审计、修改与分发。
+              </p>
+            </details>
+            <details>
+              <summary>数据会存在哪里？会出内网吗？</summary>
+              <p>
+                全部在你部署的那台机器上，默认
+                <code>%USERPROFILE%\.octop</code>：账号、专家、对话、记忆、技能与模型配置都在这里。
+                程序本身不会把内容联网上报；要不要接外部服务由你决定。
+              </p>
+            </details>
+            <details>
+              <summary>忘记密码怎么办？</summary>
+              <p>
+                登录页的「忘记密码」在本机部署下会直接给出重置表单，不用开终端；服务端部署仍会显示命令行方式。
+                这个接口只在服务绑定回环地址、且本机只有一个账号时才开放。
+              </p>
+            </details>
+            <details>
+              <summary>有 macOS 或 Linux 版吗？</summary>
+              <p>
+                目前只发布 Windows x64 的安装版与便携版。macOS / Linux 与 ARM64 的构建定义都在仓库里，
+                尚未逐个平台走完安装验收，所以暂不列为可下载项。
+              </p>
+            </details>
+            <details>
+              <summary>支持多用户吗？</summary>
+              <p>
+                支持。JWT 多用户隔离，管理员可以按成员分配不同的专家、知识库与通道，工作区互不可见。
+              </p>
+            </details>
+            <details>
+              <summary>能接哪些聊天软件？</summary>
+              <p>
+                飞书、钉钉、企业微信、QQ、微信，以及 Web 控制台本身。任何入口的消息都归一到同一条处理管线，
+                工具调用、定时任务与记忆的行为一致。
+              </p>
+            </details>
+            <details>
+              <summary>有企业支持吗？</summary>
+              <p>
+                这是薄 fork + 独立品牌路线的产品，面向企业内网自托管部署。问题反馈与实施支持请通过
+                <a href="{{REPO_URL}}/issues" rel="noopener">仓库的 issue</a> 联系我们。
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= 尾 CTA ============================= -->
+      <section class="section cta" id="get-started">
+        <div class="wrap cta-inner">
+          <h2>准备好让 AI 留在自己手里了吗</h2>
+          <div class="btn-row">
+            <a class="btn btn-primary btn-lg" href="#download">
+              下载客户端
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M5 12h14m-6-6 6 6-6 6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </a>
+            <a class="btn btn-ghost btn-lg" href="{{REPO_URL}}" rel="noopener"
+              >查看源码</a
+            >
+          </div>
+          <img
+            class="cta-mascot"
+            src="./assets/mascot-typing.png"
+            alt=""
+            aria-hidden="true"
+            width="200"
+            height="193"
+          />
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-inner">
+        <img
+          src="./assets/logo_horizontal_dark.png"
+          alt="{{NAME_ZH}} {{NAME_EN}}"
+          width="140"
+          height="36"
+        />
+        <p class="foot-note">
+          v{{VERSION}} · 基于
+          <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>
+          （MIT License）二次开发。
+        </p>
+        <nav class="foot-links" aria-label="页脚导航">
+          <a href="{{REPO_URL}}" rel="noopener">项目仓库</a>
+          <a href="{{RELEASE_URL}}" rel="noopener">版本发布</a>
+          <a href="{{REPO_URL}}/blob/product/main/CHANGELOG.md" rel="noopener"
+            >更新日志</a
+          >
+          <a href="{{REPO_URL}}/issues" rel="noopener">反馈问题</a>
+        </nav>
+      </div>
+    </footer>
+
+    <span class="sr-only" role="status" aria-live="polite" id="live"></span>
+    <script src="./app.js"></script>
+  </body>
+</html>

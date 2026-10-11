@@ -1,0 +1,10 @@
+# 品牌管线产物的副本，由 shot_screens.py 每次从 dashboard/public/ 重新复制。
+# 手抄的副本会漂移，所以不入库。
+screens/icon.png
+
+# dist/ 已被仓库根 .gitignore 忽略；--check 的临时目录同理。
+dist-check/
+
+# Cloudflare 部署凭据。本仓库是公开的，令牌绝不能入库。
+# 账号 ID、项目名、域名与流程记在 DEPLOY.md。
+.cloudflare.env
