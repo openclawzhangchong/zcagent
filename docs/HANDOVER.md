@@ -23,7 +23,7 @@
 | P2 换壳与信息架构 | 完成 | 导航渐进式披露：默认 14 项，开关打开 19 项，无头驱动真实点击验证；P2-1 / P2-2 已并入 P1b；P2-0 凭据加密**已否决，不重做**（见第 6 节） |
 | P3 首个自有能力 | 完成（遵循度受模型档位限制） | `plugins/zcagent-decision-log/` 走 `octop plugin install` → `loaded: True` → `skills list` 里 `enabled=True`；实测模型会绕开技能，见第 5 节 |
 | P4 追版度量 | 完成（首次真实追版待做） | `frontend.yml` + `sync-attempt.yml` + `scripts/sync_check.py`；合成冲突分支实测能识别冲突、非零退出、并完整还原工作树 |
-| P5 自有产物链 | 完成 | Windows 桌面产物 `zcagent-desktop-windows-amd64-1.0.2b6+z01.exe` + 便携 zip 由自有 workflow 产出并挂到 GitHub Release；未签名（刻意的，上游也不签）。内网索引侧已对着**真实 devpi** 端到端跑通（建索引 → 传 wheel → 读出我们的版本） |
+| P5 自有产物链 | 完成 | Windows 桌面产物 + 便携 zip 由自有 workflow 产出并挂到 GitHub Release；未签名（刻意的，上游也不签）。内网索引侧已对着**真实 devpi** 端到端跑通（建索引 → 传 wheel → 读出我们的版本）。z04 修掉了"新客户端不替换旧运行时"这条会让整个升级链失效的 bug（见第 4 节） |
 
 ### 冲突面积的真实测量（重要）
 
@@ -51,6 +51,7 @@ P0–P5 都已收尾，`v1.0.2b6-z01` 已发版。追版装置今天已**真跑�
 1. **干净机器上的安装验收**（最值钱的一件）：产物目前只在本机构建机上验过启动。要在一台没装过 Python / Node 的 Windows 机器上跑一遍安装版和便携版，确认内嵌运行时、数据目录迁移、SmartScreen 提示的话术，以及卸载不留垃圾。
 2. **devpi 的运维落地**：代码侧已对着真实 devpi-server 端到端跑通（建私有 index → 上传我们的 wheel → 读出 `1.0.2b6+z01`），缺的是"起在哪台机器、谁运维、CI 怎么自动推 wheel"。
 3. **等上游 `v1.0.2` 稳定版**：那才是第一次真实追版，届时按 `CONVENTIONS.md` 第 6 节走，并把 SOP 脚本化（P4-4）。
+4. **z02 / z03 装机要人工换包**：比较器在 exe 里，不在解压出来的运行时里，所以已装过旧版的机器**不会**被自己的更新检查修好。凡是发过 z02/z03 安装包的地方，都要用 z04 重装一次，界面语言与图标才会对。
 
 排期与出口条件在 [`PLAN.md`](./PLAN.md)。一句话原则仍然成立：**每多手改一个上游文件，追版成本就永久上升**——所以能放进 `brand/brand.yaml` 的不要写进源码，能用运行时覆盖的不要构建期硬改，能加新文件的不要改旧文件。
 
@@ -75,6 +76,9 @@ P0–P5 都已收尾，`v1.0.2b6-z01` 已发版。追版装置今天已**真跑�
 - **WebView2 会把语言"猜错并且写死"**：安装版在中文 Windows 上 `navigator.language` 报 `en-US`，界面按浏览器语言开了英文；而 `applyGuestLocale()` 把这个猜测 `storeUiLocale()` 落进 localStorage，于是英文成了永久状态。现在默认中文、自动猜的不落盘。**教训是通用的一条：自动检测结果不要当成用户偏好保存**，两者要分开。
 - **桌面端图标不在 `asset_map` 里，源码看不出来**。`.ico` 是构建时由 `wails3 generate icons -input appicon.png` 生成的，仓库里没有，所以 `git diff` 一切正常、装出来的 exe 却还挂着上游图标。凡是"产物才是真相"的东西（图标、包内 README、NSIS 元数据、语言默认值），验证就得真装一次。
 - **PEP 440 的 local 段按字符串比较**：`Version("1.0.2+z10") < Version("1.0.2+z9")`。所以 `+z` 序号必须零填充（`z01`…`z99`）。另外上游 `parse_version()` 的正则**捕获了** `local` 却不用它，导致 `+z` 补丁在更新检查里完全不可见——修它之前先确认判序与 pip 一致，别顺手做成"更聪明"的自然排序。
+- **同一段判序逻辑有两条独立实现，修一条不够**。上一条修的是 Python 侧（`self_update.parse_version`，管"页面上要不要亮更新按钮"），桌面壳里还有一个 Go 侧的 `desktop/src/version.go:compareVersions`（管"要不要用 exe 内嵌的包替换 `~/.octop/portable`"），它同样丢掉 local 段，于是 `+z02` 与 `+z03` 相等，`ensurePortable` 的 `<= 0` 分支永远沿用旧运行时——**z02 之后每个新客户端跑的都是第一次解压出来的那份包**。z03 的中文修复因此到不了用户手上，症状看起来却像"修复没生效"。凡是"一个规则前后端各写一遍"的地方，改动要同时落到两处并各自有测试。
+- **"有测试文件"不等于"测试会跑"**。`desktop/src` 有 8 个 `_test.go`，全仓库 `.github/workflows/` 里 `grep "go test"` 零命中——上面那个 bug 是带着自己的单元测试存在的，而且上游 `TestCompareVersions` 里有两条用例把错误行为写成了契约（`{"1.0.2+local.10", "1.0.2", 0}`）。接进 CI 时这类"钉住 bug 的断言"必须一起改，否则改对了反而变红。
+- **判断"升级逻辑坏没坏"要看解压目录里的版本，不是 exe 的版本**。本机证据链：装 z02 → 解压出 `VERSION.txt=+z02`；静默安装并启动 z03 的 exe → `VERSION.txt` 仍是 `+z02`、`8088` 服务的还是 z02 的 `index.*.js`。对照做法：把新测试跑在修复前的 `version.go` 上（11 条断言全红、每个 `+zNN` 对都返回 0），再跑在修复后（全绿）。
 
 ## 5. 验证基线（别去追的鬼）
 
@@ -99,6 +103,8 @@ P0–P5 都已收尾，`v1.0.2b6-z01` 已发版。追版装置今天已**真跑�
 ## 7. 本机环境备注（与项目无关，换机器即作废）
 
 - 没有系统 Node，用本机另一台工具自带的那份 v22（每个 shell 调用前临时加 PATH）。
+- 没有系统 Go。桌面壳的测试需要它，已在仓库外的 `D:\otp\.tools\go` 放了一份 go1.25.1（`mirrors.aliyun.com/golang/` 下 67 MB 的 zip，`C:\Windows\System32\tar.exe` 解压——Git Bash 自带的 GNU tar 不认 zip）。用之前 `export PATH="/d/otp/.tools/go/bin:$PATH"`，并配 `GOPROXY=https://mirrors.aliyun.com/goproxy/,direct`、`GOSUMDB=off`、`GOCACHE=/d/otp/.tools/gocache`。
+- `gofmt -l desktop/src` 在本机会把**每个**文件都列出来，因为工作树是 CRLF；要判格式得先 `tr -d '\r'` 复制到临时目录再跑，否则这个检查毫无信息量。
 - 没有 `make`，仓库里的 Makefile 目标要读出来手工翻译成直接命令。
 - `files.pythonhosted.org` 本机只有约 75 KB/s；用腾讯 PyPI 镜像（约 2 MB/s）。tuna 返回 403，aliyun 只有 52 KB/s。
 - `github.com:443` 间歇性连不通，但 `api.github.com` 正常；`git push` 失败就重试几次。
