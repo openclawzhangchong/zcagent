@@ -11,13 +11,24 @@ CHANGELOG.md
 README.md
 dashboard/src/App.tsx
 dashboard/src/api/modules/auth.ts
+dashboard/src/api/modules/knowledgeBases.ts
+dashboard/src/components/StreamSetupGuide/StreamSetupGuide.module.less
+dashboard/src/components/StreamSetupGuide/StreamSetupGuide.tsx
 dashboard/src/layouts/Header.tsx
 dashboard/src/layouts/Sidebar.tsx
 dashboard/src/locales/en.json
 dashboard/src/locales/zh.json
 dashboard/src/main.tsx
+dashboard/src/pages/Admin/Users/RolesPanel.tsx
 dashboard/src/pages/Agent/Channels/components/constants.test.ts
+dashboard/src/pages/Agent/Workspace/components/WorkspaceDrawer.tsx
 dashboard/src/pages/Chat/hooks/chatStore.ts
+dashboard/src/pages/Chat/index.tsx
+dashboard/src/pages/Experts/components/CreateFromExpertDrawer.tsx
+dashboard/src/pages/Experts/components/PublishExpertDrawer.tsx
+dashboard/src/pages/Experts/components/TeamDrawer.tsx
+dashboard/src/pages/KnowledgeBases/index.module.less
+dashboard/src/pages/KnowledgeBases/index.tsx
 dashboard/src/pages/Login/ForgotPasswordModal.tsx
 dashboard/src/pages/Login/Login.forgotPassword.test.tsx
 dashboard/src/pages/Login/Login.remember.test.tsx
@@ -40,10 +51,20 @@ pyproject.toml
 src/octop/__init__.py
 src/octop/api/app.py
 src/octop/api/deps.py
+src/octop/api/routers/knowledge_bases.py
+src/octop/api/routers/onnx_models.py
 src/octop/api/routers/update.py
+src/octop/infra/agents/providers/onnx_catalog.py
+src/octop/infra/agents/providers/onnx_service.py
+src/octop/infra/knowledge/embed.py
+src/octop/infra/knowledge/gate.py
+src/octop/infra/knowledge/retrieve.py
+src/octop/infra/server.py
 src/octop/infra/setup/self_update.py
 tests/unit/api/test_update_router.py
 tests/unit/infra/setup/test_self_update.py
+tests/unit/knowledge/test_gate.py
+tests/unit/knowledge/test_retrieve.py
 
 # Files we added, so there is no upstream side to conflict with. Listed for
 # completeness; sync_check.py ignores comment lines like these.
@@ -63,6 +84,8 @@ tests/unit/infra/setup/test_self_update.py
 # dashboard/src/branding/AppLogo.tsx
 # dashboard/src/branding/navSimplicity.ts
 # dashboard/src/branding/runtime.ts
+# dashboard/src/pages/Chat/components/FirstRunChecklist.test.ts
+# dashboard/src/pages/Chat/components/FirstRunChecklist.tsx
 # dashboard/src/pages/Login/Login.localReset.test.tsx
 # dashboard/src/pages/Settings/AdvancedSettings/BrandingSettings.tsx
 # dashboard/src/pages/Settings/AdvancedSettings/ClientDownloads.tsx
@@ -72,6 +95,7 @@ tests/unit/infra/setup/test_self_update.py
 # desktop/src/version_test.go
 # docs/CONVENTIONS.md
 # docs/HANDOVER.md
+# docs/PLAN-z08.md
 # docs/PLAN.md
 # plugins/zcagent-decision-log/main.py
 # plugins/zcagent-decision-log/plugin.yaml
@@ -86,16 +110,15 @@ tests/unit/infra/setup/test_self_update.py
 # site/download/build.py
 # site/download/release.json
 # site/download/src/app.js
-# site/download/src/assets/favico.svg
-# site/download/src/assets/logo_horizontal_dark.png
-# site/download/src/assets/logo_horizontal_white.png
-# site/download/src/assets/pwa-512.png
 # site/download/src/index.html
 # site/download/src/styles.css
 # site/offline-kit/guide.md
 # site/offline-kit/make_kit.py
 # src/octop/api/routers/branding.py
 # src/octop/api/routers/local_recovery.py
+# src/octop/infra/knowledge/prefetch.py
+# tests/unit/agents/test_onnx_catalog.py
 # tests/unit/api/test_branding_router.py
 # tests/unit/api/test_local_recovery_router.py
+# tests/unit/knowledge/test_model_prefetch.py
 # tests/unit/scripts/test_rebrand_transform.py
