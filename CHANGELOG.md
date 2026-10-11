@@ -32,6 +32,61 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z07] — 2026-10-11
+
+### 修复：客户端启动动画还是上游的红色章鱼
+
+`desktop/src/assets/index.html` 的启动页引用 `/octop-mascot-peek.webp` 与
+`/octop-mascot-type.webp`，而这两个文件在 `desktop/src/assets/` 下有一份**独立副本**，
+既不在 `asset_map` 也不在 `poses` 里——上游把副本放在那儿，我们的品牌管线从来没管过它。
+于是网页端吉祥物是边牧、装出来的启动动画还是章鱼。`brand.yaml` 的 `poses` 现在多两条输出
+指向 `desktop/src/assets/`，与网页端同图同参数（`box: [352, 320]`）。
+
+**这是同一个坑第二次出现**：z03 修图标时 `asset_map` 漏了桌面端的 `.ico` 源图。凡是"构建时才生成/
+被复制进另一个目录"的东西，`git diff` 和 `--check` 都看不见，只有装出来才看得见。
+
+### 变更：图标形象重画成真正的边牧
+
+原来的 `brand/assets/icon-1024.png` 是"白脸 + 大黑胡子"，更像英国古代牧羊犬。新形象补齐边牧的
+三个特征：**深色头部 + 从额头到口鼻的白色白斑 + 半立且耳尖前折的耳朵**，口鼻收窄成白色。
+派生资源由 `rebrand.py --apply` 一次性重生成 13 个文件（favicon、PWA、横竖版 logo、
+`appicon.png`、托盘图标、四个吉祥物 webp）。实测缩到 16px 仍能认出是边牧。
+
+### 变更：版本号移到 logo 下方
+
+侧栏头部原本是 `logo | 版本徽章 | 更新徽章` 一行，`v1.0.2b6+z06` 被挤到截断。
+`Sidebar.tsx` 的 `brandInner` 改成列：logo 在上、徽章行在下；收起侧栏时仍然只有 logo 并居中。
+
+### 新增：客户端右键菜单改成「上一页 / 重新加载系统」
+
+WebView2 内建右键菜单是 返回 / 刷新 / 另存为 / 打印，**标签由 Edge 运行时决定，既不能改名也不能
+单独去掉某一项**。所以两个窗口都设 `DefaultContextMenuDisabled: true`，再用注入脚本画我们自己的
+两项菜单（`desktop/src/context_menu.go`）。要点：
+
+- 脚本不依赖 `_wails`，因为仪表盘是 `http://127.0.0.1:8088` 这个远程源，那里没有 `/wails/runtime.js`；
+  菜单只用 `history.back()` 与 `location.reload()`。
+- 文案跟着 `document.documentElement.lang` 走（仪表盘 `syncDocumentLang` 会设），中文
+  「上一页 / 重新加载系统」，英文 "Back / Reload"。
+- 「上一页」在 `history.length <= 1` 时置灰；点外面、滚轮、Esc、窗口失焦都会关掉。
+- 测试用反向断言锁住"不许出现 save/print/另存/打印"，并断言两个窗口都关掉了内建菜单。
+
+### 新增：`scripts/verify/` 收拢可反复跑的验收工具
+
+历史上每个版本现抄一份脚本（`verify-z04.py`、`verify-client.py`、`fetch-z06.py`、
+`verify-z06.py` 是同一件事的四份副本），真正抓缺陷的断言反而在抄写中走样。现在一条命令跑完
+"解析 Release → 下载校验 → 静默安装 → 启动 → 断言"：
+
+```bash
+.venv/Scripts/python.exe scripts/verify/client_release.py --version 1.0.2b6+z07
+```
+
+它把这一路踩过的坑全部固化成断言：字节数与 Release `digest` 必须一致（`gh release download`
+曾对残缺文件返回成功）、解压后的运行时版本必须等于目标版本（z02–z04 的比较器 bug）、入口 chunk
+必须含各版本引入的标记串、强制 `en-US` + 空 localStorage 下登录页必须中文、z06 起必须有账号点名
+与自助重置表单、以及从 exe 里抠出内嵌图标。`scripts/verify/README.md` 逐项写了每条断言对应的真实缺陷。
+
+---
+
 ## [1.0.2b6+z06] — 2026-10-11
 
 ### 新增：忘记密码不再需要开终端
