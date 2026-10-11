@@ -3,8 +3,28 @@
 目标：在 `https://zcagent.jiuyeke.cn/guide` 落一个**面向最终用户的中文指南**，
 覆盖面与信息架构对标 `https://docs.octop.cloud/guide/`，但内容与截图全部是我们自己的。
 
-状态：方案（未开工）。执行前请先读 §1 的来源边界——它决定了这件事怎么做才是合法的，
-也决定了为什么"照抄改名"无论如何都要被打回去。
+状态：**已上线**（2026-10-11）。`https://zcagent.jiuyeke.cn/guide/` 18 章全部落地，
+首页导航有入口，sitemap 两条 URL，`/guide` 由 Pages 自动 301 到 `/guide/`。
+未做：§5 的 4 张新屏（安装向导 / 模型 / 知识库模型 / 忘记密码）——正文目前只用
+仓库里已存在的 4 张屏配图，宁可不配图也不放一张干净检出里 404 的图。
+
+## 7.1 并行改动期间踩到的两条耦合（都已修，写下来免得重演）
+
+这一节是本次实施最有价值的记录，因为**两条都不是在工作区里能看见的**：
+
+1. **token 集合会被并行改动换掉。** 正文最初用了 `CHANGELOG_URL` / `ISSUES_URL`，
+   这两个 token 只存在于对面**未提交**的 `build_tokens()` 里；改成 `REPO_URL` 之后反过来
+   在他们那版里不存在（他们注释写明"营销页刻意不出现 REPO_URL"）。两次都是工作区构建正常、
+   干净检出直接失败。现在的规则：**引用 token 前先取两个版本的交集**，
+   交集里稳定可用的是 `SITE_URL / RELEASE_URL / EXE_URL / ZIP_URL / VERSION / NAME_*`
+   加上 release.json 派生的体积、摘要、日期那一组。
+2. **图片同理。** `skill-market / connectors / tasks` 三张屏是对面未跟踪的新文件，
+   HEAD 里只有 `chat / experts / knowledge / channels`。坏链门禁在干净检出里逐条点名才暴露这件事。
+
+推论，值得当成规矩：**"工作区能构建"不是证据，干净检出能构建才是。**
+本次做法是 `git worktree add --detach <tmp> HEAD` 后在里面跑 `build.py` + `--check`。
+另外部署链必须用 `&&` 串起来：有一次 `build.py` 失败（它开头会 `rmtree(dist)`），
+而我用 `;` 接了 wrangler，结果把一份残缺 dist 推上了线——工具的"成功回显"不等于发对了东西。
 
 ---
 

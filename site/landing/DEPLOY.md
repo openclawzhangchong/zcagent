@@ -128,4 +128,15 @@ curl -sSL "https://zcagent.jiuyeke.cn/?v=$(date +%s)" | grep -o "1\.0\.2b6+z[0-9
 
 实测一次的成本：构建 29 个文件、上传 1.3 秒（26 个文件命中缓存），
 线上约 40 秒后切过去。
+
+两条后来补上的事实：
+
+- **目录页不需要写重定向规则。** `/guide` 不带斜杠时 Pages 自己就 301 到 `/guide/`
+  （实测 `status=301 redirect=…/guide/`），所以 `_redirects` 里那条是多余的，已删。
+- **构建与部署之间必须用 `&&`。** `build.py` 开头会 `rmtree(dist)`，所以它一旦失败，
+  `dist/` 就是残缺的；这时若用 `;` 接 wrangler，会把半份站点推上线而 wrangler 照样回
+  "Deployment complete"。命令里再加一道存在性检查（`test -f dist/index.html` 与
+  `test -f dist/guide/index.html`）才部署。
+- 多页之后 `dist/` 的文件数会随页面数变化（单页 32、干净检出 26，差别在并行改动里
+  未跟踪的那几张屏），**别把文件数当正确性判据**，用 `build.py --check`。
 | 页面白屏、控制台报 CSP | `_headers` 里的 `Content-Security-Policy` 只允许同源资源；新加外链资源时要一起放开 |
