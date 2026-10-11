@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -35,12 +36,25 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def fetch(url: str, dest: Path, expect_bytes: int) -> None:
+def fetch(url: str, dest: Path, expect_bytes: int, asset_id: int | None, repo: str) -> None:
     """Download with resume, then confirm the byte count.
 
-    `gh release download` has returned success on a 37%-complete file on this
-    project, so a tool's exit code is not evidence that bytes arrived.
+    Two things learned the hard way here: `gh release download` has returned
+    success on a 37%-complete file, and this network reaches api.github.com while
+    github.com transport times out -- so prefer the API asset endpoint with a
+    token. A tool's exit code is never evidence that the bytes arrived.
     """
+    token = None
+    for name in ("GH_TOKEN", "GITHUB_TOKEN"):
+        token = token or os.environ.get(name)
+    if asset_id and repo:
+        target = f"https://api.github.com/repos/{repo}/releases/assets/{asset_id}"
+        extra = ["-H", "Accept: application/octet-stream"]
+        if token:
+            extra += ["-H", f"Authorization: token {token}"]
+    else:
+        target, extra = url, []
+
     for attempt in range(1, 21):
         have = dest.stat().st_size if dest.exists() else 0
         if have == expect_bytes:
@@ -51,18 +65,21 @@ def fetch(url: str, dest: Path, expect_bytes: int) -> None:
             "--connect-timeout",
             "25",
             "--max-time",
-            "900",
+            "1800",
+            *extra,
             "-C",
             "-",
             "-o",
             str(dest),
-            url,
+            target,
         ]
         subprocess.run(cmd, check=False)
         if dest.exists() and dest.stat().st_size == expect_bytes:
             return
-        print(f"  attempt {attempt}: {have}/{expect_bytes} bytes")
-    raise SystemExit(f"download never completed: {url}")
+        print(
+            f"  attempt {attempt}: {dest.stat().st_size if dest.exists() else 0}/{expect_bytes} bytes"
+        )
+    raise SystemExit(f"download never completed: {target}")
 
 
 def main() -> int:
@@ -77,7 +94,8 @@ def main() -> int:
 
     lines = []
     for asset in data["assets"].values():
-        name, size, digest, url = asset["name"], int(asset["bytes"]), asset["sha256"], asset["url"]
+        name, size, digest = asset["name"], int(asset["bytes"]), asset["sha256"]
+        url, asset_id = asset["url"], asset.get("id")
         dest = kit / name
         if not dest.exists():
             src = (args.local / name) if args.local else None
@@ -85,7 +103,7 @@ def main() -> int:
                 shutil.copy2(src, dest)
             else:
                 print(f"fetching {name} ...")
-                fetch(url, dest, size)
+                fetch(url, dest, size, asset_id, data["repo"])
 
         got = dest.stat().st_size
         if got != size:

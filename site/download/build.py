@@ -96,6 +96,7 @@ def from_github(data: dict) -> dict:
                 f"{asset['name']}: the API returned no digest; refusing to publish a page without a hash"
             )
         slot = data["assets"][kind]
+        slot["id"] = int(asset["id"])
         slot["name"] = asset["name"]
         slot["bytes"] = int(asset["size"])
         slot["sha256"] = digest
