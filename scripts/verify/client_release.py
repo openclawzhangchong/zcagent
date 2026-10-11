@@ -403,6 +403,77 @@ def stage_ui(version: str) -> dict:
     return result
 
 
+def stage_signed_ui(version: str) -> dict:
+    """Log in for real and check the two surfaces that only exist behind auth.
+
+    The default knowledge-base name/description is a form default, and the
+    first-run checklist is a *negative* feature -- it must disappear for a user
+    who already has models, an expert and a conversation. Neither is visible in
+    the bundle text or in a unit test; both are exactly what a release can break
+    silently, so they are checked in the browser.
+    """
+    if version < CURATED_MODELS_FROM:
+        return {"skipped": f"signed-in checks exist from {CURATED_MODELS_FROM}"}
+    if not os.environ.get("ZC_VERIFY_PASSWORD"):
+        raise SystemExit("ZC_VERIFY_PASSWORD is required for the signed-in checks")
+
+    from playwright.sync_api import sync_playwright
+
+    zh = re.compile("用户名|Username", re.I)
+    pw_re = re.compile("密码|Password", re.I)
+    submit = re.compile("登录|Sign in|Log in", re.I)
+    create_btn = re.compile("创建知识库|新建|Create", re.I)
+    name_label = re.compile("^名称$|^Name$", re.I)
+    desc_label = re.compile("^描述$|^Description$", re.I)
+    checklist_re = re.compile("发出第一条消息|Send your first message")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(channel="msedge")
+        page = browser.new_context(viewport={"width": 1280, "height": 900}).new_page()
+        page.add_init_script("Object.defineProperty(navigator,'language',{get:()=>'zh-CN'});")
+        page.goto(f"{BASE}/login", wait_until="networkidle", timeout=90_000)
+        page.get_by_placeholder(zh).first.fill("admin")
+        page.get_by_placeholder(pw_re).first.fill(os.environ["ZC_VERIFY_PASSWORD"])
+        page.get_by_role("button", name=submit).first.click()
+        page.wait_for_url(lambda url: "/login" not in url, timeout=45_000)
+
+        page.goto(f"{BASE}/knowledge-bases", wait_until="networkidle", timeout=90_000)
+        page.wait_for_timeout(2000)
+        page.get_by_role("button", name=create_btn).first.click()
+        page.wait_for_timeout(1500)
+        modal = page.locator(".octop-modal, [role='dialog']").first
+        kb_name = modal.get_by_label(name_label).first.input_value()
+        kb_desc = modal.get_by_label(desc_label).first.input_value()
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(OUT_DIR / "kb-create.png"))
+        modal.press("Escape")
+
+        page.goto(f"{BASE}/chat", wait_until="networkidle", timeout=90_000)
+        # A completed checklist is allowed to show its ticks for 1.6 s before it
+        # dismisses itself, so wait past that window before calling it absent.
+        page.wait_for_timeout(4000)
+        checklist = page.get_by_text(checklist_re).count()
+        page.screenshot(path=str(OUT_DIR / "chat-old-user.png"))
+        browser.close()
+
+    result = {
+        "kb_default_name": kb_name,
+        "kb_default_description": kb_desc,
+        "checklist_visible_for_existing_user": checklist > 0,
+    }
+    for key, value in result.items():
+        log(f"  {key}: {value}")
+    if not kb_name.strip() or not any("一" <= ch <= "鿿" for ch in kb_name):
+        raise SystemExit("the create dialog's name field is not pre-filled with a Chinese default")
+    if not kb_desc.strip():
+        raise SystemExit("the create dialog's description field is empty")
+    if result["checklist_visible_for_existing_user"]:
+        raise SystemExit(
+            "the first-run checklist still renders for a machine that finished all 3 steps"
+        )
+    return result
+
+
 def stage_icon(install_dir: Path, version: str) -> dict:
     """Read the icon out of the installed exe -- the repo never contains the .ico."""
     ps = r"""
@@ -463,6 +534,7 @@ def main() -> int:
     report["bundle"] = stage_bundle(args.version)
     report["embedding_api"] = stage_embedding_api(args.version)
     report["ui"] = stage_ui(args.version)
+    report["signed_ui"] = stage_signed_ui(args.version)
     report.update(stage_icon(install_dir, args.version))
     return _finish(report)
 
