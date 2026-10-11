@@ -192,7 +192,7 @@ export default function PublishExpertDrawer({
               },
             ]}
           >
-            <Input placeholder={t("experts.agentNameLabel")} />
+            <Input placeholder={t("experts.published.namePlaceholder")} />
           </Form.Item>
           <Form.Item
             name="description"
@@ -200,7 +200,7 @@ export default function PublishExpertDrawer({
           >
             <Input.TextArea
               rows={3}
-              placeholder={t("experts.table.description")}
+              placeholder={t("experts.published.descriptionPlaceholder")}
             />
           </Form.Item>
           <Form.Item

@@ -309,7 +309,7 @@ export default function CreateFromExpertDrawer({
       return null;
     });
     form.setFieldsValue({
-      name: defaults.name,
+      name: defaults.name || t("experts.defaultAgentName"),
       description: defaults.description,
       agent_id: undefined,
       welcome_message: defaults.welcome_message,
@@ -657,7 +657,7 @@ export default function CreateFromExpertDrawer({
           label={t("experts.agentName")}
           rules={[{ required: true, message: t("experts.pleaseEnterName") }]}
         >
-          <Input />
+          <Input placeholder={t("experts.agentNamePlaceholder")} />
         </Form.Item>
 
         <Form.Item
@@ -692,7 +692,10 @@ export default function CreateFromExpertDrawer({
         </Form.Item>
 
         <Form.Item name="description" label={t("experts.agentDescription")}>
-          <Input.TextArea rows={2} />
+          <Input.TextArea
+            rows={2}
+            placeholder={t("experts.agentDescriptionPlaceholder")}
+          />
         </Form.Item>
 
         <Form.Item

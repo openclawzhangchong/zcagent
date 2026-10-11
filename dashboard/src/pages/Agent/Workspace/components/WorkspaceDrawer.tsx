@@ -1217,6 +1217,7 @@ export default function WorkspaceDrawer({
           value={renameValue}
           onChange={(e) => setRenameValue(e.target.value)}
           onPressEnter={() => void confirmRename()}
+          placeholder={t("workspace.renamePlaceholder")}
           autoFocus
         />
       </Modal>

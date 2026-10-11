@@ -617,7 +617,12 @@ export default function RolesPanel() {
               { required: true, message: t("adminUsers.roleNameRequired") },
             ]}
           >
-            <Input maxLength={64} autoFocus prefix={<IdCard size={16} />} />
+            <Input
+              maxLength={64}
+              autoFocus
+              prefix={<IdCard size={16} />}
+              placeholder={t("adminUsers.roleNamePlaceholder")}
+            />
           </Form.Item>
           {editing ? (
             <Form.Item label={t("adminUsers.roleColId")}>

@@ -109,8 +109,8 @@ export default function TeamDrawer({
       };
     }
     form.setFieldsValue({
-      name: "",
-      description: "",
+      name: t("experts.teams.defaultName"),
+      description: t("experts.teams.defaultDescription"),
       default_model: MODEL_AUTO_VALUE,
       welcome_message: t("experts.teams.welcomeDefault"),
       member_ids: [],
@@ -226,10 +226,13 @@ export default function TeamDrawer({
           label={t("experts.agentName")}
           rules={[{ required: true, message: t("experts.pleaseEnterName") }]}
         >
-          <Input />
+          <Input placeholder={t("experts.agentNamePlaceholder")} />
         </Form.Item>
         <Form.Item name="description" label={t("experts.agentDescription")}>
-          <Input.TextArea rows={2} />
+          <Input.TextArea
+            rows={2}
+            placeholder={t("experts.agentDescriptionPlaceholder")}
+          />
         </Form.Item>
         <Form.Item
           name="welcome_message"
