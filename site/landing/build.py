@@ -32,6 +32,11 @@ RELEASE_JSON = HERE.parent / "download" / "release.json"
 BRAND_YAML = REPO / "brand" / "brand.yaml"
 SITE_JSON = HERE / "site.json"
 
+# Every page the site publishes, as a directory path relative to dist/ ("" is the
+# home page). Sitemap and the link check both derive from this list, so a new page
+# cannot be published while missing from one of them.
+PAGES = ("", "guide/")
+
 TOKEN_RE = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 
 
@@ -338,7 +343,57 @@ def pull_brand_assets() -> list[str]:
     return copied
 
 
+LINK_ATTR_RE = re.compile(r'(?:href|src)="([^"]+)"')
+ID_RE = re.compile(r'\bid="([^"]+)"')
+
+
+def page_html(page: str) -> Path:
+    return (DIST if not page else DIST / page) / "index.html"
+
+
+def verify_links() -> list[str]:
+    """Return every local link in a published page that has no target.
+
+    The guide is the first page here with enough internal links that eyeballing them
+    stops working, and a renamed heading id is a dead link the visitor finds rather
+    than the author. Anchors are checked against the real ``id=`` values in the same
+    document, which is what makes renaming a section safe.
+    """
+    problems: list[str] = []
+    for page in PAGES:
+        path = page_html(page)
+        if not path.is_file():
+            problems.append(f"{page or '/'}: listed in PAGES but never published")
+            continue
+        html = path.read_text(encoding="utf-8")
+        ids = set(ID_RE.findall(html))
+        base_dir = path.parent
+        for raw in LINK_ATTR_RE.findall(html):
+            target = raw.strip()
+            if not target or target.startswith(
+                ("http://", "https://", "mailto:", "tel:", "data:", "//", "javascript:")
+            ):
+                continue
+            if target.startswith("#"):
+                if len(target) > 1 and target[1:] not in ids:
+                    problems.append(f"{page or '/'}: anchor {target} has no id in the page")
+                continue
+            clean = target.split("?")[0].split("#")[0]
+            if not clean:
+                continue
+            candidate = (
+                DIST / clean.lstrip("/") if clean.startswith("/") else base_dir / clean
+            )
+            rel = candidate.resolve().relative_to(DIST.resolve()).as_posix()
+            if rel in ("", "."):
+                continue
+            if not (candidate.is_file() or (candidate / "index.html").is_file()):
+                problems.append(f"{page or '/'}: link {raw} has no file in dist/ ({rel})")
+    return problems
+
+
 def build() -> int:
+
     """Render into DIST (module global -- --check points it at a scratch dir)."""
     brand = load_brand()
     rel = load_release()
@@ -357,16 +412,27 @@ def build() -> int:
     if og:
         written.append(og)
 
-    # One page today; the sitemap is generated rather than hand-maintained so
-    # adding a page cannot leave a stale entry behind.
+    # Generated from PAGES rather than hand-maintained: a page that is published
+    # but missing from the sitemap is exactly the drift a hand-edited list keeps.
+    urls = "".join(
+        f"  <url><loc>{tokens['SITE_URL']}/{page.lstrip('/')}</loc></url>\n"
+        for page in PAGES
+    )
     (DIST / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"  <url><loc>{tokens['SITE_URL']}/</loc></url>\n"
+        f"{urls}"
         "</urlset>\n",
         encoding="utf-8",
     )
     written.append("sitemap.xml")
+
+    broken = verify_links()
+    if broken:
+        print("dist/ has dead links:")
+        for line in broken:
+            print(f"  {line}")
+        raise SystemExit(f"{len(broken)} dead link(s)")
 
     for name in written:
         print(f"  {name}")

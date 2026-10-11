@@ -1,0 +1,317 @@
+/* 智策官网 — /guide 文档页布局。
+   颜色与字体变量来自 ../styles.css 的 :root（同一份 brand.yaml 注入的 --brand），
+   这里只定义文档页自己的排版，不再声明一遍品牌色。 */
+
+/* 首页顶栏只有 logo + 汉堡菜单，文档页需要一条常驻站内导航；
+   styles.css 里没有这个类，所以定义在这里，颜色一律走同一套变量。 */
+.doc-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 14px;
+}
+
+.doc-links a {
+  color: var(--ink-2);
+  text-decoration: none;
+  padding: 6px 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.doc-links a:hover {
+  color: var(--brand-dark);
+}
+
+.doc-links a[aria-current="page"] {
+  color: var(--brand-dark);
+  font-weight: 600;
+  border-bottom-color: var(--brand);
+}
+
+@media (max-width: 720px) {
+  .doc-links {
+    display: none;
+  }
+}
+
+.guide-shell {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+  padding-top: 28px;
+  padding-bottom: 72px;
+}
+
+/* 左侧目录：粘住，长文档里永远能跳走 */
+.guide-nav {
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 108px);
+  overflow: auto;
+  font-size: 14px;
+}
+
+.guide-nav-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.guide-nav-group {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-nav-group > li {
+  margin: 0 0 2px;
+}
+
+.guide-nav-group h3 {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.guide-nav a {
+  display: block;
+  padding: 5px 10px;
+  border-radius: 8px;
+  color: var(--ink-2);
+  text-decoration: none;
+  line-height: 1.45;
+}
+
+.guide-nav a:hover {
+  background: var(--bg-soft);
+  color: var(--brand-dark);
+}
+
+.guide-nav a[aria-current="true"] {
+  background: var(--brand-tint);
+  color: var(--brand-dark);
+  font-weight: 600;
+}
+
+/* 正文 */
+.guide-body {
+  min-width: 0;
+  max-width: 780px;
+}
+
+.guide-lede {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.guide-h1 {
+  margin: 0 0 12px;
+  font-size: 34px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.guide-meta {
+  margin: 0 0 28px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.guide-chapter {
+  padding: 30px 0 6px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.guide-chapter:first-of-type {
+  border-top: 0;
+  padding-top: 6px;
+}
+
+.guide-chapter h2 {
+  margin: 0 0 12px;
+  font-size: 23px;
+  line-height: 1.3;
+  color: var(--ink);
+  scroll-margin-top: 92px;
+}
+
+.guide-chapter h3 {
+  margin: 22px 0 8px;
+  font-size: 17px;
+  color: var(--ink);
+  scroll-margin-top: 92px;
+}
+
+.guide-chapter p {
+  margin: 0 0 12px;
+  font-size: 15.5px;
+  line-height: 1.8;
+  color: var(--ink-2);
+}
+
+.guide-chapter ul,
+.guide-chapter ol {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  font-size: 15.5px;
+  line-height: 1.8;
+  color: var(--ink-2);
+}
+
+.guide-chapter li {
+  margin: 0 0 6px;
+}
+
+.guide-chapter a {
+  color: var(--brand-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 界面里的名字保持等宽以外的正文字重，用底色标出，避免和正文混淆 */
+.ui {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  font-size: 0.94em;
+  color: var(--ink);
+}
+
+code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--ink);
+}
+
+pre {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  background: #0f172a;
+  color: #e5e7eb;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+.note,
+.warn {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 14.5px;
+  line-height: 1.7;
+}
+
+.note {
+  background: var(--brand-tint);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.warn {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #7c2d12;
+}
+
+table {
+  width: 100%;
+  margin: 0 0 18px;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+th,
+td {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.6;
+}
+
+th {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--bg-soft);
+}
+
+.guide-figure {
+  margin: 0 0 20px;
+}
+
+.guide-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.guide-figure figcaption {
+  margin-top: 7px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+/* 窄屏：目录收成折叠块，放在正文上方 */
+.guide-nav-toggle {
+  display: none;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .guide-shell {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .guide-nav {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .guide-nav[data-open="false"] .guide-nav-list {
+    display: none;
+  }
+
+  .guide-nav-toggle {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

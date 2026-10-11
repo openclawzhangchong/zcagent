@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>使用指南 — {{NAME_ZH}}</title>
+    <meta
+      name="description"
+      content="{{NAME_ZH}} 使用指南：从 Windows 客户端安装、配置第一个模型、建专家，到知识库、通道、自动化与内网部署。"
+    />
+    <link rel="canonical" href="{{SITE_URL}}/guide/" />
+
+    <meta property="og:url" content="{{SITE_URL}}/guide/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="{{NAME_ZH}} 使用指南" />
+    <meta
+      property="og:description"
+      content="装在自己的机器上：安装、模型、专家、知识库、通道、自动化与内网部署。"
+    />
+    <meta property="og:image" content="../assets/og-cover.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="../assets/favico.svg" />
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="./guide.css" />
+  </head>
+  <body>
+    <a class="skip" href="#guide-start">跳到主要内容</a>
+
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <a class="brandmark" href="{{SITE_URL}}/" aria-label="{{NAME_ZH}} 首页">
+          <img
+            src="../assets/logo_horizontal_dark.png"
+            alt="{{NAME_ZH}} {{NAME_EN}}"
+            width="140"
+            height="36"
+          />
+        </a>
+        <nav class="doc-links" aria-label="站内导航">
+          <a href="{{SITE_URL}}/">首页</a>
+          <a href="./" aria-current="page">使用指南</a>
+          <a href="{{RELEASE_URL}}">更新日志</a>
+          <a href="{{SITE_URL}}/#download">下载</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap guide-shell" id="guide-start">
+      <nav class="guide-nav" aria-label="章节目录">
+        <button class="guide-nav-toggle" type="button" aria-expanded="true" data-target="guide-nav-list">
+          目录
+        </button>
+        <p class="guide-nav-title">使用指南 · {{VERSION}}</p>
+        <ol class="guide-nav-group guide-nav-list" id="guide-nav-list">
+          <li><a href="#what">智策是什么</a></li>
+          <li><a href="#install">十分钟装好</a></li>
+          <li><a href="#first-run">第一次打开</a></li>
+          <li><a href="#interface">界面地图</a></li>
+          <li><a href="#models">配置第一个模型</a></li>
+          <li><a href="#experts">建第一个专家</a></li>
+          <li><a href="#chat">对话与记忆</a></li>
+          <li><a href="#knowledge">知识库</a></li>
+          <li><a href="#skills">技能与插件</a></li>
+          <li><a href="#channels">通道</a></li>
+          <li><a href="#connectors">连接器与 MCP</a></li>
+          <li><a href="#automation">自动化与远程执行</a></li>
+          <li><a href="#account">账号、密码与备份</a></li>
+          <li><a href="#intranet">内网与离线部署</a></li>
+          <li><a href="#config">配置与环境变量</a></li>
+          <li><a href="#cli">命令行速查</a></li>
+          <li><a href="#faq">常见问题</a></li>
+          <li><a href="#limits">已知限制</a></li>
+        </ol>
+      </nav>
+
+      <article class="guide-body">
+        <h1 class="guide-h1">{{NAME_ZH}} 使用指南</h1>
+        <p class="guide-lede">
+          面向第一次接触 {{NAME_ZH}} 的使用者与交付同事。每章都是同一套顺序：做什么 → 在界面哪里点 →
+          会看到什么 → 卡住了怎么办。
+        </p>
+        <p class="guide-meta">
+          适用版本 {{VERSION}}（发布于 {{RELEASE_DATE}}）· 实测环境 {{TESTED_ON}} · 内置运行时 {{RUNTIME}}
+        </p>
+
+        <section class="guide-chapter" id="what">
+          <h2>智策是什么</h2>
+          <p>
+            {{NAME_ZH}} 是一套<strong>自托管</strong>的多用户 AI 助手平台：服务跑在你自己的机器或自己的
+            服务器上，对话、文件、记忆与凭据都存在本机数据目录里，不经过第三方。
+          </p>
+          <p>每位使用者有自己的账号、自己的专家与自己的数据可见范围；管理员在同一个实例里统一配模型、管用户。</p>
+          <ul>
+            <li><strong>桌面客户端（Windows）</strong>：双击安装包，带托盘与原生窗口，日常使用走这条。</li>
+            <li><strong>绿色便携包</strong>：解压后 <code>start.bat</code> 即可，自带 Python 运行时，不要求目标机器装 Python 或 Node。</li>
+            <li><strong>内网离线交付包</strong>：安装程序 + 便携包 + 校验和 + 运维说明，一个 U 盘带走。</li>
+          </ul>
+          <p>
+            所有数据默认在 <code>%USERPROFILE%\.octop</code>（可用环境变量 <code>OCTOP_HOME</code> 改到别处）。
+            这一条决定了备份、迁移和卸载的行为，<a href="#account">账号、密码与备份</a>一章有专门说明。
+          </p>
+        </section>
+
+        <section class="guide-chapter" id="install">
+          <h2>十分钟装好</h2>
+          <p>推荐路径：下载桌面客户端，一路下一步。</p>
+          <ol>
+            <li>
+              到 <a href="{{SITE_URL}}/#download">下载页</a> 取
+              <code>{{EXE_NAME}}</code>（{{EXE_MIB}} MiB，SHA256 摘要 <code>{{EXE_SHA_SHORT}}</code>）。
+            </li>
+            <li>双击运行安装程序。首次运行 Windows 可能弹 SmartScreen 提示，选择「更多信息 → 仍要运行」。</li>
+            <li>装完后从开始菜单启动 <strong>智策</strong>。第一次启动会把内置运行时解压到
+              <code>~\.octop\portable</code>（约 {{PORTABLE_MIB}} MB），期间窗口会显示解压进度，
+              这一步只做一次。</li>
+            <li>浏览器未被自动拉起时，手动打开 <code>http://127.0.0.1:8088</code>。</li>
+          </ol>
+          <div class="note">
+            校验下载物是交付流程的一部分，不是可选动作。PowerShell 里
+            <code>Get-FileHash .\{{EXE_NAME}}</code> 的输出应当与下载页标注的 SHA256 一致。
+          </div>
+          <p>
+            需要在没装过 {{NAME_ZH}} 的机器上批量部署，或者要给离线环境用，取
+            <code>{{ZIP_NAME}}</code>（{{ZIP_MIB}} MiB）解压即用；<a href="#intranet">内网与离线部署</a>一章讲端口、
+            更新源与向量模型怎么配。
+          </p>
+        </section>
+
+        <section class="guide-chapter" id="first-run">
+          <h2>第一次打开：设置向导</h2>
+          <p>全新机器第一次启动会进入设置向导，它要完成两件事：</p>
+          <ol>
+            <li><strong>建立管理员账号</strong>——用户名与密码由你自己设定。这台机器之后就用这套口令登录，系统不预置任何通用密码。</li>
+            <li><strong>配置至少一个模型供应商</strong>——没有模型，助手无法回答问题。</li>
+          </ol>
+          <p>
+            向导的一次性口令会打印在服务控制台，并写入
+            <code>%USERPROFILE%\octop-login.txt</code>，用完即失效。这个文件是<strong>本机临时凭据</strong>，
+            不要外发、不要提交到任何仓库。
+          </p>
+          <div class="warn">
+            跳过模型这一步能进界面，但对话起不来——向导里的模型步骤是必做项，不是可选项。
+            之后想补，随时可以在 <span class="ui">管理 → 模型</span> 里加。
+          </div>
+          <p>装完之后要改密码、忘记口令，见 <a href="#account">账号、密码与备份</a>。</p>
+        </section>
+
+        <section class="guide-chapter" id="interface">
+          <h2>界面地图</h2>
+          <p>左侧栏按角色分四组，日常只需要前三项：</p>
+          <table>
+            <thead>
+              <tr><th>分组</th><th>包含</th><th>什么时候用</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="ui">常用</span></td>
+                <td><span class="ui">对话</span>、<span class="ui">专家</span>、<span class="ui">自动化</span>、<span class="ui">Token 统计</span></td>
+                <td>每天的工作都在这里</td>
+              </tr>
+              <tr>
+                <td><span class="ui">设置</span></td>
+                <td><span class="ui">个性化</span>、<span class="ui">通道</span>、<span class="ui">连接器</span>、<span class="ui">技能包</span>、<span class="ui">知识库</span>、<span class="ui">云端协同</span></td>
+                <td>把助手接到你的资料与通讯工具上</td>
+              </tr>
+              <tr>
+                <td><span class="ui">控制</span></td>
+                <td><span class="ui">工作台</span>、<span class="ui">远程桌面</span>、<span class="ui">ACP</span></td>
+                <td>让助手操作机器（见 <a href="#limits">已知限制</a>：终端在 Windows 不可用）</td>
+              </tr>
+              <tr>
+                <td><span class="ui">管理</span></td>
+                <td><span class="ui">用户</span>、<span class="ui">模型</span>、<span class="ui">后端</span>、<span class="ui">插件</span>、<span class="ui">安全防护</span>、<span class="ui">应用设置</span></td>
+                <td>实例级配置，通常只有管理员看得到</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            客户端窗口左上是品牌标识，<strong>版本号显示在它的下方</strong>，形如
+            <code>v{{VERSION}}</code>——交付时让对方核对这一处就够了，不必去翻菜单。
+            窗口里点右键只有两项：<span class="ui">上一页</span> 与
+            <span class="ui">重新加载系统</span>；浏览器自带的「另存为 / 打印」在客户端里不出现。
+          </p>
+          <figure class="guide-figure">
+            <img src="../assets/screens/chat.png" alt="对话界面：左侧栏分组，中间对话区" width="1600" height="1000" />
+            <figcaption>对话页。欢迎区下方会出现「配模型 → 建专家 → 发第一条消息」的三步行事历，走完自动消失。</figcaption>
+          </figure>
+        </section>
+
+        <section class="guide-chapter" id="models">
+          <h2>配置第一个模型</h2>
+          <p>入口：<span class="ui">管理 → 模型</span>。模型是助手唯一的能力来源，配好它才有后面的所有事。</p>
+          <ol>
+            <li>选择<strong>预设供应商</strong>（填 API Key 与模型名即可），或用
+              <strong>自定义供应商</strong>接入任何 OpenAI 兼容端点——企业自建网关、内网推理服务都属后者。</li>
+            <li>保存后点<strong>测试连接</strong>。这一步真的发一次请求，能立刻暴露地址、Key 或模型名写错。</li>
+            <li>把要用的模型设为默认，之后新建的专家会继承它。</li>
+          </ol>
+          <div class="note">
+            API Key 只写进本机数据目录里的配置，不下发到浏览器，也不会出现在导出内容中。
+            但请注意：专家工作区可以自己写 <code>.env</code> 存放凭据，那是<strong>明文文件</strong>——
+            对凭据有合规要求的客户请单独评估，不要承诺「密钥不落盘」。
+          </div>
+          <p>
+            模型能力直接决定助手表现：技能（Skill）是否被严格遵循、长上下文里能否守住指令，与模型档位相关。
+            交付时请按现场模型实测，不要拿演示环境的结论当承诺。
+          </p>
+        </section>
+
+        <section class="guide-chapter" id="experts">
+          <h2>建第一个专家</h2>
+          <p>
+            专家（Expert）是一位有自己人设、自己资料、自己权限的助手。入口：
+            <span class="ui">专家</span> 页 → 从模板创建，或新建空白专家。
+          </p>
+          <ol>
+            <li>先在 <span class="ui">专家市场</span> 里挑一个贴近岗位需求的模板（客服、分析师、文档助手等），再按你们的实际叫法改提示词。</li>
+            <li>定人设与语言风格——人格（Persona）决定它怎么说话，系统提示决定它守什么规矩。</li>
+            <li>指定它能用哪些技能与知识库，决定它<strong>能查到什么</strong>。</li>
+            <li>设可见范围：只给自己用，还是共享给同事。</li>
+          </ol>
+          <figure class="guide-figure">
+            <img src="../assets/screens/experts.png" alt="专家页：模板列表与创建入口" width="1600" height="1000" />
+            <figcaption>专家页。同一实例里每位用户有各自的专家与记忆，互不可见，除非你主动共享。</figcaption>
+          </figure>
+          <p>
+            每位专家有自己的工作区，里面会预置人设与工作约定文件（例如 <code>SOUL</code>、<code>USER</code>、
+            <code>MEMORY</code>），也允许专家自己写文件。要改「它记住的东西」，在工作区里改这些文件比在对话里反复强调有效。
+          </p>
+        </section>
+
+        <section class="guide-chapter" id="chat">
+          <h2>对话与记忆</h2>
+          <p>
+            <span class="ui">对话</span> 页选一位专家开始。会话历史、附件与记忆都存在本机数据目录，
+            换一台机器只要把数据目录带走就都在。
+          </p>
+          <ul>
+            <li><strong>引用</strong>：挂知识库的会话会带上来源，回答里能看到引自哪份文档。</li>
+            <li><strong>跨专家协作</strong>：一个任务可以交给另一位专家继续，适合「查资料的」和「写结论的」分开。</li>
+            <li><strong>记忆</strong>：长期偏好写进专家工作区文件，比在对话里重复说更可靠。</li>
+          </ul>
+          <p>用量在 <span class="ui">Token 统计</span> 里按用户与模型查看，内网按人分摊成本时用得上。</p>
+        </section>
+
+        <section class="guide-chapter" id="knowledge">
+          <h2>知识库：让助手按你们的制度回答</h2>
+          <p>
+            知识库把你们的文档建成索引，对话时按需检索并给出出处。典型用法是把请假、报销、流程规范一类
+            制度文件放进去，让助手据此判断。
+          </p>
+          <ol>
+            <li>打开 <span class="ui">设置 → 知识库</span>，先启用实例级开关。</li>
+            <li>选一个<strong>向量模型</strong>并等待它下载完成（下面有选型建议）。</li>
+            <li>新建知识库。名称与描述<strong>已经带着示例值</strong>（例如「智策科技公司制度知识库」），
+              改成你们的实际名称即可，不必从空白开始想。</li>
+            <li>上传文档，等索引完成，然后在对话里引用这个知识库提问。</li>
+          </ol>
+          <figure class="guide-figure">
+            <img src="../assets/screens/knowledge.png" alt="知识库页：模型选择与建库入口" width="1600" height="1000" />
+            <figcaption>知识库设置页。默认只露出中文可用的几个模型，其余收在「高级选项」里。</figcaption>
+          </figure>
+          <h3>向量模型怎么选</h3>
+          <p>默认列表<strong>只推荐中文可用的模型</strong>，每一个都标了体积和一句话优缺点；点「高级选项」才会展开其余。</p>
+          <table>
+            <thead>
+              <tr><th>模型</th><th>体积</th><th>适合</th><th>代价</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>BAAI/bge-small-zh-v1.5</code>（默认）</td>
+                <td>约 92 MB</td>
+                <td>中文制度问答的第一选择，桌面机器无需 GPU 也能跑</td>
+                <td>只擅长中文，跨语言资料建议换更大的模型</td>
+              </tr>
+              <tr>
+                <td><code>jinaai/jina-embeddings-v2-base-zh</code></td>
+                <td>约 640 MB</td>
+                <td>中英混排的公司资料，检索质量更稳</td>
+                <td>体积与首次索引时间都明显上升</td>
+              </tr>
+              <tr>
+                <td><code>paraphrase-multilingual-mpnet-base-v2</code></td>
+                <td>约 1.0 GB</td>
+                <td>多语言混合团队，无需调用方做任何预处理</td>
+                <td>本地算力要求最高</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="note">
+            请谨慎选择展开列表里 <code>intfloat/multilingual-e5-*</code> 一类模型：这类模型要求查询与文档
+            两侧分别加不同前缀，检索质量对用法敏感。{{NAME_ZH}} 已按模型集中处理这件事，但仍建议先小范围验证再推广。
+            图文类模型不会被列进知识库选项——那是错误用法。
+          </div>
+          <h3>第一次不用干等下载</h3>
+          <p>
+            客户端会在启动约 90 秒后<strong>在后台下载一次默认向量模型</strong>（约 92 MB），
+            这样你第一次打开知识库设置时不必盯着进度条。它最多尝试三次，失败就保持安静、不打扰你，
+            等你真的打开设置时再显式下载。
+          </p>
+          <p>
+            三个下载源（腾讯云 COS / huggingface.co / hf-mirror）都连不通时，它会<strong>静默放弃</strong>：
+            不弹错、不重试刷屏。内网机器什么都不用配，代价只是启动后约四秒的探测。想彻底关掉，
+            启动前设 <code>OCTOP_KNOWLEDGE_MODEL_PREFETCH=0</code>（见
+            <a href="#config">配置与环境变量</a>）。
+          </p>
+        </section>
+
+        <section class="guide-chapter" id="skills">
+          <h2>技能与插件</h2>
+          <p>
+            技能（Skill）是给专家的一段可复用工作说明书，插件是更重的能力扩展。
+            <span class="ui">设置 → 技能包</span> 负责安装与启用，专家页决定它能用哪些。
+          </p>
+          <ul>
+            <li>先在小范围验证：同一句话在不同模型档位上的遵循程度不同。</li>
+            <li>技能文件本身是文本，可评审、可版本化——把重要流程写进技能而不是口头约定。</li>
+            <li>第三方插件按实例安装，启用范围由管理员在 <span class="ui">管理 → 插件</span> 控制。</li>
+          </ul>
+<section class="guide-chapter" id="channels">
+          <h2>通道：让助手出现在你已经在用的地方</h2>
+          <p>
+            通道（Channel）把一个实例接到消息平台：同事在群里 @ 一下就能用，不需要再打开网页。
+            入口在 <span class="ui">设置 → 通道</span>，按平台分别配置凭据与回调地址。
+          </p>
+          <ul>
+            <li>每个通道可以绑定不同的专家，「报销问题找 A，技术问题找 B」是常规做法。</li>
+            <li>回调地址必须能被平台访问到。本机演示可用内网穿透，正式交付建议直接暴露在带 TLS 的域名上。</li>
+            <li>换行即发送等平台行为差异，配置页有开关，遇到「消息被拆成几条」先查这里。</li>
+          </ul>
+          <figure class="guide-figure">
+            <img src="../assets/screens/channels.png" alt="通道配置页" width="1600" height="1000" />
+            <figcaption>通道页。凭据填一次，之后每个平台只需在对方后台把回调指过来。</figcaption>
+          </figure>
+        </section>
+
+        <section class="guide-chapter" id="connectors">
+          <h2>连接器与 MCP</h2>
+          <p>
+            连接器负责把外部系统接进来：既有内置应用的直连，也支持标准
+            <strong>MCP（Model Context Protocol）</strong> 服务。入口在
+            <span class="ui">设置 → 连接器</span>。
+          </p>
+          <ol>
+            <li>先确认权限边界：给只读账号，不要一上来就给写权限。</li>
+            <li>需要 OAuth 的连接器会走授权流程，令牌存在本机数据目录。</li>
+            <li>MCP 服务可以来自公司内部，任何能按协议提供服务端点的程序都能接。</li>
+          </ol>
+</section>
+
+        <section class="guide-chapter" id="automation">
+          <h2>自动化与远程执行</h2>
+          <h3>定时任务</h3>
+          <p>
+            <span class="ui">自动化 → 定时任务</span> 让专家按计划自己跑一次：每天整理昨日工单、
+            每周一出上周摘要。任务带的是提示词与专家，所以行为与手工对话完全一致，只是触发方式不同。
+          </p>
+<h3>ACP、远程桌面</h3>
+          <p>
+            <span class="ui">ACP</span> 把编码代理接到本地终端，<span class="ui">远程桌面</span>
+            让助手在受控桌面环境里操作。两者都属于「让助手动手」的能力，交付前要按客户的安全策略单独评估。
+          </p>
+          <div class="warn">
+            <strong>工作台里的终端在 Windows 上不可用</strong>，这是上游按设计只提供 POSIX（Linux/macOS）
+            的 pty 支持，不是安装出错。需要命令行工作请走 ACP 或本机终端。
+          </div>
+        </section>
+
+        <section class="guide-chapter" id="account">
+          <h2>账号、密码与备份</h2>
+          <h3>忘记口令</h3>
+          <p>
+            登录页有 <span class="ui">忘记密码？</span>。在<strong>本机</strong>打开时（地址是
+            <code>127.0.0.1</code> 或 <code>localhost</code>），它可以在界面里直接重设管理员口令，
+            不需要打开终端；从别的机器访问时这个入口不会出现。
+          </p>
+          <p>命令行也能做到同样的事，作为兜底：先停服务，再执行 <code>octop user passwd &lt;用户名&gt;</code>。</p>
+          <h3>数据在哪、怎么迁</h3>
+          <table>
+            <thead>
+              <tr><th>内容</th><th>位置</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>账号、模型与供应商配置、通道、专家、会话与记忆</td><td><code>~/.octop</code> 内的数据库与目录</td></tr>
+              <tr><td>知识库原文与索引</td><td>同一数据目录下</td></tr>
+              <tr><td>内置运行时（客户端首次启动解压）</td><td><code>~/.octop\portable</code>，约 {{PORTABLE_MIB}} MB</td></tr>
+            </tbody>
+          </table>
+          <p>
+            <strong>迁移 = 停服务后整目录拷走</strong>，换机、换盘、备份都是这一个动作。备份前先停服务，
+            避免拷到写入中途的数据库文件。
+          </p>
+          <div class="note">
+            卸载不会删除数据目录，重装即可接着用。唯一要知道的残留：客户端解压出来的
+            <code>~/.octop\portable</code> 位于数据目录内，卸载器按设计不动数据，要彻底清理请手动删除该子目录。
+          </div>
+        </section>
+
+        <section class="guide-chapter" id="intranet">
+          <h2>内网与离线部署</h2>
+          <p>目标是把助手放进一个不通公网的环境，并且之后能自己升级。</p>
+          <ol>
+            <li>取<strong>离线交付包</strong>：安装程序、便携包、<code>SHA256SUMS.txt</code> 与运维说明。
+              落地第一步永远是核对校验和。</li>
+            <li>没有外网时，向量模型的后台下载会自然失败并保持安静；需要离线可用，
+              提前把模型放进数据目录或在有网的一侧下载后随目录迁移。</li>
+            <li>软件包更新走内网索引（devpi 等）。注意 devpi 与 PyPI 的「查版本」接口
+              <strong>URL 形状和 JSON 结构都不同</strong>，需要显式给两个模板：
+              <pre><code>set OCTOP_UPDATE_JSON_URL=http://&lt;内网索引&gt;/&lt;user&gt;/&lt;index&gt;/{name}/
+set OCTOP_UPDATE_SIMPLE_URL=http://&lt;内网索引&gt;/&lt;user&gt;/&lt;index&gt;/+simple/</code></pre>
+              配了自有索引后，安装候选<strong>只</strong>来自该索引，不会再回落公共源——
+              否则「立即更新」可能把别人的包拷进内网机器。</li>
+            <li>默认<strong>不检查公共源</strong>，所以刚装好时「应用更新」不会提示新版本，这是刻意的。</li>
+          </ol>
+          <p>
+            也可以直接换包：下载新版本覆盖安装，数据保留。桌面客户端的更新逻辑另有一条要知道的规则——
+            判断「要不要替换已解压运行时」的比较器在 <strong>exe 里</strong>，不在解压出来的运行时里。
+            装过旧客户端的机器请重新运行一次新安装程序，界面语言、图标与启动动画才会对。
+          </p>
+        </section>
+
+        <section class="guide-chapter" id="config">
+          <h2>配置与环境变量</h2>
+          <p>界面里能改的都在这里；只有几个部署级开关走环境变量。</p>
+          <table>
+            <thead>
+              <tr><th>变量</th><th>作用</th><th>什么时候要设</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>OCTOP_HOME</code></td><td>数据目录根，默认 <code>~/.octop</code></td><td>装到移动盘、多实例并存</td></tr>
+              <tr><td><code>OCTOP_BIND_HOST</code> / <code>OCTOP_PORT</code></td><td>监听地址与端口，默认 <code>127.0.0.1:8088</code></td><td>局域网共享访问、端口被占</td></tr>
+              <tr><td><code>OCTOP_KNOWLEDGE_MODEL_PREFETCH</code></td><td>后台下载默认向量模型的总开关</td><td>严格管控出站流量时设 <code>0</code></td></tr>
+              <tr><td><code>OCTOP_UPDATE_JSON_URL</code> / <code>OCTOP_UPDATE_SIMPLE_URL</code></td><td>内网索引的查版本与安装地址</td><td>离线环境需要自更新</td></tr>
+              <tr><td><code>OCTOP_REQUIRE_SETUP_PASSWORD</code></td><td>首启向导一次性口令的要求</td><td>批量预置时按策略调整</td></tr>
+              <tr><td><code>OCTOP_DATABASE_*</code></td><td>切 PostgreSQL 驱动、库名、地址</td><td>多人高并发实例</td></tr>
+            </tbody>
+          </table>
+          <p>端口一被占用，先确认是不是自己已有一个实例在跑，再谈改配置。</p>
+        </section>
+
+        <section class="guide-chapter" id="cli">
+          <h2>命令行速查</h2>
+          <p>
+            界面能做的事大部分都有对应命令，运维脚本化时用。装好之后直接运行 <code>octop &lt;命令&gt;</code>，
+            客户端环境里用 <code>~\.octop\portable\launch.py</code> 那一套。
+          </p>
+          <table>
+            <thead>
+              <tr><th>命令</th><th>做什么</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>octop run</code></td><td>启动服务（客户端也是拉这个）</td></tr>
+              <tr><td><code>octop user</code></td><td>账号管理与口令重设（忘记密码的兜底路径）</td></tr>
+              <tr><td><code>octop provider</code> / <code>octop models</code></td><td>模型供应商与模型清单</td></tr>
+              <tr><td><code>octop agent</code></td><td>专家的增删查改</td></tr>
+              <tr><td><code>octop cron</code></td><td>定时任务</td></tr>
+              <tr><td><code>octop channel</code></td><td>通道</td></tr>
+              <tr><td><code>octop skills</code> / <code>octop plugin</code></td><td>技能与插件</td></tr>
+              <tr><td><code>octop backup</code></td><td>备份与恢复</td></tr>
+              <tr><td><code>octop config</code></td><td>读实例配置</td></tr>
+              <tr><td><code>octop admin</code></td><td>管理操作</td></tr>
+              <tr><td><code>octop acp</code></td><td>编码代理接入</td></tr>
+              <tr><td><code>octop service</code></td><td>注册为系统服务</td></tr>
+              <tr><td><code>octop update</code></td><td>检查与安装更新</td></tr>
+              <tr><td><code>octop chats</code> / <code>octop memory</code></td><td>会话与记忆数据</td></tr>
+              <tr><td><code>octop captcha</code></td><td>登录验证码相关</td></tr>
+              <tr><td><code>octop clean</code> / <code>octop init</code> / <code>octop version</code> / <code>octop completion</code></td><td>清理、初始化、版本、Shell 补全</td></tr>
+            </tbody>
+          </table>
+          <p>任何命令加 <code>--help</code> 看参数；命令名以实际二进制为准。</p>
+        </section>
+
+        <section class="guide-chapter" id="faq">
+          <h2>常见问题</h2>
+          <h3>装好了但界面是英文</h3>
+          <p>
+            早于 {{VERSION}} 的若干安装包有这个问题（内置外壳的语言默认与运行时替换逻辑相关），
+            修复已进产品。<strong>已装旧包的机器不会被自己的更新检查修好</strong>，
+            请重新下载并运行一次当前版本的安装程序。
+          </p>
+          <h3>知识库显示「已下载」，但用不起来</h3>
+          <p>
+            这是 {{VERSION}} 之前版本的一个真实缺陷：从镜像源下载的模型在缓存里的目录写法，
+            加载器认不出，于是加载仍要联网。新版本已修正写法，并会在加载前
+            <strong>自动把旧缓存改成正确结构</strong>，所以老机器<strong>不用重新下载</strong>就能恢复。
+            如果仍在旧版本上，先用界面里的「测试」按钮确认，再决定升级。
+          </p>
+          <h3>为什么默认模型只有三个</h3>
+          <p>
+            默认列表只放中文可用、体积合理的模型，每个都写了一句话优缺点；其余收在「高级选项」里。
+            之前有过一次把整个目录（包括图文模型）倒进设置页的情况，会让人选中一个对知识库完全错误的模型。
+          </p>
+          <h3>忘记管理员口令</h3>
+          <p>在本机打开登录页，用 <span class="ui">忘记密码？</span> 直接重设；或停服务后执行 <code>octop user passwd &lt;用户名&gt;</code>。</p>
+          <h3>端口 8088 打不开</h3>
+          <p>先确认服务在跑（托盘图标 / <code>octop run</code> 的日志），再看是不是有另一个实例占了端口。</p>
+          <h3>客户端里怎么开 F12</h3>
+          <p>客户端是交付产品，不提供开发者入口；需要排查请用浏览器访问 <code>http://127.0.0.1:8088</code>。</p>
+        </section>
+
+        <section class="guide-chapter" id="limits">
+          <h2>已知限制</h2>
+          <ul>
+            <li>桌面客户端与便携包目前只出 <strong>Windows x64</strong>；macOS / Linux / ARM64 未交付。</li>
+            <li><span class="ui">工作台 → 终端</span> 依赖 POSIX pty，Windows 上按设计不提供。</li>
+            <li>专家可以在工作区里写明文凭据（用于接自己的外部服务）。这是产品权衡后的选择，
+              因此<strong>不要向客户承诺「密钥不落盘」</strong>；合规要求高的客户单独评估。</li>
+            <li>技能是否被严格遵循、长上下文里的稳定性都与模型档位相关，需按现场模型实测。</li>
+            <li>桌面客户端解压的运行时目录不会被卸载删除（约 {{PORTABLE_MIB}} MB），需要手动清理。</li>
+          </ul>
+          <p>
+            发现问题或需要别的形态，请在你们的交付渠道里反馈。附两样东西就够：客户端左下角 logo
+            下方显示的版本号，以及出问题时的操作步骤。
+          </p>
+        </section>
+      </article>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
