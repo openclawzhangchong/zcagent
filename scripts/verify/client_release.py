@@ -227,17 +227,21 @@ def _stop_installed_client() -> list[int]:
     return pids
 
 
-def stage_install(exe: Path, install_dir: Path) -> None:
+def stage_install(exe: Path, install_dir: Path, version: str) -> None:
     """Run the NSIS installer silently.
 
     ``/D=`` must use backslashes and be the last argument -- a forward-slash path is
     silently ignored and the installer falls back to its default directory.
+
+    Freshness comes from the registry key the installer writes, **not** from the
+    exe's mtime: NSIS stamps the payload's build time onto the file it drops, so a
+    successful install looks older than the run that performed it. Judging by mtime
+    failed a z08 install that had in fact replaced everything.
     """
     target = install_dir / "zcagent.exe"
     stopped = _stop_installed_client()
     if stopped:
         log(f"stopped the running client first: pid {', '.join(str(p) for p in stopped)}")
-    started_at = time.time()
     log(f"installing silently into {install_dir} ...")
     subprocess.run(
         [
@@ -250,17 +254,16 @@ def stage_install(exe: Path, install_dir: Path) -> None:
     )
     deadline = time.time() + 300
     while time.time() < deadline:
-        # Freshness by mtime, not by size: the previous release is the same
-        # ballpark, and a file that predates this installer run is the old build.
-        if (
-            target.exists()
-            and target.stat().st_size > 100_000_000
-            and target.stat().st_mtime >= started_at
-        ):
-            log(f"installed: {target} ({target.stat().st_size} bytes)")
+        got = registry_version()
+        if got == version and target.exists() and target.stat().st_size > 100_000_000:
+            log(f"installed: {target} ({target.stat().st_size} bytes), registry {got}")
             return
         time.sleep(3)
-    raise SystemExit(f"installer never produced a fresh {target}")
+    raise SystemExit(
+        f"installer left DisplayVersion={registry_version()!r} "
+        f"with a {target.stat().st_size if target.exists() else 0}-byte exe, "
+        f"expected {version!r}"
+    )
 
 
 def registry_version() -> str:
@@ -577,7 +580,7 @@ def main() -> int:
     if args.stage == "verify" and already_there:
         log(f"reusing the existing install at {install_dir}")
     else:
-        stage_install(exe, install_dir)
+        stage_install(exe, install_dir, args.version)
     report["registry_display_version"] = registry_version()
     stage_launch(install_dir)
 
