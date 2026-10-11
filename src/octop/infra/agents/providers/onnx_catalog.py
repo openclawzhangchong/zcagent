@@ -94,6 +94,72 @@ _HF_SOURCE_FALLBACK: dict[str, str] = {
 }
 
 
+# One-line pro-and-con per curated model, as (Chinese, English).
+#
+# Curated catalog copy lives here rather than in the dashboard locales because
+# model ids contain "/" and ".", both of which are i18next key separators, and
+# this is already how the expert catalog carries label_zh / label_en.
+_MODEL_NOTES: dict[str, tuple[str, str]] = {
+    "BAAI/bge-small-zh-v1.5": (
+        "92 MB、CPU 上秒级响应，中文短文档检索性价比最高；缺点是长篇条款与专业术语召回弱于大模型，超 512 token 会被截断。",
+        "92 MB and instant on CPU, the best value for short Chinese documents; weaker on long clauses and jargon, and truncates past 512 tokens.",
+    ),
+    "jinaai/jina-embeddings-v2-base-zh": (
+        "支持 8192 token 超长上下文，整段规章制度不用切碎，中英混排也稳；缺点是 640 MB，CPU 上索引大库明显更慢。",
+        "8192-token context keeps whole policy documents intact and handles mixed Chinese/English, but 640 MB indexes large corpora slowly on CPU.",
+    ),
+    "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": (
+        "768 维、约 50 种语言，多语种质量标杆之一，且不需要任何调用侧配合；缺点是 1.0 GB，纯中文场景不如 bge 系列划算。",
+        "768-dim over ~50 languages, a multilingual benchmark that needs no call-site help; at 1.0 GB it is poor value for Chinese-only corpora.",
+    ),
+    "intfloat/multilingual-e5-large": (
+        "1024 维、约 100 种语言，跨语言检索最强；但 2.24 GB 最重，且要求区分查询/文档前缀（本版本已自动处理）。",
+        "1024-dim across ~100 languages, the strongest cross-lingual option, but 2.24 GB and it needs query/passage tagging (handled automatically now).",
+    ),
+    "BAAI/bge-small-en-v1.5": (
+        "67 MB 的英文小模型标杆；缺点是中文语料召回差，不要拿它建中文知识库。",
+        "67 MB English small-model benchmark, but poor on Chinese — do not build a Chinese knowledge base on it.",
+    ),
+    "BAAI/bge-base-en-v1.5": (
+        "210 MB，英文精度更好；同样不适合中文。",
+        "210 MB with better English accuracy; still wrong for Chinese.",
+    ),
+    "BAAI/bge-large-en-v1.5": (
+        "1.2 GB 英文高精度；中文场景没有理由选它。",
+        "1.2 GB high-accuracy English model; no reason to pick it for Chinese.",
+    ),
+    "jinaai/jina-embeddings-v2-base-en": (
+        "520 MB 英文长上下文（8192 token）；语言不对。",
+        "520 MB with 8192-token English context; wrong language.",
+    ),
+    "jinaai/jina-embeddings-v2-small-en": (
+        "120 MB 英文小快；中文不适用。",
+        "120 MB fast English model; not for Chinese.",
+    ),
+    "sentence-transformers/all-MiniLM-L6-v2": (
+        "90 MB、社区最知名的轻量模型，但仅英文且上下文只有 256 token——体积与默认的中文模型几乎相同，最容易被误选。",
+        "90 MB and the best-known light model, but English-only at 256 tokens — the same size as the Chinese default, so the easiest one to pick by mistake.",
+    ),
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": (
+        "220 MB 支持约 50 种语言；但上下文只有 128 token，长段落会被切得极碎。",
+        "220 MB over ~50 languages, but a 128-token window shreds long paragraphs.",
+    ),
+    "thenlper/gte-base": (
+        "440 MB，英文 MTEB 排名高；中文非其所长。",
+        "440 MB with strong English MTEB scores; not a Chinese model.",
+    ),
+    "thenlper/gte-large": (
+        "1.2 GB 英文高精度；中文场景不划算。",
+        "1.2 GB high-accuracy English model; poor value for Chinese.",
+    ),
+}
+
+
+def model_notes(model_id: str) -> tuple[str, str]:
+    """Return ``(zh, en)`` for ``model_id``, or empty strings when uncurated."""
+    return _MODEL_NOTES.get(model_id, ("", ""))
+
+
 def _model_entry(
     model_id: str,
     *,
@@ -106,6 +172,11 @@ def _model_entry(
         "name": model_id,
         "recommended": recommended,
     }
+    note_zh, note_en = model_notes(model_id)
+    if note_zh:
+        entry["note_zh"] = note_zh
+    if note_en:
+        entry["note_en"] = note_en
     if size_gb is not None:
         entry["size_gb"] = size_gb
     if hf_source:

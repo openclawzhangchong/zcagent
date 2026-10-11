@@ -17,6 +17,8 @@ from octop.infra.agents.providers.onnx_catalog import (
     PASSAGE_ROLE,
     QUERY_ROLE,
     apply_role_prefix,
+    list_onnx_catalog_models,
+    model_notes,
     needs_role_prefix,
 )
 
@@ -82,6 +84,36 @@ def fastembed_sizes() -> dict[str, float]:
         str(m["model"]): float(m["size_in_GB"])
         for m in fastembed.TextEmbedding.list_supported_models()
     }
+
+
+class TestModelNotes:
+    """Every curated model must carry both languages.
+
+    An uncurated model renders no note line at all, which is fine for the long
+    tail but would be a silent gap for anything we put in front of a user.
+    """
+
+    def test_every_curated_model_has_both_notes(self) -> None:
+        for model in [*ONNX_PRESET_MODEL_IDS, *_EXTRA_CATALOG_IDS]:
+            zh, en = model_notes(model)
+            assert zh, f"{model} has no Chinese note"
+            assert en, f"{model} has no English note"
+
+    def test_notes_are_one_liner_sized(self) -> None:
+        for model in [*ONNX_PRESET_MODEL_IDS, *_EXTRA_CATALOG_IDS]:
+            zh, en = model_notes(model)
+            assert len(zh) <= 120, f"{model} Chinese note is too long to sit on one line"
+            assert len(en) <= 220, f"{model} English note is too long to sit on one line"
+
+    def test_notes_reach_the_api_entry(self) -> None:
+        served = {str(m["id"]): m for m in list_onnx_catalog_models()}
+        for model in ONNX_PRESET_MODEL_IDS:
+            entry = served[model]
+            assert entry.get("note_zh"), model
+            assert entry.get("note_en"), model
+
+    def test_unknown_model_has_no_note(self) -> None:
+        assert model_notes("some/brand-new-model") == ("", "")
 
 
 class TestFallbackSizes:

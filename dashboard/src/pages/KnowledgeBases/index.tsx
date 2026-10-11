@@ -277,7 +277,7 @@ function ReadinessRow({
 }
 
 export default function KnowledgeBasesPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { modal, message } = App.useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -3212,6 +3212,11 @@ export default function KnowledgeBasesPage() {
                   {catalog.map((model) => {
                     const selected = featureModel === model.id;
                     const size = formatSizeGb(model.size_gb);
+                    const note = (i18n.language || "")
+                      .toLowerCase()
+                      .startsWith("zh")
+                      ? model.note_zh || model.note_en
+                      : model.note_en || model.note_zh;
                     const downloading =
                       onnxDownloading && downloadProgressModel === model.id;
                     return (
@@ -3246,6 +3251,9 @@ export default function KnowledgeBasesPage() {
                               ? null
                               : ` · ${t("knowledgeBases.notDownloaded")}`}
                           </span>
+                          {note ? (
+                            <span className={styles.onnxModelNote}>{note}</span>
+                          ) : null}
                         </div>
                         {model.downloaded ? null : (
                           <Button

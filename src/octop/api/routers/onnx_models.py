@@ -35,6 +35,8 @@ class OnnxCatalogItem(BaseModel):
     downloaded: bool = False
     size_gb: float | None = None
     hf_source: str | None = None
+    note_zh: str = Field(default="", description="Chinese pro-and-con summary")
+    note_en: str = Field(default="", description="English pro-and-con summary")
 
 
 class OnnxServiceConfigBody(BaseModel):

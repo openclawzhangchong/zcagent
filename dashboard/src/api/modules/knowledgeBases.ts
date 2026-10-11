@@ -84,6 +84,9 @@ export interface KnowledgeOnnxModel {
   downloaded: boolean;
   recommended?: boolean;
   size_gb?: number | null;
+  /** One-line pro-and-con summary; empty for models nobody curated yet. */
+  note_zh?: string;
+  note_en?: string;
 }
 
 export interface KnowledgeEmbeddingOptions {
