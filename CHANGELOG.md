@@ -10,6 +10,7 @@
 - `z<NN>` 是我们的补丁序号，每次发布 +1，**写成 `z01`…`z99` 而不是 `z1`…`z99`**：PEP 440 对 local 版本段按**字符串**比较，所以 `+z10` 会排在 `+z9` **下面**——不填充的话第 10 次发布在 pip 眼里是降级（已实测：`Version("1.0.2+z10") < Version("1.0.2+z9")`）。
 - 用 PEP 440 local version，因此这类包**不能**上传 PyPI（我们不发布公共包，内网索引正合适）。
 - 更新检查的比较器 `self_update.parse_version` 已按 PEP 440 处理 local 段，与 pip 的判序**一致**——故意不做"更聪明"的自然排序：按钮承诺了而 pip 装不了，比没有按钮更糟。
+- **同一个坑有两份实现**：客户端 `desktop/src/version.go` 里另有一个 Go 版 `compareVersions`（决定要不要替换已解压的运行时），它曾把 local 段整个丢掉，导致 z02 之后所有版本的客户端都在跑第一次解压出来的旧包。改 Python 那个时必须同时改 Go 这个（z04 修复，两边判序现已一致）。
 
 ## 内网更新源怎么配
 
@@ -28,6 +29,53 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 ```
 
 配了自有索引后，安装候选**只**包含该索引，不再探测公共镜像、也不回落 pypi.org——否则"立即更新"可能把别人的 `octop` 包装进内网机器。
+
+---
+
+## [1.0.2b6+z04] — 2026-10-11
+
+**这一版修的是"升级"本身**：从 z02 之后，每一个新客户端装上去跑的都还是第一次解压出来的旧运行时。
+用户报的"忘记密码弹窗还是英文"就是它的症状——z03 的修复确实在产物里，只是永远读不到。
+
+### 修复：新版本客户端不会替换已解压的运行时
+
+`desktop/src/version.go` 的 `compareVersions` 把 PEP 440 的 `+local` 段解析出来之后**丢掉不比**，
+于是 `compareVersions("1.0.2b6+z03", "1.0.2b6+z02") == 0`。`ensurePortable` 的判据是
+`compareVersions(bundled, installed) <= 0` 就沿用现有运行时，等号成立 ⇒ 直接返回，
+连备份数据库那步都不会走到。
+
+实测链条（本机，不是推演）：先装 z02 让它解压，再静默安装并启动 z03 的 exe，
+`~/.octop/portable/VERSION.txt` 仍是 `octop_version=1.0.2b6+z02`，`8088` 上服务的仍是 z02 的
+`index.XAfRwQg_.js`；而 z03 绿色包里的入口 chunk 已经是 `index.Scx49Zw2.js`，
+其中 `resolveInitialLocale(){return readStoredUiLocale()??"zh"}` ——修复在包内，被这个等号挡在门外。
+
+改动与验证：
+
+- `version.go` 按 PEP 440 补齐 local 段比较（无 local < 有 local；数字段小于字母数字段；字母数字段
+  按不区分大小写的字符串比；短前缀小于长）。与 `self_update.parse_version` 的判序一致。
+- 上游 `TestCompareVersions` 里有两条用例把"local 不参与比较"当成了契约
+  （`{"1.0.2+local.10", "1.0.2", 0}`），已改成 PEP 440 的正确期望；`TestEnsurePortablePrereleaseUpgrade`
+  补 `+z02→+z03` 会替换、`+z03→+z03` 不动、`+z05→+z04` 不降级三条。
+- 新增 `desktop/src/version_test.go`。对照实验：同一份测试跑在修复前的 `version.go` 上，
+  11 条断言全红且**每个 `+zNN` 对都返回 0**；跑在修复后全绿，`go vet` 干净。
+
+### 新增：desktop 的 Go 测试进 CI
+
+上游写了 8 个 `_test.go` 却从未运行——全仓库 `.github/workflows/` 里 `grep "go test"` 零命中，
+所以这个 bug 带着自己的单元测试存在了很久。本机确认 `desktop/src` 在 Windows 上能 `go vet` + `go test`
+全绿，于是在 `octop-desktop.yml` 的打包步骤前加了一个 `Test desktop build` 步骤（Linux 依赖装完之后、
+装 wails3 CLI 之前），让测试有机会在打包前拦住它。
+
+### 一条必须说清的交付话术
+
+比较器在 **exe 里**，不在解压出来的运行时里。所以已经装了 z02/z03 的机器**不会**被自己的更新检查修好——
+必须重新下载并运行一次新安装程序。给老用户的说法就一句：换 z04 的安装包重装，界面语言、图标才会对。
+
+### 实测：登录凭据与"英文"的边界
+
+安装版复用 `~/.octop`，那台机器上的账号是 `admin` / `Octop2026demo`（`POST /api/auth/login` 实测返回
+JWT，`user.locale` 已是 `zh`）。也就是说**登录之后**本来就是中文，英文只出现在登录页与"忘记密码"弹窗
+这类游客界面——正是 `applyGuestLocale()` 那条路径。
 
 ---
 
