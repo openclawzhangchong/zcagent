@@ -16,8 +16,47 @@
 ### 装机验收（发版后，一条命令）
 
 ```
-PENDING_Z09_ACCEPTANCE
+resolved zcagent-desktop-windows-amd64-1.0.2b6+z09.exe: 192,200,150 bytes, sha256 4ae768bf…03c825
+  attempt 1: 63,601,970/192,200,150 (github, 900s 超时后断点续传)
+  attempt 2: 125,943,081/192,200,150 (api)
+  attempt 3: 186,967,081/192,200,150 (github)
+  attempt 4: 192,200,150/192,200,150 (api)
+download verified: 192,200,150 bytes, hash matches the release digest
+stopped the running client first: pid 13800
+installing silently into C:\Program Files\zcagent ...
+installed: C:\Program Files\zcagent\zcagent.exe (208,151,040 bytes), registry 1.0.2b6+z09
+server answering on 8088
+unpacked runtime: 1.0.2b6+z08 -> 1.0.2b6+z09
+  1.0.2b6+z03 carries 'function resolveInitia': /assets/index.CTp--4pI.js
+  1.0.2b6+z06 carries 'local-recovery':        /assets/index.CTp--4pI.js
+  1.0.2b6+z08 carries 'prefetch_enabled':      /assets/index.BeMijJdR.js
+  1.0.2b6+z08 carries '智策科技公司制度知识库':  /assets/zh.BiN4yfW1.js
+  default list: 3 models -> [BAAI/bge-small-zh-v1.5, jinaai/jina-embeddings-v2-base-zh,
+                             sentence-transformers/paraphrase-multilingual-mpnet-base-v2]
+  expanded list: 13 models
+  local load probe BAAI/bge-small-zh-v1.5: {'ok': True, 'latency_ms': 378.6, 'dim': 512}
+  stored_locale: None
+  login_is_chinese: True / login_has_english_signin: False
+  account_hint: 这台机器上已有智策数据，登录账号是 admin。
+  recovery_form: True / modal_shows_cli_command: False
+  kb_default_name: 智策科技公司制度知识库
+  kb_default_description: 智策科技公司制度汇总，方便 AI 对请假、报销等事项进行判断。
+  version_badge_under_logo: 1
+  installed icon: .zc-verify/reports/icon-1.0.2b6+z09.png sha256 62a05850012c9506…
+ALL ASSERTIONS HELD -- report at .zc-verify/reports/1.0.2b6+z09.json
 ```
+
+四条都是这一轮新加/新修的东西第一次真的在装机产物上跑通：
+
+- **`local load probe … ok=True`**：z08 那一版这里是 `ok=False, 'Could not load model …'`。
+  同一条断言在两个版本上给出相反结论，正是它值钱的地方。
+- **`unpacked runtime: +z08 -> +z09`**：升级链又一次在真机上被验证（z08 那次 before/after 相同，
+  证据来自更早的 z05 一节；这次是真实的替换）。
+- **知识库弹窗两字段拿到了**：`kb_default_name` / `kb_default_description` 是 z08 需求的中文默认值，
+  这次这台机器的知识库开关是**开着**的，所以断言真的在浏览器里点开弹窗读到了值
+  （z08 那轮它是关着的，工具按规则记录"没打开"而不是去改用户设置）。
+- 图标摘要 `62a05850…` 与 z07/z08 一致：仍是那只边牧，没有被 CI 的构建顺序换掉。
+
 
 ### 空闲预下载两趟对照（z09 产物上重跑）
 
