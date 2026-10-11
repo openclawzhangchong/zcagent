@@ -27,15 +27,15 @@
 
 ### 冲突面积的真实测量（重要）
 
-我们分支相对基线一共动了 **374 个文件**（`scripts/classify_owned.py` 在 z05 上重测），按"是否在 `rebrand.py --apply` 的再生成范围内"分类后：
+我们分支相对基线一共动了 **386 个文件**（`scripts/classify_owned.py` 在 z07 上重测），按"是否在 `rebrand.py --apply` 的再生成范围内"分类后：
 
 | 类别 | 数量 | 合并时怎么处理 |
 |---|---|---|
-| 纯工具生成（与再生成结果内容一致） | **296** | 机械处理：取上游版本，然后重跑 `--apply` |
-| 承载手工改动（上游也拥有该文件） | **33** | 真正需要人看的冲突面，逐条列在 `brand/owned-files.txt` |
-| 我们新增（无上游 counterpart） | **45** | 不会撞，除非上游以后新增同路径文件 |
+| 纯工具生成（与再生成结果内容一致） | **295** | 机械处理：取上游版本，然后重跑 `--apply` |
+| 承载手工改动（上游也拥有该文件） | **39** | 真正需要人看的冲突面，逐条列在 `brand/owned-files.txt` |
+| 我们新增（无上游 counterpart） | **52** | 不会撞，除非上游以后新增同路径文件 |
 
-那 33 个 = P1b 运行时层（`App.tsx`、`main.tsx`、`branding` 路由与模块、`AdvancedSettings`、4 处 logo 调用点、两份 locale、`permissions.ts`）+ `self_update.py` 的索引可配 + `update.py` 默认关闭 + 两处上游 lint 修正 + **桌面壳的 3 个 Go 文件**（`version.go` 判序、`settings.go` 默认语言、`download_test.go` 里钉住旧判序的两条用例）+ 版本号与我们的文档。
+那 39 个 = P1b 运行时层（`App.tsx`、`main.tsx`、`branding` 路由与模块、`AdvancedSettings`、4 处 logo 调用点、两份 locale、`permissions.ts`）+ `self_update.py` 的索引可配 + `update.py` 默认关闭 + 两处上游 lint 修正 + **桌面壳的 4 个 Go 文件**（`version.go` 判序、`settings.go` 默认语言、`main.go` 关掉内建右键菜单、`download_test.go` 里钉住旧判序的两条用例）+ `api/app.py`/`api/deps.py`（自助重置接口的注册与免鉴权）+ 版本号与我们的文档。
 
 测量方法本身也值得记一笔，先后踩过两个坑：
 

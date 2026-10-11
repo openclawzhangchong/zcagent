@@ -85,6 +85,13 @@ WebView2 内建右键菜单是 返回 / 刷新 / 另存为 / 打印，**标签�
 必须含各版本引入的标记串、强制 `en-US` + 空 localStorage 下登录页必须中文、z06 起必须有账号点名
 与自助重置表单、以及从 exe 里抠出内嵌图标。`scripts/verify/README.md` 逐项写了每条断言对应的真实缺陷。
 
+### 冲突面积重测（z07）
+
+`scripts/classify_owned.py` 在 `0c5a46ab..3fe1ac9e` 上重跑：**386 = 295 纯生成 + 39 承载手工改动 + 52 我们新增**。
+手工那一栏从 z05 的 33 涨到 39，涨的是 `desktop/src/main.go`（关内建右键菜单）、
+`api/app.py` 与 `api/deps.py`（自助重置接口的注册与免鉴权）、`Sidebar.tsx` 的版本位等；
+新增那一栏从 45 涨到 52，主要是 `scripts/verify/` 与桌面壳的测试文件。
+
 ---
 
 ## [1.0.2b6+z06] — 2026-10-11
