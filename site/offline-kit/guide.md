@@ -74,6 +74,24 @@ set OCTOP_UPDATE_SIMPLE_URL=http://<内网索引>/<user>/<index>/+simple/
 
 - 也可以直接换包：下载新版本，覆盖安装即可，数据保留。
 
+## 内网：向量模型预下载
+
+智策在**空闲时会后台下载一次默认向量模型**（`BAAI/bge-small-zh-v1.5`，约 92 MB），
+这样用户第一次打开「知识库设置」不用干等下载。它走 COS / huggingface / hf-mirror 三个源，
+**三个都连不通就静默放弃**：不弹错、不占界面，最多再试两次就不再尝试。
+所以内网机器什么都不配也不会出问题，代价只是开机 90 秒后约 4 秒的后台探测。
+
+如果连这次探测都不想要（例如严格管控出站流量的环境），在启动前设一个环境变量彻底关掉：
+
+```powershell
+# 当前会话
+set OCTOP_KNOWLEDGE_MODEL_PREFETCH=0
+# 或永久写入系统环境（管理员）
+setx OCTOP_KNOWLEDGE_MODEL_PREFETCH 0
+```
+
+关掉之后，用户打开「知识库设置」时也不会自动开始下载，需要他自己点「下载」按钮。
+
 ## 已知限制
 
 - **`工作台 / 终端` 在 Windows 上不可用**（上游按设计依赖 `pty`，仅 Linux/macOS 提供）。

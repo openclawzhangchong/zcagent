@@ -23,6 +23,10 @@ export interface KnowledgeCapability {
     model_downloaded: boolean;
     deps_available: boolean;
     provider_ready: boolean;
+    /** Whether this install is configured to fetch the default model while idle. */
+    prefetch_enabled?: boolean;
+    /** "" | "done" -- see infra/knowledge/prefetch.py. */
+    prefetch_state?: string;
   };
   ocr: {
     enabled: boolean;

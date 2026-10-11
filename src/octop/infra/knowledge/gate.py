@@ -14,6 +14,7 @@ from octop.infra.agents.providers.onnx_service import (
     require_embedding_prerequisites_for_model,
 )
 from octop.infra.knowledge.params import get_advanced_settings
+from octop.infra.knowledge.prefetch import PREFETCH_STATE_KEY, prefetch_enabled
 
 _FEATURE_ENABLED_KEY = "knowledge_bases_enabled"
 _EMBEDDING_BACKEND_KEY = "knowledge_embedding_backend"
@@ -88,6 +89,11 @@ def get_capability(settings_get: SettingsGet, provider_repo: Any = None) -> dict
             "model_downloaded": model_downloaded,
             "deps_available": deps_available,
             "provider_ready": provider_ready,
+            # Lets the dialog tell "the idle prefetch has not finished yet" from
+            # "this install is configured never to prefetch", which decide
+            # whether opening settings should start a download.
+            "prefetch_enabled": prefetch_enabled(),
+            "prefetch_state": (settings_get(PREFETCH_STATE_KEY) or "").strip(),
         },
         **get_advanced_settings(settings_get),
     }

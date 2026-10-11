@@ -22,6 +22,8 @@ def test_capability_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> N
         "model_downloaded": False,
         "deps_available": True,
         "provider_ready": False,
+        "prefetch_enabled": True,
+        "prefetch_state": "",
     }
 
 

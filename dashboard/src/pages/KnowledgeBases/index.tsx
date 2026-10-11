@@ -1226,26 +1226,69 @@ export default function KnowledgeBasesPage() {
     setOcrProviderId(capability?.ocr?.provider_id || undefined);
     setFeatureModalOpen(true);
     void (async () => {
+      // Ask first: an idle prefetch may already be running, and starting a
+      // second download makes the backend raise.
+      const status = await knowledgeBasesApi
+        .getOnnxDownloadStatus()
+        .catch(() => null);
+      const inFlight =
+        status?.status === "downloading" || status?.status === "loading";
+      if (inFlight && status) {
+        const modelId = status.model_name;
+        setOnnxDownloading(true);
+        setDownloadProgressModel(modelId);
+        setDownloadProgressOpen(true);
+        applyOnnxDownloadProgress(modelId, status.status, status.progress);
+        watchOnnxDownloadStatus(modelId);
+      }
+
       const options = await loadEmbeddingOptions(false);
       const selectedInCatalog = Boolean(
         selectedModel &&
           options?.onnx.some((model) => model.id === selectedModel),
       );
-      if (selectedBackend === "onnx" && selectedModel && !selectedInCatalog) {
-        await loadEmbeddingOptions(true);
+      const shown =
+        selectedBackend === "onnx" && selectedModel && !selectedInCatalog
+          ? (await loadEmbeddingOptions(true)) ?? options
+          : options;
+
+      // Nothing fetched yet and this install allows prefetch: opening the
+      // dialog is consent, so retry here where the progress is visible. A
+      // deployment with prefetch switched off is never asked to retry.
+      const checks = capability?.checks;
+      const nothingDownloaded = !(shown?.onnx ?? []).some(
+        (model) => model.downloaded,
+      );
+      const recommended = shown?.onnx.find((model) => model.recommended);
+      if (
+        selectedBackend === "onnx" &&
+        !inFlight &&
+        nothingDownloaded &&
+        recommended &&
+        checks?.prefetch_enabled &&
+        checks?.prefetch_state !== "done"
+      ) {
+        setFeatureModel(recommended.id);
+        await beginOnnxDownload(recommended.id);
       }
     })();
     void loadOcrOptions();
-    void knowledgeBasesApi.getOnnxDownloadStatus().then((state) => {
-      if (state.status === "downloading" || state.status === "loading") {
-        const modelId = state.model_name;
-        setOnnxDownloading(true);
-        setDownloadProgressModel(modelId);
-        setDownloadProgressOpen(true);
-        applyOnnxDownloadProgress(modelId, state.status, state.progress);
-        watchOnnxDownloadStatus(modelId);
-      }
-    });
+  };
+
+  const beginOnnxDownload = async (modelId: string) => {
+    setOnnxDownloading(true);
+    setDownloadProgressModel(modelId);
+    setDownloadProgress(0);
+    setDownloadProgressLabel(t("models.localDownloadPreparing"));
+    setDownloadProgressOpen(true);
+    try {
+      await knowledgeBasesApi.downloadOnnx(modelId);
+      watchOnnxDownloadStatus(modelId);
+    } catch (error) {
+      setOnnxDownloading(false);
+      setDownloadProgressOpen(false);
+      message.error(apiErrorMessage(error, t("models.onnxDownloadFailed"), t));
+    }
   };
 
   const startOnnxDownload = async (modelId: string) => {
@@ -1259,23 +1302,7 @@ export default function KnowledgeBasesPage() {
       }),
       okText: t("knowledgeBases.downloadModel"),
       cancelText: t("common.cancel"),
-      onOk: async () => {
-        setOnnxDownloading(true);
-        setDownloadProgressModel(modelId);
-        setDownloadProgress(0);
-        setDownloadProgressLabel(t("models.localDownloadPreparing"));
-        setDownloadProgressOpen(true);
-        try {
-          await knowledgeBasesApi.downloadOnnx(modelId);
-          watchOnnxDownloadStatus(modelId);
-        } catch (error) {
-          setOnnxDownloading(false);
-          setDownloadProgressOpen(false);
-          message.error(
-            apiErrorMessage(error, t("models.onnxDownloadFailed"), t),
-          );
-        }
-      },
+      onOk: () => beginOnnxDownload(modelId),
     });
   };
 

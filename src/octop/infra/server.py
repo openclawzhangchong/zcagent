@@ -576,6 +576,18 @@ class OctopServer:
 
         asyncio.create_task(_resume_bridges(), name="bridge-auto-resume")
 
+        # Bring the default embedding model down while the machine is idle, so a
+        # first-time knowledge-base user does not stare at a 92 MB download.
+        # Every gate lives in the module; on an air-gapped box this costs one
+        # log line and says nothing to the user.
+        from octop.infra.knowledge.prefetch import prefetch_default_model  # noqa: PLC0415
+
+        async def _prefetch_model() -> None:
+            with suppress(Exception):
+                await prefetch_default_model(self.services)
+
+        asyncio.create_task(_prefetch_model(), name="knowledge-model-prefetch")
+
     def _emit_wizard_password(self, *, user_count: int) -> None:
         config = self.config
         if config is None:
