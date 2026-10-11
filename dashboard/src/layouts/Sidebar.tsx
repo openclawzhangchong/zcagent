@@ -497,7 +497,15 @@ export default function Sidebar({
   ]);
 
   const brandInner = (
-    <>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: isRailCollapsed ? "center" : "flex-start",
+        gap: 4,
+        minWidth: 0,
+      }}
+    >
       <AppLogo
         src={isRailCollapsed ? "/pwa-192.png" : wordmarkSrc}
         alt="zcagent"
@@ -512,12 +520,12 @@ export default function Sidebar({
         }}
       />
       {!isRailCollapsed && !isMobile && (
-        <>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <CurrentVersionBadge isMobile={isMobile} />
           <AppVersionBadge isMobile={isMobile} />
-        </>
+        </div>
       )}
-    </>
+    </div>
   );
 
   const userFooter = (
