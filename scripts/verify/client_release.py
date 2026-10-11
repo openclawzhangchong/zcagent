@@ -408,13 +408,15 @@ def _auth_token() -> str:
     return str(json.load(urllib.request.urlopen(req, timeout=20))["access_token"])
 
 
-def _api(method: str, token: str, path: str, body: dict | None = None) -> dict:
+def _api(
+    method: str, token: str, path: str, body: dict | None = None, *, timeout: int = 60
+) -> dict:
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(f"{BASE}/api{path}", data=data, method=method)
     req.add_header("Authorization", f"Bearer {token}")
     if data is not None:
         req.add_header("Content-Type", "application/json")
-    return json.load(urllib.request.urlopen(req, timeout=60))
+    return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
 def stage_embedding_api(version: str) -> dict:
@@ -428,9 +430,11 @@ def stage_embedding_api(version: str) -> dict:
     token = _auth_token()
 
     def get(path: str) -> dict:
-        req = urllib.request.Request(f"{BASE}/api{path}")
-        req.add_header("Authorization", f"Bearer {token}")
-        return json.load(urllib.request.urlopen(req, timeout=30))
+        return _api("GET", token, path)
+
+    def post(path: str, body: dict) -> dict:
+        # The probe builds the model: a 92 MB ONNX load is not a 30-second call.
+        return _api("POST", token, path, body, timeout=300)
 
     default = get("/knowledge-bases/embedding-options")["onnx"]
     expanded = get("/knowledge-bases/embedding-options?all_onnx=true")["onnx"]
@@ -451,7 +455,29 @@ def stage_embedding_api(version: str) -> dict:
     e5 = "intfloat/multilingual-e5-large"
     if e5 in default_ids:
         raise SystemExit("e5-large is still recommended despite needing input prefixes")
-    return {"default": default_ids, "expanded_count": len(expanded), "all_notated": True}
+
+    # Bytes on disk are not a working model. z08 shipped a mirror layout that
+    # huggingface_hub could not address, so the "downloaded" model was loadable only
+    # while huggingface.co happened to be reachable -- and nothing in the release
+    # chain ever asked the running client to actually embed with it.
+    loaded = {}
+    for model in (str(m["id"]) for m in default if m.get("downloaded")):
+        verdict = post("/knowledge-bases/onnx-test", {"model": model})
+        log(f"  local load probe {model}: {verdict}")
+        loaded[model] = bool(verdict.get("ok"))
+        if not loaded[model]:
+            raise SystemExit(
+                f"{model} is marked downloaded but the client cannot load it: "
+                f"{verdict.get('error')!r}"
+            )
+    if not loaded:
+        log("  no downloaded model on this install -- local load not probed")
+    return {
+        "default": default_ids,
+        "expanded_count": len(expanded),
+        "all_notated": True,
+        "local_loads": loaded,
+    }
 
 
 def stage_ui(version: str) -> dict:
