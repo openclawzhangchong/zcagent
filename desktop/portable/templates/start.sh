@@ -70,6 +70,14 @@ fi
 export PYTHONNOUSERSITE=1
 unset PYTHONPATH || true
 
+# Bundled Node.js: connector CLIs install from npm and are Node programs themselves,
+# so npm plus its runtime must be reachable at run time. OCTOP_BUNDLED_NODE is the
+# directory to prepend to PATH (see infra/connectors/gateway/cli_install.py).
+if [[ -x "${ROOT}/node/bin/node" ]]; then
+  export OCTOP_BUNDLED_NODE="${ROOT}/node/bin"
+  export PATH="${ROOT}/node/bin:${PATH}"
+fi
+
 echo "[octop] home=${OCTOP_HOME}"
 echo "[octop] http://${HOST}:${PORT}"
 if [[ ${#EXTRA[@]} -gt 0 ]]; then

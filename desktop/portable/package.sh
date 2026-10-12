@@ -98,6 +98,15 @@ assemble_one() {
     echo "  Run: bash desktop/portable/bootstrap-runtime.sh ${plat}" >&2
     exit 1
   fi
+  local node_runtime
+  node_runtime="$(node_runtime_dir "$plat")"
+  if [[ ! -d "$node_runtime" ]]; then
+    echo "[package] missing bundled node ${node_runtime}" >&2
+    echo "  Run: bash desktop/portable/bootstrap-runtime.sh ${plat}" >&2
+    echo "  Connector CLIs install from npm, and npm is a Node program, so the package" >&2
+    echo "  cannot offer them without a bundled runtime." >&2
+    exit 1
+  fi
 
   mkdir -p "$wheel_dir" "$GREEN_RELEASE" "$GREEN_ROOT"
   local octop_whl
@@ -119,6 +128,7 @@ assemble_one() {
   rm -rf "$staging"
   mkdir -p "${staging}/packages"
   cp -a "$runtime" "${staging}/runtime"
+  cp -a "$node_runtime" "${staging}/node"
 
   local common_args=(
     --target "${staging}/packages"
@@ -250,6 +260,7 @@ assemble_one() {
     echo "platform=${plat}"
     echo "python=${PBS_PY}"
     echo "pbs_tag=${PBS_TAG}"
+    echo "node=${NODE_VERSION}"
     sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/octop_version=\1/p' \
       "${REPO_ROOT}/pyproject.toml" | head -1
   } > "${staging}/VERSION.txt"

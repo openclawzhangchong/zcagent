@@ -82,6 +82,14 @@ rem Prefer launch.py (site.addsitedir + pywin32 DLL path). Do not set PYTHONPATH
 set "PYTHONNOUSERSITE=1"
 set "PYTHONPATH="
 
+rem Bundled Node.js: connector CLIs are installed from npm and are Node programs
+rem themselves, so npm plus its runtime have to be reachable at run time.
+rem OCTOP_BUNDLED_NODE is the directory to prepend to PATH (see cli_install.py).
+if exist "%ROOT%\node\node.exe" (
+  set "OCTOP_BUNDLED_NODE=%ROOT%\node"
+  set "PATH=%ROOT%\node;%PATH%"
+)
+
 echo [octop] home=%OCTOP_HOME%
 echo [octop] http://%HOST%:%PORT%
 "%PY%" "%ROOT%\launch.py" run --host %HOST% --port %PORT% %EXTRA%

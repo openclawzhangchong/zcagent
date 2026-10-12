@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from typing import Any
 
 import pytest
@@ -195,6 +196,8 @@ def test_ensure_cli_path_injects_user_bin(monkeypatch: pytest.MonkeyPatch, tmp_p
     monkeypatch.setenv("HOME", str(home))
     # Windows 上 os.path.expanduser("~") 读 USERPROFILE，需一并覆盖以跨平台
     monkeypatch.setenv("USERPROFILE", str(home))
+    # 桌面包会带一份便携 Node，若宿主机恰好设了它，前置顺序断言就不成立了
+    monkeypatch.delenv("OCTOP_BUNDLED_NODE", raising=False)
     monkeypatch.setitem(cli_install.os.environ, "PATH", "/usr/bin")
     out = cli_install.ensure_cli_path()
     assert out == bin_dir
@@ -202,3 +205,35 @@ def test_ensure_cli_path_injects_user_bin(monkeypatch: pytest.MonkeyPatch, tmp_p
     # 幂等：重复调用不重复追加
     cli_install.ensure_cli_path()
     assert cli_install.os.environ["PATH"].count(bin_dir) == 1
+
+
+def test_ensure_cli_path_injects_bundled_node(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    """A machine that never installed Node still resolves npm from the package."""
+    import os as _os
+
+    home = tmp_path / "home"
+    node_dir = tmp_path / "node"
+    _os.makedirs(node_dir, exist_ok=True)
+    (node_dir / ("npm.cmd" if _os.name == "nt" else "npm")).write_text("", encoding="utf-8")
+
+    # Point HOME away from the developer's own ~/.npm-global so the only npm on
+    # PATH is the bundled one.
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setitem(cli_install.os.environ, "PATH", "/usr/bin")
+    monkeypatch.delenv("OCTOP_BUNDLED_NODE", raising=False)
+    cli_install.ensure_cli_path()
+    assert shutil.which("npm") is None
+
+    monkeypatch.setenv("OCTOP_BUNDLED_NODE", str(node_dir))
+    cli_install.ensure_cli_path()
+    path = cli_install.os.environ["PATH"]
+    assert path.startswith(str(node_dir) + _os.pathsep)
+    assert cli_install._bundled_node_dir() == str(node_dir)
+    # 幂等 + 指向不存在的目录时不参与
+    cli_install.ensure_cli_path()
+    assert cli_install.os.environ["PATH"].count(str(node_dir)) == 1
+    monkeypatch.setenv("OCTOP_BUNDLED_NODE", str(tmp_path / "missing"))
+    assert cli_install._bundled_node_dir() == ""

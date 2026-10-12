@@ -108,19 +108,41 @@ def _prefix_writable(prefix: str) -> bool:
         return False
 
 
+def _bundled_node_dir() -> str:
+    """Node runtime shipped inside the desktop / portable package, or ``""``.
+
+    Set by ``desktop/src/process.go`` and by the ``start.bat`` / ``start.sh`` launchers.
+    Connector CLIs are installed *from* npm and *are* Node programs, so the runtime has
+    to be reachable for the whole life of the server, not only while installing.
+    """
+    raw = (os.environ.get("OCTOP_BUNDLED_NODE") or "").strip()
+    if raw and os.path.isdir(raw):
+        return raw
+    return ""
+
+
+def _prepend_to_path(entry: str) -> None:
+    if not entry:
+        return
+    current = os.environ.get("PATH", "")
+    if entry not in [part for part in current.split(os.pathsep) if part]:
+        os.environ["PATH"] = entry + os.pathsep + current
+
+
 def ensure_cli_path() -> str:
-    """Prepend the user-level npm global bin dir to the in-process PATH.
+    """Put the bundled Node runtime and the user-level npm global bin dir on PATH.
 
     zcagent 在 fnOS 上常以非 root 用户运行，``/usr/local`` 下的 npm 全局目录
     不可写，安装会降级到用户级目录（~/.npm-global）。这里确保该 bin 目录
     进入进程 PATH，使 ``shutil.which`` 与后续 CLI 子进程调用都能找到命令。
-    目录不存在时不做任何修改，返回 bin 目录（可能为空串）。
+    桌面包还带一份便携 Node（``OCTOP_BUNDLED_NODE``），排在更前面，
+    这样没装过 Node 的机器也能用连接器。目录不存在时不做任何修改，
+    返回 bin 目录（可能为空串）。
     """
+    _prepend_to_path(_bundled_node_dir())
     _, bin_dir = _user_npm_prefix()
-    if bin_dir and os.path.isdir(bin_dir):
-        current = os.environ.get("PATH", "")
-        if bin_dir not in [part for part in current.split(os.pathsep) if part]:
-            os.environ["PATH"] = bin_dir + os.pathsep + current
+    if os.path.isdir(bin_dir):
+        _prepend_to_path(bin_dir)
     return bin_dir
 
 

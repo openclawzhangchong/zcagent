@@ -32,6 +32,46 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [未发布] — 攒给下一个版本
+
+### 修掉：桌面包里没有 Node，连接器一律装不上
+
+普通用户装完客户端后打开任何 npm 类连接器（agently 邮件 / 飞书 / 企微），都会撞到
+「未找到 npm，请先在 zcagent 主机安装 Node.js，然后执行：npm install -g …」
+（`src/octop/infra/connectors/gateway/cli_install.py`）。这条指令对普通用户不可执行。
+
+关键判断：**这些 CLI 本身就是 Node 程序**，所以"安装时临时联网下载 npm"解决不了运行期——
+Node 运行时必须常驻。而我们的主叙事是内网部署（`README.md`「内网批量部署」），
+装时联网恰好在最需要它的场景最容易失败。于是改成**构建时内置便携 Node.js**，
+与已有的 python-build-standalone 完全同构：
+
+| 环节 | 改动 |
+|---|---|
+| 下载 | `_common.sh` 钉 `NODE_VERSION=22.20.0`，走 npmmirror；`bootstrap-runtime.sh` 新增 `bootstrap_node`，解压进 `runtimes/<plat>-node`，并校验 `node_modules/npm` 载荷存在（npm 的 shim 靠它） |
+| 打包 | `package.sh` 把该目录复制成 `<root>/node`，缺目录直接失败并说明原因（静默漏掉就是重新制造这个 bug）；`VERSION.txt` 多一行 `node=` |
+| 启动 | `start.bat` / `start.sh` / `desktop/src/process.go` 三处都把 `<root>/node`（Windows）或 `<root>/node/bin` 前置进子进程 PATH，并设 `OCTOP_BUNDLED_NODE`。**不写系统 PATH、不在用户机器上装东西** |
+| 消费 | `cli_install.ensure_cli_path()` 读 `OCTOP_BUNDLED_NODE` 前置进进程 PATH，使 `shutil.which("npm")` 与后续子进程都能命中 |
+
+实测（本机没有全局 node，正是复现条件）：过滤掉 PATH 里所有 node 后
+`which("npm") = None`；设上 `OCTOP_BUNDLED_NODE` 并调 `ensure_cli_path()` 之后
+解析到包内 `npm.CMD`，`npm -v` 返回 **10.9.3**（rc=0）。
+体积代价实测：下载 +33.85 MB（zip 从 183 MB 起算），解压 +100 MB（便携包解压后 658 MiB 起算）。
+`node_modules/npm` 占 17 MB、corepack 2 MB，其余是 node.exe——裁剪省不了多少，没做。
+
+### 交互：展开对话历史时自动折叠最左导航栏
+
+`MainLayout` 里 `EXPAND_CHAT_RAIL_EVENT` 的处理原本写的是"两个栏都打开"，与预期相反。
+现在 rail 接管宽度、导航栏收成 56px 图标条。`scripts/verify/layout_probe.py` 加了真的点击断言
+（rail 可见 + 通过栏内按钮宽度判导航已折叠）。
+
+### 交互：导航栏顶部加独立「新建对话」按钮
+
+原来发起新对话只有会话卡片上那个 hover 才出现的图标按钮。现在导航栏顶部有一个
+整宽实心主色按钮（折叠态退成 40px 图标），复用聊天页同一个目标 `/chat/<agent>`
+（`useChatSessionActions.ts`），没有第二套导航逻辑；颜色走 `var(--fn-primary)`，多套配色仍可切换。
+
+---
+
 ## [1.0.2b6+z09] — 2026-10-11
 
 主题：**镜像下载的向量模型其实根本加载不了**。z08 的空闲预下载是把它逼出来的——

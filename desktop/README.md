@@ -17,6 +17,30 @@ Same as the zcagent CLI/server default:
 - Green runtime extract → `~/.octop/portable/`
 - Shell prefs → `~/.octop/desktop-settings.json`
 
+## Bundled runtimes
+
+The green payload carries two runtimes, because the product runs Python and
+connector CLIs come from npm:
+
+```
+zcagent-<plat>/
+├── runtime/     python-build-standalone (PBS_PY / PBS_TAG in portable/_common.sh)
+├── node/        Node.js (NODE_VERSION) — node.exe + npm on Windows, node/bin/* elsewhere
+├── packages/    site-packages, relocatable
+└── launch.py · start.bat · start.sh · VERSION.txt
+```
+
+Node is bundled rather than downloaded at install time: the connector CLIs
+(`@tencent-qqmail/agently-cli`, `@larksuite/cli`, `@wecom/cli`) **are** Node
+programs, so the runtime is needed for the whole life of the server, not only
+while installing — and an install-time download fails exactly on the internal
+networks this product ships to.
+
+`start.bat` / `start.sh` / `src/process.go` prepend the node directory to the
+child's `PATH` and export `OCTOP_BUNDLED_NODE`, which
+`infra/connectors/gateway/cli_install.py` puts on the in-process `PATH`. Nothing
+is written to the user's system `PATH` and nothing is installed on their machine.
+
 ## Build green zip
 
 From repo root:

@@ -14,6 +14,14 @@ PBS_PY="${PBS_PY:-3.12.12}"
 # Prefer npmmirror mirror; override with PBS_BASE_URL for GitHub upstream.
 PBS_BASE_URL="${PBS_BASE_URL:-https://registry.npmmirror.com/-/binary/python-build-standalone/${PBS_TAG}}"
 
+# Bundled Node.js, so connector CLIs installed from npm (@tencent-qqmail/agently-cli,
+# @larksuite/cli, @wecom/cli) work on a machine that never installed Node. The CLIs are
+# Node programs themselves, so this has to be present at run time, not only at install
+# time -- which rules out downloading during install. Every archive name below was
+# checked against the mirror on 2026-10-12.
+NODE_VERSION="${NODE_VERSION:-22.20.0}"
+NODE_BASE_URL="${NODE_BASE_URL:-https://registry.npmmirror.com/-/binary/node/v${NODE_VERSION}}"
+
 ALL_PLATS=(
   darwin-arm64
   darwin-amd64
@@ -237,6 +245,50 @@ pbs_archive_name() {
   local triple
   triple="$(plat_triple "$plat")" || return 1
   echo "cpython-${PBS_PY}+${PBS_TAG}-${triple}-install_only_stripped.tar.gz"
+}
+
+# Node distribution archives use x64/arm64, not the amd64 suffix our plat names use.
+node_slug() {
+  case "$1" in
+    windows-amd64) echo win-x64 ;;
+    windows-arm64) echo win-arm64 ;;
+    darwin-amd64) echo darwin-x64 ;;
+    darwin-arm64) echo darwin-arm64 ;;
+    linux-amd64) echo linux-x64 ;;
+    linux-arm64) echo linux-arm64 ;;
+    *) return 1 ;;
+  esac
+}
+
+node_archive_name() {
+  local slug
+  slug="$(node_slug "$1")" || return 1
+  case "$1" in
+    windows-*) echo "node-v${NODE_VERSION}-${slug}.zip" ;;
+    darwin-*) echo "node-v${NODE_VERSION}-${slug}.tar.gz" ;;
+    *) echo "node-v${NODE_VERSION}-${slug}.tar.xz" ;;
+  esac
+}
+
+# The archive holds exactly one top-level directory with that name.
+node_top_dir() {
+  local slug
+  slug="$(node_slug "$1")" || return 1
+  echo "node-v${NODE_VERSION}-${slug}"
+}
+
+node_runtime_dir() {
+  echo "${GREEN_RUNTIMES}/$1-node"
+}
+
+node_bin_dir() {
+  # Print path to the directory holding node/npm inside a bundled-node root.
+  local runtime_dir="$1"
+  if [[ -f "${runtime_dir}/node.exe" ]]; then
+    echo "$runtime_dir"
+  else
+    echo "${runtime_dir}/bin"
+  fi
 }
 
 # Write platform-specific uv/pip overrides (empty file = none).
