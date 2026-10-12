@@ -93,6 +93,16 @@
 `enabled + base_url + api_key + 至少一个 chat 模型`——顺带说明：**首启行事历第 1 步的绿灯
 不代表模型能用**（`PLAN-z10.md` §1.8 第 2 条）。
 
+除了量静态布局，它还**真的点两个控件**（`[4/5]`）：点「展开对话历史」后必须同时满足
+rail 可见 + 导航栏折叠（导航宽度通过栏内的 `nav-new-chat` 按钮量，展开 ~192px / 折叠 40px），
+点「新建对话」后必须落在 `/chat/<agent>`。这两条是 2026-10-12 两项改动的回归门。
+
+> 选导航栏元素**不要**用 `[class*="sidebar" i]`：CSS Modules 会给侧栏每个类都生成
+> `Sidebar-module__*`，大小写不敏感的匹配命中的是 DOM 里最先出现的那个类，而不是那一列——
+> 这个坑真实地把 `railInNav` 和 `navItems` 量成了 0。正确做法是从内容列
+> （`[class*="page-container"]`）往上找**第一个同时包含导航按钮、但按钮不在它自己子树里**的祖先，
+> 那个祖先才是并排列的父级。
+
 产物：`<out>/report.json` 与 `<out>/shots/{classic,minimal-records,minimal-settings}.png`，
 默认落在已被 gitignore 的 `.zc-verify/layout/`。
 

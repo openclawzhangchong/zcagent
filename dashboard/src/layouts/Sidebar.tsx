@@ -10,8 +10,14 @@ import type { TFunction } from "i18next";
 import AvatarDropdown from "../components/AvatarDropdown";
 import AppVersionBadge from "../components/AppVersionBadge";
 import CurrentVersionBadge from "../components/CurrentVersionBadge";
-import { ArrowRightLeft, ChevronDown, X } from "lucide-react";
+import {
+  ArrowRightLeft,
+  ChevronDown,
+  MessageSquarePlus,
+  X,
+} from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useAgent, selectEnabledExperts } from "../context/AgentContext";
 import { useLayoutMode } from "../context/LayoutModeContext";
 import { useUserRole } from "../hooks/useUserRole";
 import { useCurrentUser, useSetCurrentUser } from "../hooks/useCurrentUser";
@@ -434,10 +440,36 @@ export default function Sidebar({
   const [chatSidebarOpen, setChatSidebarOpen] = useChatSidebarOpen();
   const showChatRailExpand = !isMinimal && !chatSidebarOpen;
 
+  const { agents, activeAgentId } = useAgent();
+  const newChatAgentId =
+    activeAgentId ?? selectEnabledExperts(agents, null)[0]?.agent_id ?? null;
+
+  // ``/chat/<agent>`` with no thread id is the same "start fresh" target the
+  // chat page's own new-chat button navigates to (useChatSessionActions.ts:39-44).
+  const handleNewChat = useCallback(() => {
+    navigate(newChatAgentId ? `/chat/${newChatAgentId}` : "/chat");
+  }, [navigate, newChatAgentId]);
+
   const isRailCollapsed = collapsed && !isMobile;
   const wordmarkSrc = isDark
     ? "/logo_horizontal_white.png"
     : "/logo_horizontal_dark.png";
+
+  const newChatButton = (
+    <button
+      type="button"
+      className={`${styles.newChatBtn} ${
+        isRailCollapsed ? styles.newChatBtnCollapsed : ""
+      }`}
+      onClick={handleNewChat}
+      aria-label={t("chatWelcome.newChat")}
+      title={t("chatWelcome.newChat")}
+      data-testid="nav-new-chat"
+    >
+      <MessageSquarePlus size={16} strokeWidth={1.8} aria-hidden />
+      {isRailCollapsed ? null : <span>{t("chatWelcome.newChat")}</span>}
+    </button>
+  );
 
   const selectMinimalPane = useCallback(
     (pane: MinimalNavPane, opts?: { expand?: boolean }) => {
@@ -812,6 +844,15 @@ export default function Sidebar({
         }}
       >
         {brandInner}
+      </div>
+
+      <div
+        style={{
+          padding: isRailCollapsed ? "0 8px 8px" : "0 14px 10px",
+          flexShrink: 0,
+        }}
+      >
+        {newChatButton}
       </div>
 
       <div

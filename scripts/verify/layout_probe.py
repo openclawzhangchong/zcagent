@@ -200,7 +200,6 @@ def seed_threads(base: str, token: str, count: int) -> int:
 MEASURE_JS = """
 (args) => {
   const rail = document.getElementById(args.railId);
-  const nav = document.querySelector('[class*="sidebar" i]');
   const vis = (el) => {
     if (!el) return false;
     const r = el.getBoundingClientRect();
@@ -214,10 +213,25 @@ MEASURE_JS = """
     const r = el.getBoundingClientRect();
     return {x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height)};
   };
-  // Columns = full-height flex children of the app row that are visible.
-  let row = rail && rail.parentElement;
-  while (row && !(row.children && row.children.length >= 2)) row = row.parentElement;
+  // The app row is the first ancestor of the content column that ALSO contains
+  // the nav's new-chat button -- i.e. the button sits in a sibling column.
+  // Anchoring this way survives both layouts: in classic the rail is its own
+  // child of that row, in minimal the rail lives inside the nav column.
+  // Do NOT select the nav by [class*="sidebar" i]: CSS modules emit
+  // "Sidebar-module__*" for every sidebar class, so a case-insensitive match
+  // lands on whichever one comes first in the DOM, not on the column.
+  const content = document.querySelector('[class*="page-container"]');
+  const btn = document.querySelector('[data-testid="nav-new-chat"]');
+  let row = null;
+  for (let el = content; el && el.parentElement; el = el.parentElement) {
+    const p = el.parentElement;
+    if (p.children.length >= 2 && p.contains(btn) && !el.contains(btn)) {
+      row = p;
+      break;
+    }
+  }
   const columns = row ? [...row.children].filter(vis).map(box) : [];
+  const nav = row ? [...row.children].find((c) => c.contains(btn)) : null;
   const railInsideNav = !!(rail && nav && nav.contains(rail));
   const NEW = /新对话|新建对话|new chat|newchat/i;
   const labeled = [...document.querySelectorAll('button, a')].filter(
@@ -233,7 +247,7 @@ MEASURE_JS = """
     columnBoxes: columns,
     newChatCount: labeled.length,
     newChatInNav: nav ? labeled.filter((el) => nav.contains(el)).length : 0,
-    navItemCount: nav ? nav.querySelectorAll('li, [role="menuitem"], [class*="navItem" i]').length : 0,
+    navItemCount: nav ? nav.querySelectorAll('[class*="navItemMain"]').length : 0,
     bodyText: (document.body.innerText || '').slice(0, 400),
   };
 }
@@ -294,6 +308,89 @@ def probe(base: str, token: str, out: Path, shots: Path) -> list[dict[str, Any]]
     return results
 
 
+INTERACT_JS = """
+() => {
+  const box = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height)};
+  };
+  const vis = (el) => {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) return false;
+    if (el.hidden) return false;
+    const st = getComputedStyle(el);
+    return st.display !== 'none' && st.visibility !== 'hidden' && +st.opacity !== 0;
+  };
+  const rail = document.getElementById('octop-chat-history-rail');
+  const newChat = document.querySelector('[data-testid="nav-new-chat"]');
+  return {
+    path: location.pathname,
+    railVisible: vis(rail),
+    railBox: box(rail),
+    newChatBox: box(newChat),
+    sessionRows: document.querySelectorAll('[class*="sessionItem" i] a, [class*="sessionRow" i]').length,
+  };
+}
+"""
+
+
+def interact(base: str, token: str, shots: Path) -> dict[str, Any]:
+    """Click the two controls this probe exists to guard, and record what changed.
+
+    Reading source cannot answer "does expanding the history rail collapse the
+    nav", because both are effects of one event handler in ``MainLayout``.
+    Nav width is measured through the new-chat button inside it: expanded nav
+    gives it ~192px, collapsed nav caps it at 40px.
+    """
+    from playwright.sync_api import sync_playwright
+
+    out: dict[str, Any] = {"steps": []}
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel="msedge")
+        context = browser.new_context(viewport=VIEWPORT, locale="zh-CN")
+        page = context.new_page()
+        page.add_init_script(
+            f"""
+            localStorage.setItem('auth_token', {json.dumps(token)});
+            localStorage.setItem('octop:locale', 'zh');
+            localStorage.setItem('octop:layout-mode', 'classic');
+            localStorage.setItem('octop:chat-sidebar:open', 'false');
+            """
+        )
+        page.goto(f"{base}/chat", wait_until="domcontentloaded", timeout=60_000)
+        with contextlib.suppress(Exception):
+            page.wait_for_selector('[data-testid="nav-new-chat"]', timeout=20_000)
+        page.wait_for_timeout(2000)
+
+        before = page.evaluate(INTERACT_JS)
+        out["steps"].append({"name": "classic-before", **before})
+
+        expand = page.get_by_role("button", name="展开对话历史")
+        if expand.count() == 0:
+            out["steps"].append({"name": "expand-button", "error": "not found"})
+        else:
+            expand.first.click()
+            page.wait_for_timeout(1200)
+            after = page.evaluate(INTERACT_JS)
+            out["steps"].append({"name": "classic-after-expand", **after})
+            page.screenshot(path=str(shots / "interact-rail-expanded-nav-collapsed.png"))
+            nav_w = (after.get("newChatBox") or {}).get("w", 999)
+            out["nav_collapsed_on_expand"] = bool(nav_w <= 60 and after["railVisible"])
+
+        page.click('[data-testid="nav-new-chat"]')
+        page.wait_for_timeout(1500)
+        after_new = page.evaluate(INTERACT_JS)
+        out["steps"].append({"name": "after-new-chat", **after_new})
+        page.screenshot(path=str(shots / "interact-new-chat.png"))
+        out["new_chat_reached"] = bool(
+            after_new["path"].startswith("/chat/") and after_new["path"] != "/chat/"
+        )
+        browser.close()
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--python", default=sys.executable, help="interpreter that can import octop")
@@ -328,11 +425,11 @@ def main() -> int:
         shutil.rmtree(home)
 
     password = "Probe!" + os.urandom(4).hex()
-    log(f"[1/4] booting scratch control plane at {home} on :{args.port}")
+    log(f"[1/5] booting scratch control plane at {home} on :{args.port}")
     proc = boot(args.python, home, args.port)
     base = f"http://127.0.0.1:{args.port}"
     try:
-        log(f"[2/4] running the wizard (model step {'skipped' if args.no_model else 'backed by a fake provider'})")
+        log(f"[2/5] running the wizard (model step {'skipped' if args.no_model else 'backed by a fake provider'})")
         token = run_setup(base, password, with_model=not args.no_model)
         log("       waiting for the default expert to reach 'running'")
         states = wait_expert_running(base, token)
@@ -355,13 +452,31 @@ def main() -> int:
             "dashboard_artifact_mtime": artifact,
             "states": [],
         }
-        log("[3/4] measuring each layout state at 1280x800")
+        log("[3/5] measuring each layout state at 1280x800")
         report["states"] = probe(base, token, out, shots)
 
-        log("[4/4] verdict")
+        log("[4/5] clicking the rail-expand and new-chat controls")
+        report["interaction"] = interact(base, token, shots)
+        it = report["interaction"]
+        log(
+            f"  rail-expand collapses nav: {it.get('nav_collapsed_on_expand')}  "
+            f"new-chat opens a thread: {it.get('new_chat_reached')}"
+        )
+
+        log("[5/5] verdict")
         bad = []
         notes = []
         by = {s["state"]: s for s in report["states"]}
+        if it.get("nav_collapsed_on_expand") is not True:
+            bad.append(
+                "expanding the chat-history rail left the nav expanded -- the rail and the "
+                "nav now compete for width (PLAN-z10 item 2)"
+            )
+        if it.get("new_chat_reached") is not True:
+            bad.append(
+                "the nav 新建对话 button did not land on /chat/<agent> -- a fresh conversation "
+                "is not reachable from the nav (PLAN-z10 item 3)"
+            )
         if not by["classic"]["railInContentColumn"]:
             bad.append("classic: rail is not its own column -- probe selector is wrong")
         if not by["minimal-records"]["railParentIsNav"]:

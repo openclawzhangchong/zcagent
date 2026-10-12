@@ -139,14 +139,15 @@ export default function MainLayout() {
     return () => window.removeEventListener("octop:toggle-nav", handler);
   }, []);
 
-  // Chat history rail expand: if nav is also collapsed, open both rails.
+  // Chat history rail expand: the rail takes over the width the nav was using,
+  // so collapse the nav instead of showing both rails at once.
   // Minimal layout has no second rail — Sidebar handles records pane itself.
   useEffect(() => {
     if (isMinimalLayout) return;
     const handler = () => {
       setChatSidebarOpen(true);
-      if (collapsed) {
-        persistNavCollapsed(false);
+      if (!collapsed) {
+        persistNavCollapsed(true);
       }
     };
     window.addEventListener(EXPAND_CHAT_RAIL_EVENT, handler);
