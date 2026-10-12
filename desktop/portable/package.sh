@@ -276,20 +276,32 @@ assemble_one() {
       zip -qry "$zip_name" "zcagent-${plat}"
     else
       # Windows runners often have `python` but not `python3` / `zip`.
+      # ``python3`` must be *proved* to run: on a stock Windows 10/11 box it is an
+      # App Execution Alias stub that prints nothing and exits 0, so the fallback
+      # below would "succeed" while writing no archive at all.
       py=""
-      if command -v python3 >/dev/null 2>&1; then
-        py=python3
-      elif command -v python >/dev/null 2>&1; then
-        py=python
-      fi
+      for cand in python3 python; do
+        if command -v "$cand" >/dev/null 2>&1 &&
+          "$cand" -c "print(1)" 2>/dev/null | grep -qx 1; then
+          py="$cand"
+          break
+        fi
+      done
       if [[ -z "$py" ]]; then
-        echo "[package] need zip or python to create archive" >&2
+        echo "[package] need zip, or a working python, to create the archive" >&2
         exit 1
       fi
       "$py" -c "import shutil; shutil.make_archive('${zip_stem}', 'zip', '.', 'zcagent-${plat}')"
     fi
   )
-  echo "[package] wrote ${zip_path}"
+  # A missing or empty zip used to pass silently; every downstream step (Wails
+  # embed, NSIS payload, the download page's byte count) then describes a file
+  # that was never produced.
+  if [[ ! -s "$zip_path" ]]; then
+    echo "[package] FAILED: ${zip_path} was not created" >&2
+    exit 1
+  fi
+  echo "[package] wrote ${zip_path} ($(wc -c <"$zip_path") bytes)"
 }
 
 main() {

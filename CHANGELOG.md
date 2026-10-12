@@ -55,8 +55,19 @@ Node 运行时必须常驻。而我们的主叙事是内网部署（`README.md`�
 实测（本机没有全局 node，正是复现条件）：过滤掉 PATH 里所有 node 后
 `which("npm") = None`；设上 `OCTOP_BUNDLED_NODE` 并调 `ensure_cli_path()` 之后
 解析到包内 `npm.CMD`，`npm -v` 返回 **10.9.3**（rc=0）。
-体积代价实测：下载 +33.85 MB（zip 从 183 MB 起算），解压 +100 MB（便携包解压后 658 MiB 起算）。
-`node_modules/npm` 占 17 MB、corepack 2 MB，其余是 node.exe——裁剪省不了多少，没做。
+真跑了一次 `package.sh windows-amd64`：产物 zip 里 `node/` 有 2872 个条目，
+含 `node/node.exe` 与 `node/npm.cmd`，打包出的 `start.bat` 带着 PATH 前置那三行。
+体积实测：**zip 从 196,615,752 → 233,921,049 字节（+37.3 MB，+20%）**，解压 +100 MB
+（其中 node.exe 占大头，`node_modules/npm` 17 MB、corepack 2 MB，裁剪省不了多少，没做）。
+
+### 顺带修掉：打包在没有 `zip` 的 Windows 上会静默产不出 zip
+
+`package.sh` 建 zip 时若没有 `zip` 命令就退回 `python3`，而**未装过 Python 的 Windows 10/11
+上 `python3` 是 App Execution Alias 占位程序：什么都不打印、退出码 0**。
+于是打包"成功"、日志照写 `wrote …`、zip 根本不存在——下游 Wails 嵌入、NSIS 载荷、
+下载页的字节数全在描述一个没有产出的文件。改成：候选解释器必须**证明自己真能跑**
+（`"$py" -c "print(1)"` 要回显 `1`），并且子 shell 之后硬检查 `[[ -s "$zip_path" ]]`，
+没有就失败退出。本机正是这个组合（无 zip、`python3` 是 stub），修完才第一次产出真 zip。
 
 ### 交互：展开对话历史时自动折叠最左导航栏
 
