@@ -120,6 +120,27 @@ rail 可见 + 导航栏折叠（导航宽度通过栏内的 `nav-new-chat` 按�
 产物：`<out>/report.json` 与 `<out>/shots/{classic,minimal-records,minimal-settings}.png`，
 默认落在已被 gitignore 的 `.zc-verify/layout/`。
 
+## fetch_asset.py —— 大产物在这台机器上怎么下得动
+
+本机到 GitHub 资产主机是**每连接限速**（实测单连接 ~42 KB/s，同时开第二条各自还有 ~50 KB/s），
+所以 234 MB 的便携包用一条 curl 要 25 分钟。这个脚本把剩余字节切成 N 段并发 `Range:` 拉，
+z10 实测 10 段 → 约 7 分钟。
+
+```bash
+.venv/Scripts/python.exe scripts/verify/fetch_asset.py \
+  --out .zc-verify/zcagent-portable-windows-amd64-1.0.2b6+z10.zip \
+  --asset-id 635744912 --bytes 233968336 \
+  --sha 1aa3f015c5da16e52a339e82ce8b3f20dc8a11471116cc5f08c846460ebff8d4
+```
+
+`--asset-id` 走 `api.github.com`（这台机器上 `github.com:443` 经常连不通，API 主机是通的）。
+已有的半截文件保留作前缀，只补下尾部；拼完必须**同时**核对字节数与 Release 里那条 SHA256——
+`gh release download` 曾对 37% 完整的文件返回成功。
+
+两个坑脚本里都判了：服务器若回 `200` 而不是 `206`，说明它忽略了 `Range`，
+把响应体追加进去会静默毁掉那一段；以及不带 `--max-time` 的 curl 在流停滞时会**看起来还在下**，
+实际挂死（z10 这一轮就这么白等了 4 分钟，是文件大小没变才暴露的）。
+
 ## 其它可复用的工具（不在本目录）
 
 | 命令 | 用途 |
