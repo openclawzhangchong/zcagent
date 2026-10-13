@@ -7,7 +7,7 @@
 | 文件 | 用途 |
 |---|---|
 | `zcagent-desktop-windows-amd64-<版本>.exe` | 安装版：开始菜单图标 + 桌面窗口 |
-| `zcagent-portable-windows-amd64-<版本>.zip` | 便携版：解压即用，自带 Python 运行时 |
+| `zcagent-portable-windows-amd64-<版本>.zip` | 便携版：解压即用，自带 Python 与 Node 运行时 |
 | `SHA256SUMS.txt` | 两个包的校验值（由打包命令从 GitHub Release 的 digest 生成） |
 | `guide.md` | 本页 |
 
@@ -25,10 +25,16 @@ Get-FileHash .\zcagent-desktop-windows-amd64-<版本>.exe -Algorithm SHA256
 ## 系统要求
 
 - Windows 10 1903 及以上，x64（实测环境 Windows 10 10.0.19045）
-- 磁盘：安装版占用约 199 MB，便携版解压后约 658 MB；运行数据另算
+- 磁盘（z10 实测）：安装版程序目录约 235 MB，便携版解压后约 724 MiB；首次运行还会把绿色包
+  解到 `~\.octop\portable`（实测 811 MB），运行数据另算
 - 安装版需要 **Microsoft Edge WebView2 运行时**（较新的 Win10/Win11 已内置，缺失时安装器会提示）
-- 便携版**不需要**安装 Python 或 Node
-- 网络：只需要能访问你配置的模型 API；软件本身不外联
+- 便携版**不需要**安装 Python 或 Node。z10 起包里就带着 Node 22.20.0 —— 之前从 npm 装的
+  连接器命令行工具（agently 邮件 / 飞书 / 企微）会报「未找到 npm，请先在 zcagent 主机安装 Node.js」，
+  现在不需要用户自己装任何东西。这份 Node 只被前置进本程序自己的 PATH，**不写系统 PATH、
+  不在目标机上安装任何东西**
+- 网络：只需要能访问你配置的模型 API；软件本身不外联。一个例外——在界面里点「安装命令行工具」时，
+  它会执行一次 `npm install -g`，那一步要能到 npm 源（内网机器请配内网 npm 镜像，
+  或提前把包放进目标机）
 
 ## 安装版
 
@@ -57,7 +63,7 @@ Get-FileHash .\zcagent-desktop-windows-amd64-<版本>.exe -Algorithm SHA256
   技能、通道与模型配置都在里面。
 - 迁移 = 拷走整个数据目录。
 - 卸载：安装版从「应用和功能」卸载，便携版直接删目录；两者都不动数据，重装即可继续用。
-- **一条要知道的残留**：桌面客户端首次运行会把绿色包解到 `~\.octop\portable\`（约 712 MB），
+- **一条要知道的残留**：桌面客户端首次运行会把绿色包解到 `~\.octop\portable\`（z10 实测 811 MB），
   卸载**不会**删除它（它位于数据目录内，卸载器按设计不动数据）。要彻底清理，卸载后手动删除
   `~\.octop\portable`。
 
