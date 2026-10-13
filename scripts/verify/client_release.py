@@ -53,6 +53,8 @@ BUNDLE_MARKERS = {
     "1.0.2b6+z03": ('function resolveInitialLocale(){return readStoredUiLocale()??"zh"}',),
     "1.0.2b6+z06": ("local-recovery",),
     "1.0.2b6+z08": ("prefetch_enabled", "智策科技公司制度知识库"),
+    # The nav's standalone new-chat button: proves the z10 dashboard shipped.
+    "1.0.2b6+z10": ("nav-new-chat",),
 }
 # Releases from which the login page carries the account hint and self-service reset.
 RECOVERY_UI_FROM = "1.0.2b6+z06"
@@ -341,6 +343,84 @@ def stage_runtime(version: str, before: str) -> str:
     return after
 
 
+def stage_bundled_node(version: str) -> dict:
+    """z10 acceptance: the connector CLIs install from npm *and* are Node programs.
+
+    A file listing would prove presence but not usability, so this also runs the
+    shipped product's own detection code against the installed payload with the
+    same environment the launcher gives the server process. That is the difference
+    between "the exe contains node" and "a user can install a connector".
+    """
+    node_dir = PORTABLE / "node"
+    exe = node_dir / ("node.exe" if os.name == "nt" else "bin/node")
+    npm = node_dir / ("npm.cmd" if os.name == "nt" else "bin/npm")
+    out: dict = {"node": str(exe), "npm_present": npm.exists()}
+    if not exe.exists() or not npm.exists():
+        raise SystemExit(
+            f"bundled node missing under {node_dir} -- connectors would still answer "
+            "'未找到 npm，请先在 zcagent 主机安装 Node.js'"
+        )
+    for label, argv in (("node_v", [str(exe), "-v"]), ("npm_v", [str(npm), "-v"])):
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=240, check=False)
+        out[label] = (proc.stdout or proc.stderr).strip().splitlines()[-1:] or [""]
+        out[label] = out[label][0]
+        if proc.returncode != 0:
+            raise SystemExit(f"{label} failed in the installed payload: {out[label]}")
+
+    vtxt = (PORTABLE / "VERSION.txt").read_text(encoding="utf-8", errors="replace")
+    out["version_txt_node"] = next(
+        (ln.split("=", 1)[1].strip() for ln in vtxt.splitlines() if ln.startswith("node=")),
+        "",
+    )
+    if not out["version_txt_node"]:
+        raise SystemExit("VERSION.txt has no node= line -- the payload was not assembled by z10")
+
+    bat = PORTABLE / "start.bat"
+    if bat.exists():
+        text = bat.read_text(encoding="utf-8", errors="replace")
+        out["launcher_wires_path"] = "OCTOP_BUNDLED_NODE" in text and "%ROOT%\\node;%PATH%" in text
+        if not out["launcher_wires_path"]:
+            raise SystemExit("installed start.bat does not put the bundled node on PATH")
+
+    # Run the product's own detection code the way the server would see it.
+    # ``site.addsitedir`` is mandatory, not an optimisation: the portable layout
+    # relies on the ``.pth`` files under packages/ (pywin32 among them), which a
+    # bare sys.path.insert never processes -- launch.py exists for this reason.
+    probe = (
+        "import os,sys,json,shutil,site;"
+        f"site.addsitedir(r'{PORTABLE / 'packages'}');"
+        "from octop.infra.connectors.gateway import cli_install;"
+        "cli_install.ensure_cli_path();"
+        "print(json.dumps({'npm': shutil.which('npm'),"
+        " 'path_head': os.environ['PATH'].split(os.pathsep)[0]}))"
+    )
+    env = os.environ.copy()
+    env["OCTOP_BUNDLED_NODE"] = str(node_dir if os.name == "nt" else node_dir / "bin")
+    env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONPATH"] = ""
+    proc = subprocess.run(
+        [str(PORTABLE / "runtime" / ("python.exe" if os.name == "nt" else "bin/python3")),
+         "-c", probe],
+        capture_output=True,
+        text=True,
+        timeout=240,
+        env=env,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise SystemExit(f"installed payload could not run the detector: {proc.stderr[-400:]}")
+    seen = json.loads(proc.stdout.strip().splitlines()[-1])
+    out["detector_sees_npm"] = seen.get("npm")
+    if not seen.get("npm"):
+        raise SystemExit(
+            "the shipped code still cannot find npm with the launcher's environment -- "
+            f"PATH head was {seen.get('path_head')!r}"
+        )
+    log(f"bundled node: {out['node_v']} / npm {out['npm_v']} / VERSION.txt node={out['version_txt_node']}")
+    log(f"  detector resolves npm -> {out['detector_sees_npm']}")
+    return out
+
+
 def expected_markers(version: str) -> dict:
     return {rel: needle for rel, needle in BUNDLE_MARKERS.items() if rel <= version}
 
@@ -405,7 +485,16 @@ def _auth_token() -> str:
     req = urllib.request.Request(
         f"{BASE}/api/auth/login", data=body, headers={"Content-Type": "application/json"}
     )
-    return str(json.load(urllib.request.urlopen(req, timeout=20))["access_token"])
+    try:
+        return str(json.load(urllib.request.urlopen(req, timeout=20))["access_token"])
+    except urllib.error.HTTPError as exc:
+        # A raw 401 traceback buries the reason and, worse, aborts before the
+        # report is written, discarding the stages that did pass.
+        raise SystemExit(
+            f"login as admin -> HTTP {exc.code}. The signed-in stages need "
+            "ZC_VERIFY_PASSWORD set to this install's admin password; the earlier "
+            "stages already passed and are in the partial report."
+        ) from exc
 
 
 def _api(
@@ -730,11 +819,31 @@ def main() -> int:
 
     report["runtime_after"] = stage_runtime(args.version, report["runtime_before"])
     report["bundle"] = stage_bundle(args.version)
-    report["embedding_api"] = stage_embedding_api(args.version)
-    report["ui"] = stage_ui(args.version)
-    report["signed_ui"] = stage_signed_ui(args.version)
-    report.update(stage_icon(install_dir, args.version))
+    report["bundled_node"] = stage_bundled_node(args.version)
+    try:
+        report["embedding_api"] = stage_embedding_api(args.version)
+        report["ui"] = stage_ui(args.version)
+        report["signed_ui"] = stage_signed_ui(args.version)
+        report.update(stage_icon(install_dir, args.version))
+    except SystemExit as exc:
+        return _bail(report, str(exc))
     return _finish(report)
+
+
+def _bail(report: dict, reason: str) -> int:
+    """Write what *did* pass before failing.
+
+    Losing the whole report because one late stage aborted throws away the
+    evidence for everything already verified -- and the transcript is the artifact
+    that gets pasted into ``site/download/VERIFICATION.md``.
+    """
+    report["passed"] = False
+    report["failed_at"] = reason[:400]
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    target = OUT_DIR / f"{report['version']}.json"
+    target.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    log(f"\nFAILED -- partial report at {target}\n  {reason}")
+    return 1
 
 
 def _finish(report: dict) -> int:

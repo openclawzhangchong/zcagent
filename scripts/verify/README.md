@@ -32,7 +32,16 @@
 | 从 z08 起：能力检查里必须带 `prefetch_enabled` / `prefetch_state` | 后台下载是"看不见的功能"，不在接口里露出来就没人知道它到底开没开 |
 | 从 z08 起：**真的登录进去**（含拖过滑块验证码），侧边栏 logo 下方有短版本号；知识库开关是开着的话，新建弹窗的名称/描述必须已填好中文默认值 | 登录能不能走通、版本号显示成什么，都只有在装好的机器上才看得见；表单默认值在服务出来的 `zh` 语言分片里证明 |
 | 从 z09 起：标着"已下载"的向量模型，必须让装好的客户端**真的加载并 embed 一次** | z08 的镜像下载写进了 huggingface_hub 寻不到址的目录，94 MB 正确权重摆在机器上而接口回"Could not load model"；只看下载成不成功永远发现不了 |
+| 从 z10 起：装好的 `~/.octop/portable/node` 必须能 `node -v` / `npm -v`，`VERSION.txt` 要有 `node=`，`start.bat` 要把 node 前置进 PATH，且**用装好的 runtime 跑产品自己的检测代码**必须解析到包内 npm | 连接器 CLI 是从 npm 装的、本身就是 Node 程序；只看文件在不在证明不了"用户点得到连接器" |
 | 从 exe 里抠出内嵌图标 | `.ico` 是构建时生成的，仓库里没有，`git diff` 看不出图标没换 |
+
+`stage_bundled_node` 第 4 步必须用 `site.addsitedir(packages)`，不能 `sys.path.insert`——
+便携包里的 pywin32 靠 `packages/` 下的 `.pth` 生效，`insert` 不处理 `.pth`，
+报出来的会是 `ModuleNotFoundError: No module named 'pywintypes'`，看着像产物坏了其实是探针错了
+（这正是 `launch.py` 存在的理由）。
+
+任何一段失败，**已经通过的阶段仍会写进报告**（`_bail()`）：transcript 是要贴进
+`site/download/VERIFICATION.md` 的证据，为一个 401 赔掉前面全部结果不合理。
 
 产物落在 `.zc-verify/reports/<版本>.json` 与同目录的截图；失败信息点名的是**断言**，不是阶段。
 
@@ -41,6 +50,11 @@
 ——向量模型列表与「登录进去看弹窗」两段都要真的认证。口令是装机时你自己设的管理员口令，
 **不要写进仓库**。
 下载走 `github.com` 与 `api.github.com` 交替——本机前者快但常连不通，后者稳但慢。
+z10 这一轮 `github.com:443` 连续几十分钟拒绝连接，改用资产端点才下下来：
+`curl -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream"
+https://api.github.com/repos/…/releases/assets/<id>`（它重定向到 `objects.githubusercontent.com`，
+绕开挂掉的 `github.com`）。**每条 curl 必须带 `--max-time` 与 `--speed-limit/--speed-time`**：
+z10 第一次下载在 130 MB 处停滞，因为没有超时的 curl 就那样挂着，看起来像循环还在跑。
 
 ## prefetch_watch.py —— 空闲预下载到底有没有跑
 

@@ -2,6 +2,88 @@
 
 智策 Windows 客户端的实测记录。每次改动产物时追加一节，不覆盖历史。
 
+## 1.0.2b6+z10 · 2026-10-13（主题：桌面包内置 Node，连接器不再要求用户自己装）
+
+改动来龙去脉与体积实测写在 `CHANGELOG.md` 的 z10 一节。本节只记发版后的产物验收。
+
+### 装机验收（一条命令，`--stage all`）
+
+```
+resolved zcagent-desktop-windows-amd64-1.0.2b6+z10.exe: 228309973 bytes, sha256 0b7f6ea8ec6deec4...
+download verified: 228309973 bytes, hash matches the release digest
+stopped the running client first: pid 17604
+installing silently into C:\Program Files\zcagent ...
+installed: C:\Program Files\zcagent\zcagent.exe (245504512 bytes), registry 1.0.2b6+z10
+server answering on 8088
+unpacked runtime: 1.0.2b6+z09 -> 1.0.2b6+z10
+  1.0.2b6+z03 carries 'function resolveInitia': /assets/index.BASFQJW-.js
+  1.0.2b6+z06 carries 'local-recovery': /assets/index.BASFQJW-.js
+  1.0.2b6+z08 carries 'prefetch_enabled': /assets/index.BxELVbHj.js
+  1.0.2b6+z08 carries '智策科技公司制度知识库': /assets/zh.BiN4yfW1.js
+  1.0.2b6+z10 carries 'nav-new-chat': /assets/index.BASFQJW-.js
+bundled node: v22.20.0 / npm 10.9.3 / VERSION.txt node=22.20.0
+  detector resolves npm -> C:\Users\Administrator\.octop\portable\node\npm.CMD
+```
+
+`nav-new-chat` 是导航栏那个新按钮的 `data-testid`——它出现在**被服务的 chunk** 里，
+才说明装机版真的带上了这一版的界面，而不是只更新了 Python 运行时。
+
+### 新增的一条验收阶段：`stage_bundled_node`
+
+光看文件在不在，证明不了"用户点得到连接器"。这一步做四件事：
+
+1. `~/.octop/portable/node/node.exe` 与 `npm.cmd` 必须存在；
+2. 用**装好的那份**真跑 `node -v` / `npm -v`（v22.20.0 / 10.9.3）；
+3. `VERSION.txt` 必须有 `node=` 行，`start.bat` 必须把 `%ROOT%\node` 前置进 PATH 并设
+   `OCTOP_BUNDLED_NODE`——否则用户机器上有 node 也没用，服务进程看不见；
+4. 用**装好的 runtime 与 packages** 跑产品自己的检测代码
+   （`cli_install.ensure_cli_path()` + `shutil.which("npm")`），必须解析到包内那份 npm。
+
+第 4 步一开始是失败的，而且**是工具的错不是产物的错**：我用 `sys.path.insert` 加载 packages，
+便携包里的 pywin32 靠 `packages/` 下的 `.pth` 生效，`insert` 不处理 `.pth`，
+于是 `ModuleNotFoundError: No module named 'pywintypes'`——这正是 `launch.py` 存在的理由
+（`site.addsitedir`）。改成 `site.addsitedir` 后通过。
+
+### 独立的一次真装：报错里那个包
+
+用内置 npm 真的执行了用户看到的命令（装进临时前缀，不碰系统）：
+
+```
+npm install -g --prefix .zc-verify/npm-scope-z10 @tencent-qqmail/agently-cli@1.0.18
+  added 2 packages in 12s
+cli_install_status('agently-cli') -> {"installed": true, "version": "1.0.18",
+  "binary_path": "...\\npm-scope-z10\\agently-cli.CMD"}
+```
+
+对照：把 PATH 里所有含 node 的条目过滤掉之后 `which("npm")` 是 `None`——正是 z09 及之前
+用户撞到的状态。中途踩了一次本机老坑：给 PATH 塞 Git Bash 风格路径（`/d/otp/...`）时
+`shutil.which` 找不到任何东西，必须用 Windows 路径。
+
+### 这一轮没做完的一项（以及为什么）
+
+**界面上点「连接器 → 安装」那一步没有跑。** 登录态的四个阶段（embedding API、登录页、
+知识库对话框、图标）都需要这台机器上 zcagent 管理员账号的口令，我没有，也不会去重置你的账号
+（`~/octop-login.txt` 是首启向导口令，不是登录口令）。
+`--stage verify` 复用已装好的实例，设上 `ZC_VERIFY_PASSWORD` 就能补齐。
+后端接口已经用上面两条证明过，所以缺的是"按钮点下去的观感"，不是能力。
+
+### 顺带修掉的两个工具自身问题
+
+- **验收器一失败就把整份报告丢掉**：`_bail()` 现在会把已经通过的阶段写进
+  `reports/<version>.json` 再返回非零码——transcript 是要贴进本文件的，
+  为一个 401 赔掉前面全部证据不合理。
+- **`_auth_token()` 抛裸 401 traceback**：改成明确说明"缺 ZC_VERIFY_PASSWORD，
+  前面的阶段已通过并写进报告"。
+
+### 装机后端口归属变化（需要知道）
+
+验收过程会停掉占用 8088 的进程再装。跑完之后 **8088 上是安装版 z10**
+（`C:\Program Files\zcagent\zcagent.exe`），不是开发实例；数据没动
+（`/api/health` 报 `users_loaded: 2, agents_running: 3`）。
+要把 8088 交还开发实例，照 z06 那次的做法处理即可。
+
+---
+
 ## 1.0.2b6+z09 · 2026-10-11（主题：镜像下载的向量模型其实加载不了）
 
 修复的来龙去脉与"同一个 exe、同一批文件"的对照实验写在上面 z08 一节的最后，
