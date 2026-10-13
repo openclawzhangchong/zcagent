@@ -55,12 +55,11 @@
         <a href="#overview">概览</a>
         <a href="#download">下载</a>
         <a href="#why">为什么选{{NAME_ZH}}</a>
+        <a href="#ecosystem">生态与市场</a>
         <a href="#faq">常见问题</a>
         <a href="{{SITE_URL}}/guide/">使用指南</a>
-        <a href="{{REPO_URL}}/blob/product/main/CHANGELOG.md" rel="noopener"
-          >更新日志</a
-        >
-        <a href="{{REPO_URL}}" rel="noopener">项目文档
+        <a href="{{CHANGELOG_URL}}">更新日志</a>
+        <a href="{{DOC_URL}}">项目文档
           <svg viewBox="0 0 24 24" aria-hidden="true" class="ext">
             <path
               d="M7 17 17 7M9 7h8v8"
@@ -80,7 +79,7 @@
       <section class="hero" id="overview">
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="wrap hero-inner">
-          <a class="pill" href="{{REPO_URL}}" rel="noopener">
+          <span class="pill">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M12 3v18M3 12h18"
@@ -90,8 +89,8 @@
                 stroke-linecap="round"
               />
             </svg>
-            开源 · MIT 协议 · 基于 {{UPSTREAM}}
-          </a>
+            开源 · MIT 协议发布 · 自托管部署
+          </span>
 
           <h1>
             把 AI 助手，<br class="br-m" />
@@ -247,9 +246,8 @@
                 <code>~/.octop</code> 下用 uv 建一个隔离的 Python 3.12 环境，不碰系统 Python。
               </p>
               <div class="cmd">
-                <pre id="src-cmd"><code>git clone {{REPO_URL}}.git
-cd zcagent
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -FromSource</code></pre>
+                <pre id="src-cmd"><code>irm {{INSTALL_PS1_URL}} -OutFile install.ps1
+.\install.ps1 -FromSource</code></pre>
                 <button
                   class="copy"
                   type="button"
@@ -274,15 +272,18 @@ octop run</code></pre>
               </div>
               <ul class="plain">
                 <li>
-                  <b><code>-FromSource</code> 不能省。</b>省掉它，脚本会去 PyPI 装名为
-                  <code>octop</code> 的包——那是上游
-                  <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>，不是智策。
+                  <b><code>-FromSource</code> 不能省。</b>省掉它，脚本会去 PyPI 装一个同名的
+                  <code>octop</code> 包——<b>装出来的不是智策</b>。
                 </li>
                 <li>
-                  命令行入口仍然叫 <code>octop</code>：上游的协议头、数据目录
-                  <code>~/.octop</code> 与包名都被保留，改了会断掉数据兼容。
+                  命令行入口仍然叫 <code>octop</code>：产品沿用了既有的协议头与数据目录
+                  <code>~/.octop</code>，改了会断掉已有数据的兼容性。
                 </li>
                 <li>我们不发布公共 PyPI 包；内网自建索引时在应用设置里填索引地址即可。</li>
+                <li>
+                  脚本本体就是仓库里的
+                  <a href="{{INSTALL_URL}}">scripts/install.ps1</a>，官网只负责发它，不维护副本。
+                </li>
               </ul>
             </div>
           </div>
@@ -388,19 +389,15 @@ octop run</code></pre>
             <dl>
               <dt>v{{VERSION}} · {{RELEASE_DATE}} · 当前</dt>
               <dd>
-                逐条改动见
-                <a href="{{REPO_URL}}/blob/product/main/CHANGELOG.md" rel="noopener"
-                  >CHANGELOG</a
-                >；本次发布的全部产物与校验值在
-                <a href="{{RELEASE_URL}}" rel="noopener">GitHub Release</a>。
+                逐条改动见 <a href="{{CHANGELOG_URL}}">CHANGELOG</a>；本次发布的全部产物与校验值在
+                <a href="{{RELEASE_URL}}">发布页</a>。
               </dd>
               <dt>v{{PREV_VERSION}} · {{PREV_LABEL}}</dt>
-              <dd>{{PREV_REASON}}。<a href="{{PREV_URL}}" rel="noopener">该发布页</a>。</dd>
-              <dt>基线</dt>
+              <dd>{{PREV_REASON}}。<a href="{{PREV_URL}}">该发布页</a>。</dd>
+              <dt>更早的版本</dt>
               <dd>
-                基于上游
-                <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>
-                <code>v1.0.2b6</code>（MIT License），以薄 fork 的方式定期合并上游稳定版本。
+                {{NAME_ZH}}以 MIT 协议发布，历史版本与完整改动记录都在
+                <a href="{{CHANGELOG_URL}}">更新日志</a> 里。
               </dd>
             </dl>
           </details>
@@ -468,17 +465,23 @@ octop run</code></pre>
 
           <article class="feature">
             <div class="feature-copy">
-              <h3>不只能聊天，还能动手</h3>
+              <h3>一句话交代，它按时自己干</h3>
               <p>
-                接上飞书、钉钉、企业微信或 QQ，任务直接落到群里。定时任务、文件读写与工具调用走的是同一条处理链路——
-                你在控制台里看到的，它在 IM 里也做得到。
+                定时任务不用写 Cron 表达式。直接用大白话说清楚「什么时候、做什么」，
+                {{NAME_ZH}}替你解析成计划并落到服务端——服务在跑，它就一直按时执行，
+                不需要谁开着浏览器盯着。
+              </p>
+              <p>
+                到了点，专家带着同一套技能、同一份记忆去执行：整理待办、复盘本周、
+                汇总数据写进工作区，或者把结果直接推到群里。Web 控制台、IM 消息与定时任务
+                共用同一条处理链路，所以定时跑的活和随手问的活，用的是同一副脑子。
               </p>
             </div>
             <figure class="shot">
               <div class="shot-frame">
                 <img
-                  src="./assets/screens/channels.png"
-                  alt="{{NAME_ZH}}控制台的通道页面：配置飞书、钉钉、企业微信等 IM 接入。"
+                  src="./assets/screens/tasks.png"
+                  alt="自动化：用自然语言配置定时任务，示例包括每个工作日九点列出今日待办、每周日复盘本周、每天二十二点提醒整理明日三件事。"
                   width="1600"
                   height="1000"
                   loading="lazy"
@@ -486,6 +489,190 @@ octop run</code></pre>
                 />
               </div>
             </figure>
+          </article>
+        </div>
+      </section>
+
+      <!-- ====================== 装上就有的能力 ====================== -->
+      <section class="section section-alt" id="ecosystem">
+        <div class="wrap">
+          <h2 class="section-title">
+            装上就有一整个生态<svg class="squiggle" viewBox="0 0 220 14" aria-hidden="true">
+              <path
+                d="M3 9c34-7 66 3 100-1s70-8 114-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </h2>
+          <p class="section-sum">
+            这是{{NAME_ZH}}最值钱的部分：不是一个空壳聊天框等你从零配。装完之后，
+            <b>55 个现成的市场专家</b>、<b>数百个可一键安装的技能</b>、<b>26 个内置连接器</b>
+            与 <b>10 个 IM 通道</b>直接可用——按一下「从市场创建」或「安装」，一位配好技能、
+            接好工具的同事就上岗了。
+          </p>
+
+          <div class="eco-stats">
+            <div><b>55</b><span>个市场专家</span></div>
+            <div><b>17</b><span>个内置专家</span></div>
+            <div><b>数百</b><span>个市场技能</span></div>
+            <div><b>26</b><span>个内置连接器</span></div>
+            <div><b>10+</b><span>个 IM 通道</span></div>
+          </div>
+
+          <article class="feature feature-tight">
+            <div class="feature-copy">
+              <h3>专家市场：按行业挑一个，不用从零写提示词</h3>
+              <p>
+                「专家」是一位有独立人格、工作区、记忆和技能包的 AI 同事。市场里的专家不是空壳模板——
+                每个都写清了擅长什么、从哪一步开始、交付物是什么，还预装 6 个技能。
+                按行业筛一下就能用：
+              </p>
+              <ul class="ticks">
+                <li>
+                  <b>法律</b>：合同起草、诉讼策略、法规检索——条款审查与尽职调查，配合使用
+                </li>
+                <li><b>金融</b>：财报分析、量化回测——三表解读、财务造假识别、完整报告生成</li>
+                <li><b>医疗健康</b>：病历分析、护理方案、健康报告、临床辅助</li>
+                <li><b>人力行政</b>：简历筛选——漏斗式量化评估到结构化信息提取</li>
+                <li>
+                  <b>技术与内容</b>：自动化测试、脚本拆解、分镜设计、视频剪辑——从 TDD 到 FFmpeg 成片
+                </li>
+              </ul>
+              <p>
+                覆盖 14 个行业分类，点「从市场创建」就落到你自己的实例里，之后可以随意改提示词、
+                换模型、加技能。创好的专家还能共享给同事，谁用都是同一套配置。
+              </p>
+            </div>
+            <figure class="shot">
+              <div class="shot-frame">
+                <img
+                  src="./assets/screens/expert-market.png"
+                  alt="专家市场：共 55 个市场专家，按电商、金融、法律、医疗健康等 14 个行业分类筛选，每个专家预装 6 个技能，可一键从市场创建。"
+                  width="1600"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </figure>
+          </article>
+
+          <article class="feature feature-flip feature-tight">
+            <figure class="shot">
+              <div class="shot-frame">
+                <img
+                  src="./assets/screens/skill-market.png"
+                  alt="技能市场：数百个可安装技能，按推荐、飙升、下载热榜与最近上新排列，每个技能显示下载量与安装按钮。"
+                  width="1600"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </figure>
+            <div class="feature-copy">
+              <h3>技能市场：装一个，多一项本事</h3>
+              <p>
+                这是把「什么都不会的聊天框」变成「什么都会干的同事」的地方。技能包里写着明确的
+                使用场景、输入输出和操作步骤，专家加载后就知道这类活该怎么干——
+                不是靠你在提示词里手把手教。
+              </p>
+              <ul class="ticks">
+                <li>
+                  <b>编程</b>：编程专家（270 万次下载）、dev-expert——全栈开发、Bug 诊断、代码审查、测试用例
+                </li>
+                <li><b>职场文书</b>：公文写作、标书写作、专利初稿、合同审查、中文公文排版</li>
+                <li><b>设计与多媒体</b>：架构图一键生成、GPT Image 生图、论文配图、视频剪辑、公众号封面</li>
+                <li><b>数据与研究</b>：全球文献知识库、OpenAlex、财报与量化分析、PDF 与图片文字提取</li>
+                <li><b>生活场景</b>：育儿大师、防骗大师、法律咨询——也有娱乐向的，按需取用</li>
+              </ul>
+              <p>
+                需要 Key 的技能（腾讯文档、WPS、企查查这类）会明确标出「需配置 API Key」，
+                不会让你装完才发现用不了。技能按「为你推荐 / 近期飙升 / 下载热榜 / 最近上新」排列，
+                社区装得多的东西自然排在前面。
+              </p>
+            </div>
+          </article>
+
+          <article class="feature feature-tight">
+            <div class="feature-copy">
+              <h3>内置连接器：填个 Key，就能动手碰你的真实系统</h3>
+              <p>
+                连接器是专家调用外部服务能力的入口。一个连接器实例 = 一份凭证 + 一个显示名称，
+                同一个服务可以创建多个实例（比如两个不同账号的邮箱）。填完凭证先探测再保存，
+                对话时按需勾选即可。
+              </p>
+              <ul class="ticks">
+                <li>
+                  <b>办公协作</b>：腾讯文档、腾讯会议、腾讯微云——读写文档、拉会议纪要、传文件
+                </li>
+                <li><b>笔记与知识</b>：腾讯 IMA、有道云笔记、Notion</li>
+                <li>
+                  <b>出行与生活</b>：百度地图、滴滴、携程问道、美团旅游助手、飞猪、QQ 音乐
+                </li>
+                <li><b>专业工具</b>：企查查（工商与风险数据）、OpenAlex（学术检索）</li>
+                <li>
+                  <b>自托管与扩展</b>：飞书 CLI、企业微信 CLI、Agent Mail、WeKnora、Dify——
+                  以及任何自定义 MCP
+                </li>
+              </ul>
+              <p>
+                关键在于<b>凭证由你保管</b>：连接器的凭据加密后存在你这台服务器上，
+                不经过任何第三方；共享后同实例内的同事可选用，但只有你能编辑。
+              </p>
+            </div>
+            <figure class="shot">
+              <div class="shot-frame">
+                <img
+                  src="./assets/screens/connectors.png"
+                  alt="内置连接器：当前支持 26 个连接器，按办公协作、笔记与知识、出行地图、专业工具、自托管扩展分类，含腾讯文档、Notion、企查查、Dify 等。"
+                  width="1600"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </figure>
+          </article>
+
+          <article class="feature feature-flip feature-tight">
+            <figure class="shot">
+              <div class="shot-frame">
+                <img
+                  src="./assets/screens/channels.png"
+                  alt="通道：当前支持 10 个通道，含微信、QQ、企业微信、飞书、元宝、钉钉、小艺、MQTT，配置后可在 IM 里直接与专家对话。"
+                  width="1600"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </figure>
+            <div class="feature-copy">
+              <h3>通道：在大家已经待着的群里，使唤专家</h3>
+              <p>
+                这是最容易体现价值的一步：同事不用打开任何新东西。在他们本来就在的群里 @ 一下，
+                专家就把活干了，做完把结果发回群里。
+              </p>
+              <ul class="ticks">
+                <li><b>微信</b>：通过 iLink Bot 接收与回复私聊、群聊消息</li>
+                <li><b>企业微信</b>：应用消息、单聊与群聊——最适合团队内部使用</li>
+                <li><b>飞书 / 钉钉</b>：私聊与群聊，消息双向同步到专家</li>
+                <li><b>QQ</b>：机器人频道，接入后可在 QQ 中直接对话</li>
+                <li>
+                  <b>元宝 / 小艺</b>：把专家能力接入腾讯元宝会话，或经 A2A 协议与语音助手互通
+                </li>
+                <li><b>MQTT</b>：把 IoT 设备或机器人的消息路由给专家</li>
+              </ul>
+              <p>
+                所有入口——Web 控制台、IM、定时任务——走的是<b>同一条处理链路</b>：
+                同一套工具、同样的技能、同样的记忆。所以「控制台里能做到的事，群里也做得到」，
+                不会出现两套行为。群里的每条消息都带发送者身份，只有授权名单里的人能触发工具调用与写文件。
+              </p>
+            </div>
           </article>
         </div>
       </section>
@@ -517,9 +704,8 @@ octop run</code></pre>
             <details>
               <summary>{{NAME_ZH}}是开源的吗？</summary>
               <p>
-                是。{{NAME_ZH}}基于 MIT 协议的
-                <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>
-                开发，保留了上游的许可与署名。代码公开，你可以自行审计、修改与分发。
+                是。{{NAME_ZH}}以 MIT 协议发布，许可与版权声明随源码一并提供。
+                代码公开，你可以自行审计、修改与分发。
               </p>
             </details>
             <details>
@@ -560,8 +746,8 @@ octop run</code></pre>
             <details>
               <summary>有企业支持吗？</summary>
               <p>
-                这是薄 fork + 独立品牌路线的产品，面向企业内网自托管部署。问题反馈与实施支持请通过
-                <a href="{{REPO_URL}}/issues" rel="noopener">仓库的 issue</a> 联系我们。
+                面向企业内网自托管部署。问题反馈与实施支持请通过
+                <a href="{{ISSUES_URL}}">问题反馈</a> 联系我们。
               </p>
             </details>
           </div>
@@ -586,9 +772,7 @@ octop run</code></pre>
                 />
               </svg>
             </a>
-            <a class="btn btn-ghost btn-lg" href="{{REPO_URL}}" rel="noopener"
-              >查看源码</a
-            >
+            <a class="btn btn-ghost btn-lg" href="{{DOC_URL}}">查看源码</a>
           </div>
           <img
             class="cta-mascot"
@@ -610,18 +794,12 @@ octop run</code></pre>
           width="140"
           height="36"
         />
-        <p class="foot-note">
-          v{{VERSION}} · 基于
-          <a href="https://github.com/{{UPSTREAM}}" rel="noopener">{{UPSTREAM}}</a>
-          （MIT License）二次开发。
-        </p>
+        <p class="foot-note">v{{VERSION}} · 以 MIT 协议发布</p>
         <nav class="foot-links" aria-label="页脚导航">
-          <a href="{{REPO_URL}}" rel="noopener">项目仓库</a>
-          <a href="{{RELEASE_URL}}" rel="noopener">版本发布</a>
-          <a href="{{REPO_URL}}/blob/product/main/CHANGELOG.md" rel="noopener"
-            >更新日志</a
-          >
-          <a href="{{REPO_URL}}/issues" rel="noopener">反馈问题</a>
+          <a href="{{DOC_URL}}">项目文档</a>
+          <a href="{{RELEASE_URL}}">版本发布</a>
+          <a href="{{CHANGELOG_URL}}">更新日志</a>
+          <a href="{{ISSUES_URL}}">反馈问题</a>
         </nav>
       </div>
     </footer>

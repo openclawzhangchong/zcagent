@@ -319,12 +319,6 @@ p {
   color: var(--brand);
 }
 
-.pill:hover {
-  text-decoration: none;
-  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
-  color: var(--brand);
-}
-
 .hero h1 {
   margin: 26px auto 0;
   max-width: 17ch;
@@ -887,6 +881,79 @@ p {
 .feature-copy p {
   color: var(--ink-2);
   font-size: 16.5px;
+}
+
+/* --------------------------------------------------------------- ecosystem */
+
+/* 装上就有的能力：顶部那排数字，比任何形容词都有说服力 */
+.eco-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 40px 0 20px;
+}
+
+.eco-stats div {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.eco-stats b {
+  display: block;
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 800;
+  color: var(--brand);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.eco-stats span {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.ticks {
+  list-style: none;
+  margin: 20px 0;
+  padding: 0;
+}
+
+.ticks li {
+  position: relative;
+  padding: 9px 0 9px 26px;
+  color: var(--ink-2);
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+
+.ticks li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 17px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  opacity: 0.5;
+}
+
+.ticks b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.feature-tight {
+  margin-top: 72px;
+}
+
+.feature-tight .feature-copy p {
+  font-size: 16px;
 }
 
 /* --------------------------------------------------------------------- faq */
