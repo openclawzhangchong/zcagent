@@ -32,7 +32,7 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
-## [未发布] — 攒给下一个版本
+## [1.0.2b6+z10] — 2026-10-12
 
 ### 修掉：桌面包里没有 Node，连接器一律装不上
 
@@ -68,6 +68,15 @@ Node 运行时必须常驻。而我们的主叙事是内网部署（`README.md`�
 下载页的字节数全在描述一个没有产出的文件。改成：候选解释器必须**证明自己真能跑**
 （`"$py" -c "print(1)"` 要回显 `1`），并且子 shell 之后硬检查 `[[ -s "$zip_path" ]]`，
 没有就失败退出。本机正是这个组合（无 zip、`python3` 是 stub），修完才第一次产出真 zip。
+
+### CI：补 node 的下载源、缓存与冒烟断言
+
+`octop-desktop.yml` 里加 `NODE_VERSION` / `NODE_BASE_URL`（runner 上走 nodejs.org 上游，
+与 PBS 的约定一致），新增一步 **Smoke bundled node**：从产物目录里真跑
+`node -v` 与 `npm -v`，跑不起来就红——打包回归不会再变成一个能下载但没有连接器的包。
+顺带修一个一直在空转的步骤：缓存路径写的是 `green/.cache`，而 `_common.sh` 实际用的
+是 `desktop/portable/.cache`（workflow 从没设过 `GREEN_ROOT`），所以那个缓存永远 miss；
+key 里现在也带上 `NODE_VERSION`。
 
 ### 交互：展开对话历史时自动折叠最左导航栏
 

@@ -53,6 +53,8 @@ env:
   PBS_BASE_URL: https://github.com/astral-sh/python-build-standalone/releases/download/20251209
   PBS_TAG: "20251209"
   PBS_PY: "3.12.12"
+  NODE_VERSION: "22.20.0"
+  NODE_BASE_URL: https://nodejs.org/dist/v22.20.0
 
 jobs:
   frontend:
@@ -166,12 +168,15 @@ jobs:
           python-version: "3.12"
 
       # GitHub Cache outages must not fail the build — PBS download is cheap enough.
-      - name: Cache python-build-standalone downloads
+      # The path is where _common.sh actually caches downloads (GREEN_ROOT is not
+      # overridden in this workflow, so it is desktop/portable/.cache).
+      - name: Cache bundled runtime downloads
         continue-on-error: true
         uses: actions/cache@v5
         with:
-          path: green/.cache
-          key: pbs-${{ env.PBS_TAG }}-${{ env.PBS_PY }}-${{ matrix.plat }}
+          path: desktop/portable/.cache
+          key: >-
+            runtimes-${{ env.PBS_TAG }}-${{ env.PBS_PY }}-${{ env.NODE_VERSION }}-${{ matrix.plat }}
 
       - name: Bootstrap portable CPython
         env:
@@ -185,6 +190,23 @@ jobs:
           set -euo pipefail
           echo "GREEN_HOST_PLAT=${GREEN_HOST_PLAT} RUNNER_ARCH=${RUNNER_ARCH:-} uname=$(uname -ms)"
           bash desktop/portable/package.sh "${{ matrix.plat }}"
+
+      - name: Smoke bundled node (native host only)
+        run: |
+          set -euo pipefail
+          staging="desktop/portable/release/zcagent-${{ matrix.plat }}"
+          if [[ "${{ matrix.plat }}" == windows-* ]]; then
+            node="${staging}/node/node.exe"
+            npm="${staging}/node/npm.cmd"
+          else
+            node="${staging}/node/bin/node"
+            npm="${staging}/node/bin/npm"
+          fi
+          # Connector CLIs install from npm and are Node programs, so a payload
+          # without a working node/npm ships the "未找到 npm" dead end again.
+          [[ -x "$node" || -f "$node" ]] || { echo "node missing: $node" >&2; exit 1; }
+          "$node" -v
+          "$npm" -v
 
       - name: Smoke import (native host only)
         run: |
