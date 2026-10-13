@@ -202,7 +202,11 @@ def build_tokens(brand: dict, rel: dict) -> dict:
         "ZIP_URL": zipped["url"],
         "PREV_VERSION": prev.get("version", ""),
         "PREV_TAG": prev.get("tag", ""),
-        "PREV_REASON": prev.get("reason", ""),
+        # The previous release is usually just the previous release. Only say
+        # 已废弃 when release.json actually marks it so, and never render an
+        # empty reason (it used to come out as a bare 。).
+        "PREV_LABEL": prev.get("label") or "上一版",
+        "PREV_REASON": prev.get("reason") or "功能正常，已被更新版本取代",
         "PREV_URL": f"https://github.com/{rel['repo']}/releases/tag/{prev.get('tag', '')}",
     }
 

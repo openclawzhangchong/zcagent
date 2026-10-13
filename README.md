@@ -31,10 +31,10 @@ MCP 的主路径），因此任何文案都不声称"密钥不落盘"。详见 [
 <!-- client-downloads:start -->
 | 产物 | 大小 | SHA256 | 适合谁 |
 |---|---|---|---|
-| [`zcagent-desktop-windows-amd64-1.0.2b6+z09.exe`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z09/zcagent-desktop-windows-amd64-1.0.2b6%2Bz09.exe) | 183.3 MiB（192,200,150 字节） | `4ae768bf…03c825` | 日常使用：开始菜单图标 + 桌面窗口（需 WebView2 运行时） |
-| [`zcagent-portable-windows-amd64-1.0.2b6+z09.zip`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z09/zcagent-portable-windows-amd64-1.0.2b6%2Bz09.zip) | 187.5 MiB（196,615,752 字节） | `e9ee05d1…327c9d` | 内网批量部署：解压 → `start.bat`，自带 CPython，不需要装 Python / Node |
+| [`zcagent-desktop-windows-amd64-1.0.2b6+z10.exe`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z10/zcagent-desktop-windows-amd64-1.0.2b6%2Bz10.exe) | 217.7 MiB（228,309,973 字节） | `0b7f6ea8…e9a1e4` | 日常使用：开始菜单图标 + 桌面窗口（需 WebView2 运行时） |
+| [`zcagent-portable-windows-amd64-1.0.2b6+z10.zip`](https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z10/zcagent-portable-windows-amd64-1.0.2b6%2Bz10.zip) | 223.1 MiB（233,968,336 字节） | `1aa3f015…bff8d4` | 内网批量部署：解压 → `start.bat`，自带 CPython 与 Node 运行时，不需要装 Python / Node |
 
-下载页：<https://zcagent-download-igdker4k5y4.qoder.website/> ｜ 全部产物：[GitHub Releases](https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z09)
+下载页：<https://zcagent.jiuyeke.cn/download/> ｜ 全部产物：[GitHub Releases](https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z10)
 <!-- client-downloads:end -->
 
 装完第一次启动会走初始化向导（验证口令 → 数据库 → 建管理员 → 配模型，模型可跳过）。一次性口令在

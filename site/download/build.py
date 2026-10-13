@@ -77,11 +77,20 @@ def retag(data: dict, tag: str) -> dict:
     Without this, ``--from-github`` happily refreshes whatever tag is already
     pinned and prints success -- which is how the page sat on z03 through the
     z04..z07 releases.
+
+    ``previous`` is **reset**, not carried over: the old release is usually just
+    the previous version, not a deprecated one. Copying the outgoing note is how
+    z09 ended up described with z08's cache-addressing defect. When a version
+    really is deprecated, fill ``label`` / ``reason`` back in by hand afterwards.
     """
     if tag == data["tag"]:
         return data
-    old = {"version": data["version"], "tag": data["tag"]}
-    data["previous"] = {**old, "reason": data.get("previous", {}).get("reason", "")}
+    data["previous"] = {
+        "version": data["version"],
+        "tag": data["tag"],
+        "label": "上一版",
+        "reason": "",
+    }
     data["tag"] = tag
     data["version"] = tag[1:].replace("-", "+", 1)
     data["release_url"] = f"https://github.com/{data['repo']}/releases/tag/{tag}"
@@ -147,7 +156,7 @@ def render(template: str, values: dict[str, str]) -> str:
 
 AUDIENCE = {
     "exe": "日常使用：开始菜单图标 + 桌面窗口（需 WebView2 运行时）",
-    "zip": "内网批量部署：解压 → `start.bat`，自带 CPython，不需要装 Python / Node",
+    "zip": "内网批量部署：解压 → `start.bat`，自带 CPython 与 Node 运行时，不需要装 Python / Node",
 }
 README_START = "<!-- client-downloads:start -->"
 README_END = "<!-- client-downloads:end -->"
