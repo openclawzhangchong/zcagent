@@ -1,33 +1,33 @@
 {
-  "version": "1.0.2b6+z11",
-  "tag": "v1.0.2b6-z11",
+  "version": "1.0.2b6+z12",
+  "tag": "v1.0.2b6-z12",
   "date": "2026-10-20",
   "repo": "openclawzhangchong/zcagent",
-  "release_url": "https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z11",
+  "release_url": "https://github.com/openclawzhangchong/zcagent/releases/tag/v1.0.2b6-z12",
   "site_url": "https://zcagent-download-igdker4k5y4.qoder.website/",
   "tested_on": "Windows 10 10.0.19045",
   "runtime": "CPython 3.12.12 + Node 22.20.0",
   "portable_extracted_mib": 724,
   "previous": {
-    "version": "1.0.2b6+z10",
-    "tag": "v1.0.2b6-z10",
+    "version": "1.0.2b6+z11",
+    "tag": "v1.0.2b6-z11",
     "label": "上一版",
-    "reason": "z10 功能正常，z11 修掉「模型配好了却提示没有可用模型」：抓回来的模型默认未启用，以前界面没交代这一步"
+    "reason": "z11 功能正常，z12 加的是公网访问（Cloudflare 隧道），默认关闭，不影响已有安装"
   },
   "assets": {
     "exe": {
-      "name": "zcagent-desktop-windows-amd64-1.0.2b6+z11.exe",
-      "bytes": 228314086,
-      "sha256": "ab3bf3c89f7189d5952ebeab6cab0eb8def0a17f0fd7867e96eedfdf196bacad",
-      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z11/zcagent-desktop-windows-amd64-1.0.2b6%2Bz11.exe",
-      "id": 658610670
+      "name": "zcagent-desktop-windows-amd64-1.0.2b6+z12.exe",
+      "bytes": 228329078,
+      "sha256": "ff550c2a3e9584983dad975e9d8b8c3e3f7f7cee9e55b92b82744bda61fa4cd3",
+      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z12/zcagent-desktop-windows-amd64-1.0.2b6%2Bz12.exe",
+      "id": 659036315
     },
     "zip": {
-      "name": "zcagent-portable-windows-amd64-1.0.2b6+z11.zip",
-      "bytes": 233968853,
-      "sha256": "22196211e5b55ffdd8ba294ff5aeaa416b9445974ed21123594d458c27663ba9",
-      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z11/zcagent-portable-windows-amd64-1.0.2b6%2Bz11.zip",
-      "id": 658610669
+      "name": "zcagent-portable-windows-amd64-1.0.2b6+z12.zip",
+      "bytes": 233990800,
+      "sha256": "d2ae53a046cfa6aca88af3f147767be51b48976f1f13f07a5d2b66811a39a842",
+      "url": "https://github.com/openclawzhangchong/zcagent/releases/download/v1.0.2b6-z12/zcagent-portable-windows-amd64-1.0.2b6%2Bz12.zip",
+      "id": 659036313
     }
   }
 }
