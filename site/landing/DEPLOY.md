@@ -140,3 +140,29 @@ curl -sSL "https://zcagent.jiuyeke.cn/?v=$(date +%s)" | grep -o "1\.0\.2b6+z[0-9
 - 多页之后 `dist/` 的文件数会随页面数变化（单页 32、干净检出 26，差别在并行改动里
   未跟踪的那几张屏），**别把文件数当正确性判据**，用 `build.py --check`。
 | 页面白屏、控制台报 CSP | `_headers` 里的 `Content-Security-Policy` 只允许同源资源；新加外链资源时要一起放开 |
+
+## z11 这一版**没有**部署 landing：HEAD 自身构建不出来
+
+发 z11 时下载页（Qoder Sites）已核对上线为 z11，官网停在 z10。原因不是忘了，是
+`python site/landing/build.py` 在**干净检出**上跑不通，两条都是 `bb409021`（改首屏那枚 pill）留下的：
+
+1. 那次把线上版本的模板抄进了仓库，模板因此开始用 `{{CHANGELOG_URL}}`、`{{DOC_URL}}`、
+   `{{INSTALL_URL}}`、`{{INSTALL_PS1_URL}}`、`{{ISSUES_URL}}` 这五个 token，而**已提交的
+   `build.py` 一个都不提供** → 构建直接以
+   `template uses tokens that no data source provides` 失败。这五个 token 与
+   `src/_redirects` 目前只存在于未提交的工作区。
+2. 就算补上 1，模板还引用 `./assets/screens/{tasks,expert-market,skill-market,connectors}.png`
+   四张图，同样只在未提交的工作区里（由 `screens/*.html` + `shot_screens.py` 生成）
+   → 死链门禁报 4 个 dead link 后退出。
+
+线上那五枚短链是好的（`/repo`、`/issues`、`/changelog`、`/docs`、`/install` 逐个实测 302，
+目标与 `_redirects` 一致），所以**访问者没有坏链**，只是版本号落后一版。
+
+**怎么解**：把在做的这套 landing 改动（`build.py` 的 token、`src/_redirects`、
+`screens/*`、`shot_screens.py`、重拍的四张 PNG）作为一个整体提交，然后在干净检出上跑
+`build.py`，让门禁自己判定它是否完整——不要从工作区直接部署。
+提交后重新 `build.py` 一次即可拿到 z11，因为版本号全部来自 `site/download/release.json`，
+而那份已经是 z11。
+
+> 教训：**模板、builder、资源必须同一次提交落地。** 只把"线上看起来对的那一版"抄进
+> 模板，等于让仓库落后于线上 yet 又领先于自己——两边都对不上，而且 `git diff` 看不出来。
