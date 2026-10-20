@@ -77,6 +77,7 @@ from octop.infra.db.repos.audit import ACTOR_SYSTEM
 from octop.infra.errors import ErrorCode, OctopError
 from octop.infra.skills.presentation import apply_skill_presentation, localize_skill_summary
 from octop.infra.skills.skill_package_store import SkillPackageStore
+from octop.infra.skills.thread_state import sync_thread_skills
 from octop.infra.skills.workspace_catalog import (
     list_workspace_skill_summaries,
     repair_workspace_skill_manifests,
@@ -410,6 +411,9 @@ class AgentManager:
         self._reload_dirty: set[str] = set()
         self._reload_worker_running: dict[str, bool] = {}
         self._bootstrap_graph_refresh_pending: set[str] = set()
+        # (agent, thread) -> digest of the skill pool last written into that
+        # thread's checkpoint. See octop.infra.skills.thread_state.
+        self._skill_state_seen: dict[tuple[str, str], str] = {}
         # Chat user id used to resolve connectors when agent.user_id is NULL (shared agents).
         self._connector_user_override: dict[str, int] = {}
         self._langfuse = LangfuseSettingsStore(
@@ -1301,11 +1305,37 @@ class AgentManager:
             self._track_invocation(agent_id),
         ):
             self._apply_pending_bootstrap_graph_refresh(agent_id)
+            await self._sync_thread_skill_state(agent_id, thread_id)
             req = self._prepare_stream_request(agent_id, request)
             with hitl_thread_scope(thread_id_from_request(req)):
                 async for chunk in self._harness_manager.stream(agent_id, cast(Any, req)):
                     yield chunk
             self._apply_pending_bootstrap_graph_refresh(agent_id)
+
+    async def _sync_thread_skill_state(self, agent_id: str, thread_id: str) -> None:
+        """Re-publish the live skill pool into this conversation's checkpoint.
+
+        The harness snapshots ``skills_metadata`` on a thread's first turn and
+        never re-scans it, so a skill installed afterwards stays invisible in
+        conversations that were already open. Runs under the thread execution
+        lock so the checkpoint write cannot interleave with a turn. A failure
+        only costs freshness: it must not take the chat turn down.
+        """
+        if not thread_id:
+            return
+        try:
+            agent = self.get_agent(agent_id)
+        except OctopError:
+            return
+        try:
+            await sync_thread_skills(agent, agent_id, thread_id, self._skill_state_seen)
+        except Exception:
+            logger.warning(
+                "Skill pool refresh failed for agent %s thread %s",
+                agent_id,
+                thread_id,
+                exc_info=True,
+            )
 
     async def call(self, agent_id: str, request: dict[str, Any]) -> dict[str, Any]:
         """Non-streaming harness invocation (one-shot agent call)."""
