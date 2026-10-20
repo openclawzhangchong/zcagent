@@ -25,8 +25,14 @@ Get-FileHash .\zcagent-desktop-windows-amd64-<版本>.exe -Algorithm SHA256
 ## 系统要求
 
 - Windows 10 1903 及以上，x64（实测环境 Windows 10 10.0.19045）
-- 磁盘（z10 实测）：安装版程序目录约 235 MB，便携版解压后约 724 MiB；首次运行还会把绿色包
-  解到 `~\.octop\portable`（实测 811 MB），运行数据另算
+- 磁盘（z11 实测）：安装版程序目录约 235 MB，便携版解压后 758 MB（≈723 MiB，与下载页标的
+  724 MiB 一致）；首次运行还会把绿色包解到 `~\.octop\portable`，**干净状态 758 MB**，
+  运行数据另算
+- **`~\.octop\portable` 会长大，给客户算磁盘时要留余量**：知识库真的跑过一次之后，
+  onnxruntime / numpy / Pillow / tokenizers / huggingface_hub 这些依赖会装进
+  `portable\runtime\Lib\site-packages`，实测多占 151 MB（本机 758 MB → 946 MB）。
+  这不是残留也不是重复解压——`runtime\Lib` 从 32 MB 变 172 MB，`packages\` 只多 47 MB，
+  差额全在真正被 import 过的那些包里。内网批量部署请按 **≈1 GB** 预留这一项
 - 安装版需要 **Microsoft Edge WebView2 运行时**（较新的 Win10/Win11 已内置，缺失时安装器会提示）
 - 便携版**不需要**安装 Python 或 Node。z10 起包里就带着 Node 22.20.0 —— 之前从 npm 装的
   连接器命令行工具（agently 邮件 / 飞书 / 企微）会报「未找到 npm，请先在 zcagent 主机安装 Node.js」，
@@ -63,7 +69,8 @@ Get-FileHash .\zcagent-desktop-windows-amd64-<版本>.exe -Algorithm SHA256
   技能、通道与模型配置都在里面。
 - 迁移 = 拷走整个数据目录。
 - 卸载：安装版从「应用和功能」卸载，便携版直接删目录；两者都不动数据，重装即可继续用。
-- **一条要知道的残留**：桌面客户端首次运行会把绿色包解到 `~\.octop\portable\`（z10 实测 811 MB），
+- **一条要知道的残留**：桌面客户端首次运行会把绿色包解到 `~\.octop\portable\`（z11 实测
+  758 MB 起，用过知识库后约 946 MB），
   卸载**不会**删除它（它位于数据目录内，卸载器按设计不动数据）。要彻底清理，卸载后手动删除
   `~\.octop\portable`。
 

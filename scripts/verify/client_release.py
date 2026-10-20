@@ -402,8 +402,11 @@ def stage_bundled_node(version: str) -> dict:
     env["PYTHONNOUSERSITE"] = "1"
     env["PYTHONPATH"] = ""
     proc = subprocess.run(
-        [str(PORTABLE / "runtime" / ("python.exe" if os.name == "nt" else "bin/python3")),
-         "-c", probe],
+        [
+            str(PORTABLE / "runtime" / ("python.exe" if os.name == "nt" else "bin/python3")),
+            "-c",
+            probe,
+        ],
         capture_output=True,
         text=True,
         timeout=240,
@@ -419,7 +422,9 @@ def stage_bundled_node(version: str) -> dict:
             "the shipped code still cannot find npm with the launcher's environment -- "
             f"PATH head was {seen.get('path_head')!r}"
         )
-    log(f"bundled node: {out['node_v']} / npm {out['npm_v']} / VERSION.txt node={out['version_txt_node']}")
+    log(
+        f"bundled node: {out['node_v']} / npm {out['npm_v']} / VERSION.txt node={out['version_txt_node']}"
+    )
     log(f"  detector resolves npm -> {out['detector_sees_npm']}")
     return out
 
@@ -614,16 +619,34 @@ def stage_ui(version: str) -> dict:
         "recovery_form": has_form,
         "modal_shows_cli_command": "octop user passwd" in modal_text,
     }
+    if version >= RECOVERY_UI_FROM:
+        # Self-service reset exists only on a single-account install
+        # (``_recovery_state`` in ``api/routers/local_recovery.py`` refuses when
+        # the count is not exactly 1). Asserting "the form is there" therefore
+        # fails on any machine that has been used for multi-user testing, and
+        # passes for the wrong reason on a fresh one. Ask the same endpoint the
+        # page asked and check the dialog agrees with it.
+        try:
+            recovery = json.loads(_served("/api/auth/local-recovery"))
+        except Exception as exc:  # noqa: BLE001
+            raise SystemExit(f"GET /api/auth/local-recovery failed: {exc}") from exc
+        result["recovery_available"] = bool(recovery.get("available"))
+        result["recovery_username"] = recovery.get("username")
     for key, value in result.items():
         log(f"  {key}: {value}")
     if not result["login_is_chinese"] or result["login_has_english_signin"]:
         raise SystemExit("the login page is still English")
     if version >= RECOVERY_UI_FROM:
-        if not result["recovery_form"]:
-            raise SystemExit("expected the self-service reset form in the dialog")
-        if result["modal_shows_cli_command"]:
+        if result["recovery_available"] and not result["recovery_form"]:
+            raise SystemExit("this machine can self-serve a reset but the dialog shows no form")
+        if result["recovery_available"] and result["modal_shows_cli_command"]:
             raise SystemExit(
                 "the dialog still shows shell commands on a machine that can self-serve"
+            )
+        if not result["recovery_available"] and not result["modal_shows_cli_command"]:
+            raise SystemExit(
+                "no self-service here (multi-account install), but the dialog also "
+                "withholds the command that would actually work"
             )
     return result
 

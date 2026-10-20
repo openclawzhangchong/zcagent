@@ -2,7 +2,95 @@
 
 智策 Windows 客户端的实测记录。每次改动产物时追加一节，不覆盖历史。
 
+## 1.0.2b6+z11 · 2026-10-20（主题：模型配好了却说"没有可用模型"）
+
+改动来龙去脉写在 `CHANGELOG.md` 的 z11 一节。本节只记发版后的产物验收，
+以及**这一轮被验收工具自己绊到的两次**。
+
+### CI 与产物
+
+tag `v1.0.2b6-z11` → run `39386274334`（Desktop Package）与 `39386273977`（Frontend 门禁）
+全部 success。产物形状与 z10 一致（Windows 安装版 + Windows 便携版）：
+
+| 文件 | 字节 | SHA256 |
+|---|---|---|
+| `zcagent-desktop-windows-amd64-1.0.2b6+z11.exe` | 228,314,086 | `ab3bf3c8…6bacad` |
+| `zcagent-portable-windows-amd64-1.0.2b6+z11.zip` | 233,968,853 | `22196211…663ba9` |
+
+相对 z10 只涨 4,113 B 与 517 B——与"只改前端表述加一个按钮"相符；
+如果哪一版涨了几十 MB，那说明带上了别的东西，要问。
+
+### 下载页线上核验（不信发布回显，直接读线上）
+
+`curl https://zcagent-download-igdker4k5y4.qoder.website/` → HTTP 200，
+`1.0.2b6+z11` 出现 7 次、`1.0.2b6+z10` 1 次（就是"上一版"那一行），
+`228,314,086` / `233,968,853` / `ab3bf3c8` / `22196211` 各自都在。
+
+### 装机验收（`client_release.py --stage all`，本机覆盖安装）
+
+```
+resolved zcagent-desktop-windows-amd64-1.0.2b6+z11.exe: 228314086 bytes, sha256 ab3bf3c89f7189d5...
+download verified: 228314086 bytes, hash matches the release digest
+installing silently into C:\Program Files\zcagent ...
+installed: C:\Program Files\zcagent\zcagent.exe (245505024 bytes), registry 1.0.2b6+z11
+unpacked runtime: 1.0.2b6+z10 -> 1.0.2b6+z11
+  1.0.2b6+z10 carries 'nav-new-chat': /assets/index.DpyY-vfK.js
+  1.0.2b6+z11 carries 'modelsCountEnabled': /assets/zh.B-Qr-Bee.js
+bundled node: v22.20.0 / npm 10.9.3 / VERSION.txt node=22.20.0
+  detector resolves npm -> C:\Users\Administrator\.octop\portable\node\npm.CMD
+  local load probe BAAI/bge-small-zh-v1.5: {'ok': True, 'latency_ms': 154.6, 'dim': 512}
+ALL ASSERTIONS HELD
+```
+
+`modelsCountEnabled` 落在 `zh.*.js` 语言分片里——它同时被组件和语言包引用，
+所以拿旧 chunk 冒充过不了这一关。
+
+### 修好之前，先说两次"失败"各是什么
+
+**1）自助重置表单断言失败——是工具的错，不是产物的错。**
+`expected the self-service reset form in the dialog`。查下来：这台机器上有
+`admin` 与 `zc` 两个账号（`zc` 是早先做多用户测试建的），而
+`_recovery_state()` 在账号数不等于 1 时**按设计**返回不可用
+（`src/octop/api/routers/local_recovery.py:62`），于是对话框回落到终端指令。
+实测两边都对得上：
+
+```
+GET /api/auth/local-recovery -> {"available":false,"username":null}
+accounts on this install: [('admin','admin'), ('zc','user')]
+```
+
+断言原来硬假设"单账号机器"，在用过多次用户测试的机器上必然假失败，
+在干净机器上又可能因为别的原因假通过。改成**问同一个接口、要求界面与它一致**：
+可用却没表单 = 失败；不可用却连能用的命令都不给 = 失败。两种形态现在都测得到。
+
+**2）landing 这一版没上线，卡在仓库自身不可构建。**
+`python site/landing/build.py` 在**干净检出**上两条硬失败：模板用了五个只有未提交
+工作区才提供的 token，又引用四张只有未提交工作区才生成的截图（死链门禁报 4 个）。
+根因是我上一轮 `bb409021` 把"线上那一版"的模板抄进仓库、没带上配套 builder 与资源。
+线上五枚短链逐个实测仍正确（`/repo`、`/issues`、`/changelog`、`/docs`、`/install` 全 302），
+所以访问者没有坏链，只是官网版本号停在 z10。详细处置写在 `site/landing/DEPLOY.md`。
+
+### 顺手纠正的一处体积口径
+
+`portable_extracted_mib: 724` 是真数：把 z11 便携版完整解压实测 **758 MB（≈723 MiB）**。
+但离线指南里"首次运行解到 `~\.octop\portable` 约 811 MB"这个数会误导实施人员——
+本机同一目录实测 **946 MB**。拆开看不是残留也不是重复解压（只有一份
+`octop-1.0.2b6+z11.dist-info`，无 `.old/.bak`）：`runtime\Lib` 从 32 MB 涨到 172 MB，
+多出来的 151 MB 是知识库真跑过之后装进 `site-packages` 的
+onnxruntime / numpy / Pillow / tokenizers / huggingface_hub。
+指南已按 z11 实测改写，并明确"内网批量部署这一项按 ≈1 GB 预留"。
+
+### 离线包
+
+`make_kit.py --local`（先用 `fetch_asset.py` 九段并发把 462 MB 拉下来，
+单连接在这台机器上要一个多小时）：两份产物都按 Release 的 digest 校验通过才装箱。
+桌面 `zcagent-1.0.2b6+z11-windows-offline-kit`（441 MB），z10 已移入
+`智策-旧版本存档`，与 z03/z07/z08/z09 并列。
+
+---
+
 ## 1.0.2b6+z10 · 2026-10-13（主题：桌面包内置 Node，连接器不再要求用户自己装）
+
 
 改动来龙去脉与体积实测写在 `CHANGELOG.md` 的 z10 一节。本节只记发版后的产物验收。
 
