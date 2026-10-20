@@ -58,6 +58,9 @@ BUNDLE_MARKERS = {
     # The model pool fix speaks through this i18n key, which appears in both the
     # component and the bundled locale JSON -- so it cannot pass on a stale chunk.
     "1.0.2b6+z11": ("modelsCountEnabled",),
+    # The public-access switch: a data-testid, so it survives CSS-module hashing
+    # and can only be present if the Network page actually shipped in this chunk.
+    "1.0.2b6+z12": ("tunnel-switch",),
 }
 # Releases from which the login page carries the account hint and self-service reset.
 RECOVERY_UI_FROM = "1.0.2b6+z06"

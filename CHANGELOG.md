@@ -32,6 +32,82 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z12] — 2026-10-20
+
+### 新增：公网访问（Cloudflare 隧道），带默认开启的「公网安全模式」
+
+负责人要求："把 cloudflare 的隧道功能加进去，这样外网可以通过隧道网址进行访问。"
+方案与判据先在 `docs/PLAN-tunnel.md` 里定稿，本版落 **P1**（quick 模式 + 硬门 + 自证探活 + 设置页）。
+
+**这不是一个开关的事，所以开关不是主体。** 专家能直接操作这台机器（终端、浏览器、
+远程桌面、本机文件），认证一旦被绕过就是主机沦陷，不是"泄露几个文件"。因此
+`docs/PLAN-tunnel.md` §8 的结论被当作交付条件执行：**没有 G5 公网安全模式的公网开关不交付**。
+
+| 环节 | 落点 |
+|---|---|
+| 生命周期 | `src/octop/infra/tunnel/manager.py`：asyncio 子进程（照 `api/routers/terminal.py` 的形状，**没有**学 `ollama_manager`——它把 `Popen` 丢了、靠 `pkill` 收尾，Windows 上还是空操作）、退避重启 5/30/120/300 秒、连续失败标记 `degraded` 而不是静默重启到死循环 |
+| 状态 | `settings` KV 一条 `cloudflare_tunnel`（与 `active_model`、预下载状态同表），字段含 `enabled/mode/url/status/verified_at/last_error/failures/safe_mode` |
+| 自证 | 拿到地址后**从本机走公网回环**打一次 `/api/health`，成功才叫 `live`；进程活着不算 |
+| 安全模式 | `src/octop/api/middleware/tunnel_guard.py`：凭边缘注入的 `Cf-Connecting-Ip` 判定来源，对隧道流量拒绝终端 / 浏览器 / 远程桌面 / 远程手机 / 本机文件浏览 / 接口文档 / TLS·更新·备份管理 |
+| 权限 | 新键 `tunnel`（admin 类，`permissions.py`），`require_permission` 会因未知键直接 RuntimeError，所以键先加再挂路由 |
+| 审计 | `tunnel.start` / `tunnel.stop` / `tunnel.safe_mode` / `tunnel.verified` |
+| 界面 | 设置 → 网络（`pages/Settings/Network`）+ 顶部常驻状态条（`components/TunnelActiveBanner.tsx`）——"以为关了其实还开着"是这类功能最坏的结局，所以不能只在设置页里显示 |
+
+### 硬门里有一条换了做法
+
+G2「口令强度达标」原计划在开启时检查——**做不到**：库里只有哈希。改成开启时
+**必须重输当前口令**，再用产品自己的 `validate_password_policy` 校验。这同时回答了
+"点这个按钮的人是不是知道口令的人"。口令只用于这一次校验，不落盘、不进日志。
+
+G6 是显式的：必须勾选"我已知悉流量经 Cloudflare 第三方边缘"，并单独写一篇
+`docs/public-access.md`——这是对 `README.md`「不出内网」承诺的公开例外，
+不能悄悄做。README 的"明确不做 / 已知边界"段落也一并指向它。
+
+### cloudflared 不进安装包
+
+52.8 MB 换 +23% 体积给一个绝大多数安装永远不用的功能不值。走
+`PLAN-tunnel.md` §4.1 的方案③：**第一次真的点"开启"时才下载并校验**。
+
+- 钉版本 `2026.10.1`，win/linux 各记一条 SHA-256（从 Release API 的 `digest` 读，不是估的）；
+- 强制 `--no-autoupdate`：cloudflared 默认会自我升级并重启，那等于把我们校验过的字节换成没校验过的；
+- 强制 `--loglevel info`：`--help` 原文写着 debug 级别会记录**每个请求头**，里面就有凭据；
+- Apache-2.0 声明随二进制落在 `%USERPROFILE%\.octop\tunnel\LICENSE.cloudflared.txt`；
+- 没有校验和的平台一律拒绝下载，而不是"先下下来再说"。
+
+### 三条只有真跑才测得到的事
+
+1. **探活必须重试。** 隧道地址打印后约 40 秒，本机解析那个随机子域仍返回
+   `getaddrinfo failed`（Cloudflare 边缘未生效 + 本地 DNS 负缓存）。一次性的探活会把
+   一条完全正常的隧道判成"未验证"，比不探更糟。预算改成 12 次 × 5 秒，界面上另留
+   「重新验证」按钮和 `POST /api/admin/tunnel/probe`。
+2. **cloudflared 没有 `--header` 注入能力**（`tunnel --help` 实测，只有改写 Host 的
+   `--http-host-header`），所以"这请求是不是从隧道来的"只能依赖边缘加的
+   `Cf-Connecting-Ip`。伪造它只会让自己被当成远程而**降权**，方向安全，测试里钉死了这条。
+3. **`bind()` 必须幂等。** 第一版每个请求处理器都调它，于是第一次状态轮询就把正在运行的
+   隧道从库里读回来、判成"上次重启遗留"并清空。回归测试
+   `test_binding_twice_does_not_kill_a_live_tunnel` 钉住。
+
+另外**故意不做自动重连**：试用地址每次重启都会变，自动重连只会让之前发出去的链接悄悄失效。
+named 模式（固定域名）需要用户自己的 Cloudflare 账号与 API Token，没有凭据就没法验证，
+本版不做——不写没验证过的功能。`M10 桌面双形态`（任务 #47）仍是"同事客户端填地址连进来"的前置。
+
+### 验收
+
+`scripts/verify/tunnel_probe.py`：起独立实例 → 走完首启 → 开**真**隧道 →
+从公网地址跑 13 项断言 → 关闭。三组各验一件事：
+
+| 组 | 断言 |
+|---|---|
+| 通 | 公网 `/api/health` 200；带 token 的 `/api/agents` 200；关闭后地址不再应答（502） |
+| 拦 | 文件系统 / 浏览器 / 远程桌面 **走隧道 403、走本机 200**——拦的是"从外面来"，不是把功能删掉 |
+| 兜 | 本机请求伪造 `Cf-Connecting-Ip` 也必须 403 |
+
+13/13 PASS。单测 `tests/unit/infra/tunnel`（28 项，全离线，CI 网络到不了 github.com 也能跑）
+覆盖：门禁路径表、钉住的校验和、下载字节不符即拒、不认裸文件只认 `.verified` 边车、
+外来的 PID 一律不信、不自动重连、`bind` 幂等。
+
+---
+
 ## [1.0.2b6+z11] — 2026-10-20
 
 ### 修掉：「获取模型列表」之后，可用模型池还是空的
