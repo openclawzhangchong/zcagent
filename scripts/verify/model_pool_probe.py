@@ -32,7 +32,6 @@ import os
 import shutil
 import socket
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +46,13 @@ PROVIDER_NAME = "本地网关"
 # Exactly the shape the dashboard writes after 获取模型列表.
 FETCHED_MODELS = [
     {"id": "glm-5.1", "name": "glm-5.1", "enabled": False, "input": ["text"], "thinking": None},
-    {"id": "deepseek-v4-pro", "name": "deepseek-v4-pro", "enabled": False, "input": ["text"], "thinking": None},
+    {
+        "id": "deepseek-v4-pro",
+        "name": "deepseek-v4-pro",
+        "enabled": False,
+        "input": ["text"],
+        "thinking": None,
+    },
     {"id": "auto", "name": "auto", "enabled": False, "input": ["text"], "thinking": None},
 ]
 

@@ -55,6 +55,9 @@ BUNDLE_MARKERS = {
     "1.0.2b6+z08": ("prefetch_enabled", "智策科技公司制度知识库"),
     # The nav's standalone new-chat button: proves the z10 dashboard shipped.
     "1.0.2b6+z10": ("nav-new-chat",),
+    # The model pool fix speaks through this i18n key, which appears in both the
+    # component and the bundled locale JSON -- so it cannot pass on a stale chunk.
+    "1.0.2b6+z11": ("modelsCountEnabled",),
 }
 # Releases from which the login page carries the account hint and self-service reset.
 RECOVERY_UI_FROM = "1.0.2b6+z06"

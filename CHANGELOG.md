@@ -32,6 +32,70 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z11] — 2026-10-20
+
+### 修掉：「获取模型列表」之后，可用模型池还是空的
+
+用户实测报告：自定义提供商填好、点了「获取模型列表」拿到 20 个模型，卡片显示
+「20 个模型 · 已授权」，可上面的**可用模型池**写着「暂无可用模型，请先授权至少一个
+提供商并配置模型」——而授权早就做完了，这句话把人指向一个已经满足的条件。
+
+**这不是后端的 bug。** 三个写入模型列表的入口
+（`CustomProviderModal.tsx:127`、`PresetProviderModal.tsx:133`、
+`ProviderConfigModal.tsx:879`）一律把抓回来的模型存成 `enabled: false`，
+`is_chat_eligible_model`（`providers/model_flags.py:163`）据此过滤，
+`GET /api/providers/resolved` 返回 `[]` 是正确行为——自动路由的候选池本来就该人工挑，
+否则一个 `/v1/models` 里有 `auto` 这种占位 id 的网关会把垃圾模型喂给路由器。
+
+**是界面的 bug**：没有任何一处交代"还差一步"，而且三处都在反方向误导。
+
+| 用户看到的 | 实际含义 |
+|---|---|
+| 卡片「20 个模型」 | 20 个**已添加**，0 个已启用 |
+| toast「已新增 20 个模型到列表（已有模型保持不变）」 | 听起来像可以直接用 |
+| 空池「请先授权至少一个提供商」 | 指错方向，授权已完成 |
+
+唯一写明「默认未启用」的 `fetchModelsSuccess` 是个**死键**——只存在于语言文件，
+源码零引用（已实测：`grep -rn fetchModelsSuccess dashboard/src --include=*.ts*` 无命中）。
+
+### 四处改动
+
+| 位置 | 改动 |
+|---|---|
+| `ProviderCard.tsx` | 有未启用模型时显示「已启用 0 / 20 个模型」；全启用则退回原来的「20 个模型」。**向量模型不计入分母**——ONNX 那三个由知识库选择器管，与这个开关无关，否则本地 ONNX 卡片会永远显示 0/N |
+| `ActiveModelPool.tsx` | 空池分两种：能定位到"有已授权提供商但模型全未启用"时点名说「模型已添加但还没有启用：\<名字\>」，否则才保留原来那句 |
+| `locales/{zh,en}.json` | `fetchModelsMerged` 补上「默认未启用，需打开开关才会进入可用模型池」；三个新键中英同步 |
+| `ModelListEditor.tsx` | 加「全部启用（N）」：20 个开关逐个点不叫易用性。自动跳过向量模型与未下载完的本地模型（`requireDownload` 锁） |
+
+### 一个只在真机上才会踩到的坑
+
+新加的 `:global(.ant-input-affix-wrapper)` 不生效。这个应用把 antd 前缀改成了
+`octop`（`App.tsx:132` `prefixCls="octop"`），所有类名是 `octop-card-body`、
+`octop-switch`、`octop-drawer-body`。`index.module.less` 里上游留下的
+`.ant-card-body` 规则本身是死的，反而让 `ant-` 看起来像约定。LESS 选择器不匹配**不会报错**，
+只会静默失效，所以改成包一层自己的类 `.modelListToolbarField`，不再依赖 antd 内部类名。
+
+### 验收
+
+`scripts/verify/model_pool_probe.py`：起独立实例（自己的 `OCTOP_HOME`、空口端口）→
+按界面写入的**一模一样**的形状造 provider → 驱动 1280×800 的真实构建产物走完
+「空池 → 点编辑 → 点全部启用 → 保存」。7 项断言全过：
+
+```
+resolved_before = 0                    ← 复现报告里的空池
+card: 模型: 已启用 0 / 3 个模型
+pool: 模型已添加但还没有启用：本地网关。点该提供商的「编辑」…
+全部启用 clicked=True  剩余未启用=0
+card: 模型: 3 个模型     pool: 3 个可用  rows=3
+resolved_after = 3
+verdict: OK
+```
+
+装机实例另测：把该机器上那个 20 模型的提供商全部启用后，
+`GET /api/providers/resolved` 由 0 变 20。`tsc -b`、eslint、i18n 键对齐（76 passed）全绿。
+
+---
+
 ## [1.0.2b6+z10] — 2026-10-12
 
 ### 修掉：桌面包里没有 Node，连接器一律装不上
