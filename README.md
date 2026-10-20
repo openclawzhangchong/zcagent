@@ -25,6 +25,8 @@
 `src/octop/api/routers/terminal.py`）；技能的**遵循度**取决于模型档位，flash 档实测会绕开技能；
 Agent 可在工作区 `.octop/.env` 写明文凭据，这是**权衡后的接受项**（强制加密会挡住普通用户接自己
 MCP 的主路径），因此任何文案都不声称"密钥不落盘"。详见 [`docs/HANDOVER.md`](./docs/HANDOVER.md) 第 6 节。
+默认只监听本机与内网；**开启公网访问是一个显式例外**（经 Cloudflare 边缘转发），
+开关、硬门与风险都写在 [`docs/public-access.md`](./docs/public-access.md)。
 
 ## 获取 Windows 客户端
 

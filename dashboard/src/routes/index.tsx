@@ -19,6 +19,7 @@ const RemoteDesktopPage = lazy(() => import("../pages/Control/RemoteDesktop"));
 
 // Lazy-loaded pages — Settings
 const ModelsPage = lazy(() => import("../pages/Settings/Models"));
+const NetworkPage = lazy(() => import("../pages/Settings/Network"));
 
 // Lazy-loaded pages — Admin
 const OctopAdminUsersPage = lazy(() => import("../pages/Admin/Users"));
@@ -92,6 +93,7 @@ export const pathToKey: Record<string, string> = {
   "/admin/plugins": "admin-plugins",
   "/admin/advanced": "admin-advanced",
   "/admin/security": "admin-security",
+  "/admin/network": "network",
 };
 
 /**
@@ -235,6 +237,7 @@ export const routeConfigs: RouteConfig[] = [
   { path: "/admin/plugins", element: <AdminPluginsPage /> },
   { path: "/admin/advanced", element: <AdvancedSettingsPage /> },
   { path: "/admin/security", element: <AdminSecurityPage /> },
+  { path: "/admin/network", element: <NetworkPage /> },
   {
     path: "/admin/voice",
     element: <Navigate to="/admin/models?tab=voice" replace />,

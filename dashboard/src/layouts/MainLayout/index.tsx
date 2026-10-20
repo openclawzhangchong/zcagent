@@ -23,6 +23,7 @@ import { useKeyboardOffset } from "../../hooks/useKeyboardOffset";
 import { useChatSidebarOpen } from "../../pages/Chat/hooks/useChatSidebarState";
 import { EXPAND_CHAT_RAIL_EVENT } from "../../pages/Chat/components/ChatSidebarPanel";
 import RequirePermission from "../../components/RequirePermission";
+import TunnelActiveBanner from "../../components/TunnelActiveBanner";
 import { routeNeedsPermission } from "../../utils/permissions";
 import { useLayoutMode } from "../../context/LayoutModeContext";
 import { useDashboardPushToast } from "../../hooks/useDashboardPushToast";
@@ -285,6 +286,7 @@ export default function MainLayout() {
                 minHeight: 0,
               }}
             >
+              <TunnelActiveBanner />
               <Content
                 className="page-container"
                 style={{

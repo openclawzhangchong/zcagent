@@ -44,6 +44,9 @@ export const NAV_PERMISSIONS = {
   "admin-plugins": PERM.plugins,
   "admin-security": PERM.securityPage,
   "admin-advanced": PERM.advancedPage,
+  // Public exposure is its own page but stays admin-only: the gate is the
+  // ``tunnel`` permission key, not the nav entry, so an employee never sees it.
+  network: ["tunnel"],
 } as const satisfies Record<string, PermissionKeys>;
 
 export type NavPermissionKey = keyof typeof NAV_PERMISSIONS;

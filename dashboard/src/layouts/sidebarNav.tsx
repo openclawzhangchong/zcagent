@@ -18,6 +18,7 @@ import {
   HardDrive,
   GraduationCap,
   Shield,
+  Globe,
   PanelsTopLeft,
 } from "lucide-react";
 import type { OctopUser } from "../api/modules/auth";
@@ -204,6 +205,14 @@ export function buildNavSections(
       path: "/knowledge-bases",
       icon: <Database size={iconSize} strokeWidth={iconStroke} />,
       labelKey: "nav.knowledgeBases",
+    });
+  }
+  if (navAllowed(user, "network")) {
+    settingsItems.push({
+      key: "network",
+      path: "/admin/network",
+      icon: <Globe size={iconSize} strokeWidth={iconStroke} />,
+      labelKey: "nav.network",
     });
   }
   // User-scoped remote zcagent links — always available (like personalization).

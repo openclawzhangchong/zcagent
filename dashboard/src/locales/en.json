@@ -266,6 +266,7 @@
     "adminPlugins": "Plugins",
     "skillPackages": "Skill Packages",
     "knowledgeBases": "Knowledge Bases",
+    "network": "Network",
     "remoteAndroid": "Remote Phone",
     "records": "Tasks",
     "paneSettings": "Settings",
@@ -2781,6 +2782,49 @@
     "micNotAvailable": "Audio recording unavailable — please use HTTPS",
     "sttNotAvailable": "Voice input not available on this device (HTTPS required)",
     "ttsAutoplayBlocked": "Autoplay blocked by browser — tap read-aloud again"
+  },
+  "network": {
+    "switchTitle": "Public access",
+    "switchHelp": "While this is off, zcagent listens only on this machine and your intranet — nothing on the internet can reach it. Turning it on opens an outbound tunnel to Cloudflare and gives you a public URL, with no public IP and no router port forwarding.",
+    "status": {
+      "off": "Off",
+      "starting": "Preparing",
+      "connecting": "Connecting",
+      "live": "Verified",
+      "unverified": "Up · unverified",
+      "degraded": "Unstable",
+      "error": "Failed",
+      "stopped": "Stopped"
+    },
+    "copy": "Copy",
+    "open": "Open",
+    "refresh": "Refresh",
+    "copied": "Address copied",
+    "copyFailed": "Copy failed — select the address and copy it manually",
+    "ephemeralTitle": "This address is one-time",
+    "ephemeralBody": "A trial tunnel gets a new random address every time it is opened, and it does not come back on its own after a restart. Check before you send it to a colleague. For a permanent hostname, configure a named tunnel in Cloudflare (not yet built into this release).",
+    "safeModeTitle": "Public-safe mode",
+    "safeModeBody": "While on, requests arriving from the internet cannot use: terminal, browser, remote desktop, remote phone, host file browsing, API docs, and TLS/update/backup administration. Local and intranet use is unaffected. Agents can operate this machine directly, which is why this stays on by default and turning it off is not advised.",
+    "preflightTitle": "What must be true first",
+    "goFix": "Configure",
+    "consent": "I understand that traffic will transit Cloudflare's third-party edge, which differs from the default promise that data stays on the intranet.",
+    "consentHelp": "Chat content, uploaded files and login credentials all pass through that third party. Confirm this meets your organisation's compliance requirements.",
+    "confirmTitle": "Confirm public access",
+    "confirmOk": "Open",
+    "confirmBody": "Once open, anyone who finds the URL sees a login page. Make sure captcha is on and the admin password is strong.",
+    "confirmUnsafeWarning": "You turned public-safe mode off: if a login is ever bypassed, the attacker can operate this computer directly (terminal, files, desktop). Keeping it on is strongly advised.",
+    "passwordLabel": "Current password",
+    "passwordPlaceholder": "Your login password",
+    "passwordHelp": "The password is asked for again because the database stores a hash: without the plaintext we cannot judge its strength, nor prove that the person clicking knows it. It is used for this check only and is never stored.",
+    "needPassword": "Enter your current password",
+    "starting": "Opening the tunnel. The first time also downloads the public-access component (~53 MB).",
+    "bannerOn": "Public access is on — this machine is currently reachable from the internet.",
+    "bannerUnverified": "Public access is on but has not passed the external check — the address may not open.",
+    "bannerManage": "Manage",
+    "actionFailed": "Operation failed",
+    "reprobe": "Re-check",
+    "reprobeOk": "Public check passed — the address works.",
+    "reprobeFailed": "The public check still fails. The address may still be propagating; try again shortly."
   },
   "security": {
     "intro": "Configure runtime security policies for agents. Running agents reload automatically after save.",
@@ -6342,6 +6386,10 @@
     "security": {
       "title": "Security",
       "subtitle": "Tool approval, command guard, filesystem rules, and PII redaction"
+    },
+    "network": {
+      "title": "Network",
+      "subtitle": "Listening scope and public access"
     },
     "adminPlugins": {
       "title": "Plugin Management",

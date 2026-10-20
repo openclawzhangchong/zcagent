@@ -195,6 +195,18 @@ PERMISSIONS: dict[str, PermissionDef] = {
         page_zh="应用设置",
         page_en="App settings",
     ),
+    # Public exposure is admin-only, but it lives on its own page rather than
+    # under 高级: the audience is a small-team owner who has never opened a
+    # terminal, and burying the one switch that matters is how it stays unused.
+    "tunnel": _p(
+        "tunnel",
+        "admin",
+        "公网访问",
+        "Public access",
+        page="network",
+        page_zh="网络",
+        page_en="Network",
+    ),
     "update": _p(
         "update",
         "admin",

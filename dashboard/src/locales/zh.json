@@ -264,6 +264,7 @@
     "adminAdvanced": "应用设置",
     "security": "安全防护",
     "knowledgeBases": "知识库",
+    "network": "网络",
     "adminPlugins": "插件",
     "skillPackages": "技能包",
     "remoteAndroid": "远程手机",
@@ -2781,6 +2782,49 @@
     "micNotAvailable": "此设备不支持录音，请通过 HTTPS 访问",
     "sttNotAvailable": "此设备不支持语音输入（需要 HTTPS）",
     "ttsAutoplayBlocked": "浏览器阻止了自动播放，请再次点击朗读按钮"
+  },
+  "network": {
+    "switchTitle": "公网访问",
+    "switchHelp": "不开启时，智策只监听本机与内网地址，外面完全打不开。开启后会向 Cloudflare 建一条出站隧道，得到一个公网网址，不需要公网 IP、不需要在路由器上做端口映射。",
+    "status": {
+      "off": "未开启",
+      "starting": "正在准备",
+      "connecting": "正在建立",
+      "live": "已连通",
+      "unverified": "已建立·未验证",
+      "degraded": "不稳定",
+      "error": "失败",
+      "stopped": "已停止"
+    },
+    "copy": "复制",
+    "open": "打开",
+    "refresh": "刷新",
+    "copied": "网址已复制",
+    "copyFailed": "复制失败，请手动选中地址复制",
+    "ephemeralTitle": "这个地址是一次性的",
+    "ephemeralBody": "试用隧道每次重新开启都会换一个随机网址，服务重启也不会自动恢复。发给同事之前请确认；需要长期固定域名，请在 Cloudflare 上配置正式隧道（本版本暂未内置）。",
+    "safeModeTitle": "公网安全模式",
+    "safeModeBody": "开启时，从公网进来的请求不能使用：终端、浏览器、远程桌面、远程手机、本机文件浏览、接口文档、TLS/更新/备份管理。本机与内网的使用不受影响。专家能直接操作这台电脑，所以这一项默认打开且不建议关闭。",
+    "preflightTitle": "开启前要满足的条件",
+    "goFix": "去设置",
+    "consent": "我已知悉：开启后流量会经过 Cloudflare 的第三方边缘节点，这与「数据不出内网」的默认承诺不同。",
+    "consentHelp": "对话内容、上传的文件与登录凭据都会经由该第三方转发。请确认这符合你所在组织的合规要求。",
+    "confirmTitle": "确认开启公网访问",
+    "confirmOk": "开启",
+    "confirmBody": "开启后任何人都能在这个网址上看到登录页。请确保验证码已开启、管理员口令足够强。",
+    "confirmUnsafeWarning": "你关闭了公网安全模式：一旦登录被绕过，对方可以直接操作这台电脑（终端、文件、桌面）。强烈建议保持开启。",
+    "passwordLabel": "当前账号口令",
+    "passwordPlaceholder": "输入你的登录口令",
+    "passwordHelp": "需要再输一次口令，是因为库里存的是哈希：不拿到明文就无法判断它够不够强，也无法证明点这个按钮的人知道它。口令只用于本次校验，不落盘。",
+    "needPassword": "请输入当前口令",
+    "starting": "正在建立隧道，首次使用还需下载公网访问组件（约 53 MB）",
+    "bannerOn": "公网访问已开启，这台机器当前可以从互联网打开。",
+    "bannerUnverified": "公网访问已开启，但还没通过外网验证——地址可能打不开。",
+    "bannerManage": "管理",
+    "actionFailed": "操作失败",
+    "reprobe": "重新验证",
+    "reprobeOk": "公网验证通过，地址可用。",
+    "reprobeFailed": "公网还是没验证通过。地址可能仍在生效中，稍后再试。"
   },
   "security": {
     "intro": "配置专家运行时的安全防护策略。保存后已运行的专家会自动重新加载配置。",
@@ -6342,6 +6386,10 @@
     "security": {
       "title": "安全防护",
       "subtitle": "工具审批、命令防护、文件访问与敏感信息防护"
+    },
+    "network": {
+      "title": "网络",
+      "subtitle": "内网监听范围与公网访问开关"
     },
     "adminPlugins": {
       "title": "插件管理",

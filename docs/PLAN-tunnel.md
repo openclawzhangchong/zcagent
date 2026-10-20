@@ -229,3 +229,36 @@ frp / Tailscale 只在文档里给指引、不内置——它们需要用户自�
 二进制走"可选组件 + 首次开启时校验下载"而不是全量内置，
 并且**把「公网安全模式」当成开启公网的前置条件**——
 没有 G5 的公网开关，我不建议交付给任何真实客户。
+
+---
+
+## 9. 实现状态（2026-10-20）
+
+**P1 已落地并实测通过**，P2/P0 仍未做。
+
+| 项 | 状态 | 落在哪 |
+|---|---|---|
+| 二进制钉版本 + 校验下载 + Apache-2.0 声明 | ✅ | `src/octop/infra/tunnel/binary.py`（钉 `2026.10.1`，win/linux 各一条 SHA-256） |
+| 进程生命周期、退避重启、连续失败即 degraded | ✅ | `src/octop/infra/tunnel/manager.py` |
+| 开完自证（走公网地址探 `/api/health`）+ 可重新验证 | ✅ | 同上 `_probe` / `reverify`；界面「重新验证」按钮 |
+| 硬门 G1/G3/G4/平台 | ✅ | `GET /api/admin/tunnel/preflight`，不满足不给开 |
+| G2 口令强度 | ✅ 换了做法 | 开启时**必须重输当前口令**，再用 `validate_password_policy` 校验——库里只有哈希，拿不到明文就无从判断强度 |
+| G5 公网安全模式 | ✅ 默认开 | `api/middleware/tunnel_guard.py`，凭 `Cf-Connecting-Ip` 判定 |
+| G6 显式告知第三方边缘 | ✅ | 预检页勾选 + 确认框，未勾不能提交 |
+| G7 审计 | ✅ | `tunnel.start` / `tunnel.stop` / `tunnel.safe_mode` / `tunnel.verified` |
+| 设置 → 网络 页面 + 顶部常驻状态条 | ✅ | `pages/Settings/Network`、`components/TunnelActiveBanner.tsx` |
+| 端到端实测 | ✅ 13/13 | `scripts/verify/tunnel_probe.py` |
+| **P2 named 模式（固定域名）** | ❌ 未做 | 需要用户自己的 Cloudflare 账号与 API Token，本机无法验证，没有凭据就不写 |
+| **P0 M10 桌面双形态** | ❌ 未做 | 仍是任务 #47；隧道现在解决"外面能打开"，还没解决"同事的客户端填地址连进来" |
+| cloudflared 进安装包 | ❌ 故意不做 | 按 §4.1 的方案③：首次开启时才下载并校验 |
+
+### 与本文原稿不同的两个实测结论
+
+1. **§4.2 说的"从 cloudflared 日志抓 URL"要配一个足够长的探活预算。** 实测地址打印后
+   ~40 秒内本机解析该随机子域仍失败（边缘未生效 + 本地 DNS 负缓存），
+   原稿暗示的"起完探一次"会把正常隧道判成坏。现在是 12 次 × 5 秒，且允许手动重验。
+2. **`--header` 注入不存在**（`cloudflared tunnel --help` 实测无此标志，只有
+   `--http-host-header` 改写 Host），所以"这个请求来自隧道"只能靠边缘加的
+   `Cf-Connecting-Ip`。伪造它只会让自己被当成远程而降权，方向是安全的。
+   另外 `--loglevel debug` 会把**每个请求头**写进日志（含凭据），所以启动参数里钉死 `info`。
+

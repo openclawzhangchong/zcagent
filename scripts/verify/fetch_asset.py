@@ -92,9 +92,14 @@ def main() -> int:
     ap.add_argument("--bytes", type=int, required=True)
     ap.add_argument("--sha", required=True)
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument(
+        "--repo",
+        default=REPO,
+        help="owner/name owning the release; also used for vendored third-party assets",
+    )
     args = ap.parse_args()
 
-    url = f"https://api.github.com/repos/{REPO}/releases/assets/{args.asset_id}"
+    url = f"https://api.github.com/repos/{args.repo}/releases/assets/{args.asset_id}"
     token = gh_token()
     if not token:
         raise SystemExit("no gh token; run `gh auth login` or set GH_TOKEN")

@@ -130,10 +130,15 @@ def build_app(server: OctopServer) -> FastAPI:
         )
 
     from octop.api.middleware.bridge_proxy import install as install_bridge_proxy
+    from octop.api.middleware.tunnel_guard import install as install_tunnel_guard
 
     # Bridge proxy must sit inside JWT auth so ``request.state.octop_user`` is set
     # (Starlette runs the last-added middleware first).
     install_bridge_proxy(app, server)
+    # Installed before jwt_auth on purpose: it therefore runs *after* auth, so an
+    # anonymous probe of a tunnel-restricted path still gets a plain 401 instead
+    # of a 403 that would confirm the route exists.
+    install_tunnel_guard(app, server)
     install_jwt_auth(app, server)
     install_setup_lockdown(app, server)
 
@@ -218,6 +223,7 @@ def build_app(server: OctopServer) -> FastAPI:
     from octop.api.routers.storage_backends import admin_router as admin_storage_router
     from octop.api.routers.storage_backends import user_router as storage_backends_user_router
     from octop.api.routers.tls import router as tls_router
+    from octop.api.routers.tunnel import router as tunnel_router
     from octop.api.routers.voice import admin_router as admin_voice_router
 
     _mount_routers(
@@ -264,6 +270,7 @@ def build_app(server: OctopServer) -> FastAPI:
                 ["providers"],
             ),
             _RouterMount(tls_router, "/api/admin/tls", ["tls"]),
+            _RouterMount(tunnel_router, "/api/admin/tunnel", ["admin"]),
             _RouterMount(security_router, "/api/admin/security", ["security"]),
             _RouterMount(admin_storage_router, "/api/admin/storage-backends", ["admin"]),
             _RouterMount(
