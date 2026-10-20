@@ -33,6 +33,7 @@
 | 从 z08 起：**真的登录进去**（含拖过滑块验证码），侧边栏 logo 下方有短版本号；知识库开关是开着的话，新建弹窗的名称/描述必须已填好中文默认值 | 登录能不能走通、版本号显示成什么，都只有在装好的机器上才看得见；表单默认值在服务出来的 `zh` 语言分片里证明 |
 | 从 z09 起：标着"已下载"的向量模型，必须让装好的客户端**真的加载并 embed 一次** | z08 的镜像下载写进了 huggingface_hub 寻不到址的目录，94 MB 正确权重摆在机器上而接口回"Could not load model"；只看下载成不成功永远发现不了 |
 | 从 z10 起：装好的 `~/.octop/portable/node` 必须能 `node -v` / `npm -v`，`VERSION.txt` 要有 `node=`，`start.bat` 要把 node 前置进 PATH，且**用装好的 runtime 跑产品自己的检测代码**必须解析到包内 npm | 连接器 CLI 是从 npm 装的、本身就是 Node 程序；只看文件在不在证明不了"用户点得到连接器" |
+| 从 z11 起：服务的 chunk 里必须有 `modelsCountEnabled` | 这个键同时出现在组件和打进 bundle 的语言 JSON 里，拿旧 chunk 冒充过不了；只看运行时版本会漏掉"Python 更新了、界面还是旧的"（z03 就是这么被 z02–z04 的比较器坑过的） |
 | 从 exe 里抠出内嵌图标 | `.ico` 是构建时生成的，仓库里没有，`git diff` 看不出图标没换 |
 
 `stage_bundled_node` 第 4 步必须用 `site.addsitedir(packages)`，不能 `sys.path.insert`——
@@ -119,6 +120,29 @@ rail 可见 + 导航栏折叠（导航宽度通过栏内的 `nav-new-chat` 按�
 
 产物：`<out>/report.json` 与 `<out>/shots/{classic,minimal-records,minimal-settings}.png`，
 默认落在已被 gitignore 的 `.zc-verify/layout/`。
+
+## model_pool_probe.py —— 「模型配好了却说没有可用模型」到底是谁的错
+
+z11 的回归门。用户点了「获取模型列表」拿到几十个模型，可用模型池仍然是空的。
+读代码看不出结论：后端返回 `[]` 是**正确**的（抓回来的模型一律 `enabled: false`，
+等着人工挑），错的是界面没交代这一步。所以这个探针同时证明两件事——
+机制没变（`resolved` 在未启用时确实为 0），以及界面现在会说这句话。
+
+```bash
+.venv/Scripts/python.exe scripts/verify/model_pool_probe.py --python .venv/Scripts/python.exe
+```
+
+它起一个独立实例（自己的 `OCTOP_HOME`、空口端口，绝不碰别人正在跑的库），按界面写入的
+**一模一样**的形状造 provider，然后驱动 1280×800 的真实构建产物走完
+「空池 → 点编辑 → 点全部启用 → 保存」，断言 7 项。
+
+> 这个脚本第一版全部断言失败，而**截图里修复明明生效了**：这个应用把 antd 前缀改成了
+> `octop`（`App.tsx` 的 `prefixCls="octop"`），所以 `.ant-card`、`.ant-empty-description`、
+> `.ant-drawer-body` 一律命中 0 个节点，且不报错。写任何伸进 antd 内部的 selector
+> （LESS 的 `:global(...)` 同理）都要用 `octop-`，或者直接包一层自己的类别依赖它。
+
+产物：`<out>/report.json` 与 `<out>/shots/{a-pool-empty,b-editor,c-enabled,d-pool-filled}.png`，
+默认落在 `.zc-verify/model-pool/`。
 
 ## fetch_asset.py —— 大产物在这台机器上怎么下得动
 
