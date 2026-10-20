@@ -202,9 +202,15 @@ class TunnelManager:
                 self._starting = False
             return self._state
 
-        await self._spawn(path)
+        # Fetching the component can take minutes, during which the operator may
+        # have pressed 关闭. Re-check under the lock or we would spawn a public
+        # tunnel nobody asked for any more.
         async with self._lock:
             self._starting = False
+            if not self._state.enabled:
+                log.info("tunnel: start cancelled while the component was downloading")
+                return self._state
+        await self._spawn(path)
         return self._state
 
     async def _spawn(self, path: Path) -> None:

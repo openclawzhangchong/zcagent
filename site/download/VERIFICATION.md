@@ -99,8 +99,33 @@ verdict: OK（12/12）
 连同原有的 `test_download_that_does_not_match_the_release_is_rejected` 一起，
 `tests/unit/infra/tunnel` 29 项全过。
 
-> 这两个修复**不在已发布的 z12 产物里**（产物字节已经固定）。z12 的发布说明与
-> 离线指南按"手动放置可用"来写，所以在修好版本放出之前，那条内网离线路径实际不通。
+**3（最严重）. 被"关闭"的 start 在下载完成后照样把隧道开起来了。**
+装机实例上实测：点开启 → 因为这台机器到 github.com 是死的，组件下载爬了四分钟 →
+期间点关闭，接口返回 200、状态变 `off`、`enabled=False` → **四分钟后隧道仍然建立并拿到公网地址**，
+而 `start()` 在 `ensure_binary` 之后没有重新检查 `enabled`。
+更糟的是安全模式的生效条件是 `state.enabled and safe_mode and url`，
+所以这条孤儿隧道是**在没有公网安全模式的情况下对外服务**——实测直接坐实：
+
+```
+GET https://allows-…-exclusion.trycloudflare.com/api/filesystem/dirs?path=.
+  -> HTTP 200      ← 本机文件浏览，对互联网开放，且 UI 显示"未开启"
+```
+
+这正是 `docs/PLAN-tunnel.md` 里点名的最坏形态（"我以为关了其实还开着"），
+只不过反了过来：UI 说关了，它真的开着。两处修复：`start()` 在 spawn 前重新检查
+`enabled`；**守卫的生效条件改成只看"有没有活着的公网地址"，不再看意图标志**
+（`guard_is_active(url, safe_mode)`，单独抽出来以便测试）。
+
+回归测试在未修复的代码上验过是红的：
+
+```
+fix reverted for the control
+FAILED test_a_cancelled_start_does_not_spawn_after_the_download_finishes
+restored -> 31 passed
+```
+
+> 这三处修复**都不在已发布的 z12 产物里**。z12 从发布到发现只隔了一次验收，
+> 没有任何用户下载过，所以直接续 z13 而不是移动已公开的 tag。
 
 ### 已知未做
 

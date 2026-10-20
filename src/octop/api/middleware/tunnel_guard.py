@@ -61,6 +61,17 @@ def _under(path: str, prefix: str) -> bool:
     return path == prefix or path.startswith(prefix + "/")
 
 
+def guard_is_active(url: str, safe_mode: bool) -> bool:
+    """Whether the guard applies right now.
+
+    Deliberately not a parameter for ``enabled``: a cancelled start used to leave
+    the child process running with ``enabled=False``, which switched this guard
+    off and served host file browsing to the internet. The only thing that
+    matters is whether there is a live public address.
+    """
+    return bool(url) and safe_mode
+
+
 def is_denied_over_tunnel(path: str) -> bool:
     if any(_under(path, p) for p in DENIED_PREFIXES):
         return True
@@ -81,7 +92,7 @@ def install(app: Any, server: Any) -> None:
         from octop.infra.tunnel.manager import get_manager
 
         state = get_manager().state
-        active = state.enabled and state.safe_mode and bool(state.url)
+        active = guard_is_active(state.url, state.safe_mode)
         if not active or not request.headers.get(TUNNEL_MARKER_HEADER):
             return await call_next(request)
         path = request.url.path

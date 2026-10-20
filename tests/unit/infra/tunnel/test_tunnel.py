@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from octop.api.middleware.tunnel_guard import is_denied_over_tunnel
+from octop.api.middleware.tunnel_guard import guard_is_active, is_denied_over_tunnel
 from octop.infra.tunnel import binary
 from octop.infra.tunnel.manager import SETTINGS_KEY, TunnelManager, TunnelState
 
@@ -211,3 +211,46 @@ def test_public_payload_withholds_the_consent_flag() -> None:
     assert "consent_ack" not in data
     assert data["url"] == "https://a-b.trycloudflare.com"
     assert data["safe_mode"] is True
+
+
+# ── the orphan-tunnel defect found by testing the shipped artifact ──────────
+
+
+def test_guard_is_active_even_when_the_start_was_cancelled() -> None:
+    """A cancelled start used to leave the child running with ``enabled=False``,
+    which switched the guard off and served host file browsing to the internet.
+    The guard therefore looks at the address, never at the intent flag."""
+    assert guard_is_active("https://a-b.trycloudflare.com", True) is True
+    assert guard_is_active("", True) is False
+    # turning safe mode off is the operator's explicit choice -- the only way out
+    assert guard_is_active("https://a-b.trycloudflare.com", False) is False
+
+
+def test_a_cancelled_start_does_not_spawn_after_the_download_finishes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``ensure_binary`` can take minutes on a slow link, and the operator may
+    press 关闭 inside that window. Measured on the installed client: the tunnel
+    came up four minutes after the cancel."""
+    import asyncio
+
+    manager = TunnelManager()
+    manager.bind(_FakeServices(), 8088)  # type: ignore[arg-type]
+    spawned: list[Path] = []
+
+    async def fake_spawn(path: Path) -> None:
+        spawned.append(path)
+
+    def fake_ensure_binary() -> Path:
+        # the operator hit 关闭 while the component was still downloading
+        manager._state.enabled = False  # noqa: SLF001
+        return Path("cloudflared")
+
+    monkeypatch.setattr(binary, "ensure_binary", fake_ensure_binary)
+    manager._spawn = fake_spawn  # type: ignore[method-assign]
+
+    asyncio.run(manager.start(consent_ack=True))
+
+    assert spawned == [], "spawned a public tunnel whose start had been cancelled"
+    assert manager.state.enabled is False
+    assert manager.state.url == ""
