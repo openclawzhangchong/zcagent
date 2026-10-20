@@ -2,6 +2,94 @@
 
 智策 Windows 客户端的实测记录。每次改动产物时追加一节，不覆盖历史。
 
+## 1.0.2b6+z14 · 2026-10-21（主题：对话开着时装的技能，模型看不见）
+
+### 装机升级（`client_release.py --version 1.0.2b6+z14 --stage all`）
+
+```
+resolved zcagent-desktop-windows-amd64-1.0.2b6+z14.exe: 228332792 bytes, sha256 2bc3f4b43f1868e2...
+  attempt 1: 115425280/228332792 bytes (github)   <- curl 900s 超时
+  attempt 2: 228332792/228332792 bytes (api)
+download verified: 228332792 bytes, hash matches the release digest
+stopped the running client first: pid 27380
+installed: C:\Program Files\zcagent\zcagent.exe (245530624 bytes), registry 1.0.2b6+z14
+unpacked runtime: 1.0.2b6+z13 -> 1.0.2b6+z14        <- 旧运行时真的被换掉
+  1.0.2b6+z14 carries 'effectHint': /assets/zh.BTDrUKNl.js
+bundled node: v22.20.0 / npm 10.9.3 / VERSION.txt node=22.20.0
+```
+
+第一趟在登录处停下：`--stage all` 需要 `ZC_VERIFY_PASSWORD`（前面的阶段已过）。补上口令
+重跑 `--stage verify` 之后 **ALL ASSERTIONS HELD**，含 13 个本地向量模型展开列表、
+`BAAI/bge-small-zh-v1.5` 真的 embed 成功（220 ms / dim 512）、登录页中文、版本徽标 1 处。
+
+github 直连又超时（这台机器的老问题），第二趟自动改走 `api.github.com` 拉完——
+这条回落路径这次是被真实触发而不是假设可用。
+
+### 修复确实进了交付物，不只是开发树
+
+```
+C:\Users\Administrator\.octop\portable\packages\octop\infra\skills\thread_state.py   存在
+... octop\infra\agents\manager.py:1308   await self._sync_thread_skill_state(agent_id, thread_id)
+... octop\__init__.py:__version__ = "1.0.2b6+z14"
+```
+
+### 修复在装机实例上的实际效果
+
+升级后立刻只读解出该 agent 四条会话的最新 checkpoint：
+
+```
+thr_01M4PZM1YXPFZYDM1CREQ27KN9  n=26  beatra=False
+thr_01M4PZX6WAX9AFC1Q8H8213QHK  n=26  beatra=False
+thr_01M5CS2SEQV197HJKAE90YP0GQ  n=26  beatra=False
+thr_01M5CSX2DQQ1YGJX9XZA8Z767R  n=26  beatra=False
+```
+
+**这是预期状态**：刷新发生在某条会话的下一回合开始前，所以四条旧会话会在用户各发一条
+消息之后自愈；不需要重装、也不需要重开会话。开发树里已用真模型跑过完整 A/B
+（`scripts/verify/skill_turn_probe.py`）：修复前模型答「没有」，修复后答出只存在于
+frontmatter 描述里的口令，通道 25→26。
+
+### 下载页线上核验
+
+`curl https://zcagent-download-igdker4k5y4.qoder.website/` → HTTP 200（65,050 字符）：
+`1.0.2b6+z14` 7 次、`1.0.2b6+z13` 1 次（"上一版"那行）、`1.0.2b6+z12` 0 次，
+`228,332,792` / `233,994,525` 各 2 次，`2bc3f4b4` / `fe0e096a` 各 3 次，下载链接 4 处指向
+`v1.0.2b6-z14`。本轮 actionId `befe7698-b3eb-4aab-ba56-38467e1b53a3`，
+`descriptorStatus` 第一次 `pending`、重试同一 action 后 `written` 才 publish。
+
+### CI 产物核对（顺便纠正一个说法）
+
+`Select platforms` 这一轮只选了 `windows-amd64`，Release 上就是 **2 个产物**
+（exe 228,332,792 / zip 233,994,525），与 z13 完全同形。任务标题里"CI 六平台"从 z13 起
+就不成立，追版说明别再沿用。两个 workflow（Frontend、zcagent Desktop Package）均
+completed/success。
+
+### 离线包：抓到一处从 z13 之前就带着的交付物缺陷
+
+`make_kit.py` 用 `Path.write_text(..., encoding="utf-8")` 写 `SHA256SUMS.txt`，**Windows
+文本模式会把每个 `\n` 改写成 `\r\n`**，于是清单是 CRLF。后果：
+
+```
+$ sha256sum -c SHA256SUMS.txt
+zcagent-desktop-...exe: FAILED open or read
+sha256sum: 'zcagent-portable-...zip'$'\r': No such file or directory
+```
+
+`guide.md` 让实施人员用 `Get-FileHash`，PowerShell 不在乎 CRLF，所以**没人真的被卡住**——
+但这份文件用的是 `sha256sum` 格式，就该过 `sha256sum -c`。加 `newline=""` 修掉，清单从
+227 B 变 225 B（正好少两个 CR），重跑后：
+
+```
+zcagent-desktop-windows-amd64-1.0.2b6+z14.exe: OK
+zcagent-portable-windows-amd64-1.0.2b6+z14.zip: OK
+```
+
+这两行 OK 同时证明桌面上那份 462 MB 拷贝与 Release 逐字节相同。z13 那份没有删，改名成
+`旧-可删-zcagent-1.0.2b6+z13-windows-offline-kit` 放在旁边，等确认后再清。
+
+排查过程中 `grep -q $'\r'` 对同一份文件报了"没有 CR"（假阴性），最后是数
+`b.count(b'\r')` 才定论——又一个"工具说没事不算没事"。
+
 ## 1.0.2b6+z13 · 2026-10-20（安全修复版：z12 的公网访问有三个缺陷）
 
 改动与后果写在 `CHANGELOG.md` 的 z13 一节。本节只记发版后的产物验收，

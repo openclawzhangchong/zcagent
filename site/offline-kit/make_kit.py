@@ -118,7 +118,10 @@ def main() -> int:
         print(f"verified {name}  {size:,} B  {digest[:8]}…{digest[-6:]}")
         lines.append(f"{digest}  {name}")
 
-    (kit / "SHA256SUMS.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # newline="" is load-bearing: text mode on Windows rewrites every "\n" as
+    # "\r\n", and a CRLF manifest makes `sha256sum -c SHA256SUMS.txt` report the
+    # second entry as a missing file called "<name>\r".
+    (kit / "SHA256SUMS.txt").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="")
     shutil.copy2(HERE / "guide.md", kit / "guide.md")
     (kit / "README-FOR-OPS.txt").write_text(
         "先读 guide.md。第一步永远是 Get-FileHash 对 SHA256SUMS.txt。\n"
