@@ -2,7 +2,83 @@
 
 智策 Windows 客户端的实测记录。每次改动产物时追加一节，不覆盖历史。
 
+## 1.0.2b6+z13 · 2026-10-20（安全修复版：z12 的公网访问有三个缺陷）
+
+改动与后果写在 `CHANGELOG.md` 的 z13 一节。本节只记发版后的产物验收，
+以及**一次"我的诊断错了、用测量纠正回来"的记录**——因为它正是这套验收流程要防的东西。
+
+### CI 与产物
+
+tag `v1.0.2b6-z13` → Desktop Package `39424466989` 与 Frontend `39424467311` 全 success。
+
+| 文件 | 字节 | SHA256 |
+|---|---|---|
+| `zcagent-desktop-windows-amd64-1.0.2b6+z13.exe` | 228,334,224 | `55dd0562…a4837e` |
+| `zcagent-portable-windows-amd64-1.0.2b6+z13.zip` | 233,991,530 | `d9f99f4a…e8a527` |
+
+本版**没有前端改动**，所以 `BUNDLE_MARKERS` 不新增指纹；装机验收里 z13 继承 z12 的
+`tunnel-switch`（标记表按 `rel <= version` 累积），实测两条都在。
+
+### 装机升级
+
+```
+installed: C:\Program Files\zcagent\zcagent.exe (245527552 bytes), registry 1.0.2b6+z13
+unpacked runtime: 1.0.2b6+z12 -> 1.0.2b6+z13
+  1.0.2b6+z12 carries 'tunnel-switch': /assets/index.DnuYi6TH.js
+ALL ASSERTIONS HELD
+```
+
+### 修复 1 直接在装机实例上验掉了
+
+把 z12 那次下载留下的 `.verified` 边车**删掉**，只留二进制本身：
+
+```
+is_ready on a hand-placed file (fixed code): True
+```
+
+z12 在这种情况下返回 False（所以它的错误提示语是一条产品自己做不到的指令）。
+
+### 公网访问在装机实例上确实开起来了
+
+```
+POST /api/admin/tunnel -> 200
+url=https://wed-functionality-sanyo-lay.trycloudflare.com
+DELETE -> 200；after close: status=off url=''
+```
+
+**但"走公网地址验守卫"这一项在装机实例上没做完**，原因要说清楚：这台机器对
+**刚创建的** `*.trycloudflare.com` 随机子域解析时好时坏。同一时刻本机直连
+`/api/filesystem/dirs` 是 200，走公网地址是 000（curl 与 Python 都失败过）。
+守卫的公网拦截证据来自便携版那一轮（同一份代码）：`tunnel=403 / local=200 / 聊天=200`。
+
+### 一次自我纠正，值得留在记录里
+
+看到连续 12 次探活 `getaddrinfo failed` 而 curl 拿到 200 时，我判断成
+**"Python 走了 IPv6、这台机器 IPv6 不通"**，并准备把探针改成强制 IPv4。
+动手前测了一次：
+
+```
+default getaddrinfo (any family) -> ('104.16.231.132', 443)   ← 成功了
+forced AF_INET                   -> 104.16.230.132
+```
+
+默认解析**直接返回 IPv4 且成功**，IPv6 假设不成立。真实情况是这台机器的解析器
+对新建子域间歇性失败（随后连 curl 也 000 了）。
+
+结论：**没有改代码。** 如果当时按假设动手，会加进一段强制 IPv4 的绕行逻辑，
+既没解决间歇性失败，又永久掩盖"这台机器 DNS 有问题"这个真信号——
+而产品现在显示的"已建立·未验证 + 可重新验证"恰恰是对这个外部状况的诚实表达。
+记下来是因为这类"看起来已经想清楚了"的判断，成本最低的时刻就是动手前先测一次。
+
+### 已知未做
+
+landing 仍停在 z10（与 z11、z12 同因：`site/landing/` 有 18 个未提交文件，
+干净检出构建不出来）。见 `site/landing/DEPLOY.md` 末节。
+
+---
+
 ## 1.0.2b6+z12 · 2026-10-20（主题：公网访问 / Cloudflare 隧道）
+
 
 功能本身与门槛的设计写在 `CHANGELOG.md` 的 z12 一节与 `docs/public-access.md`。
 本节记发版后的产物验收，以及**这一版第一次把"交付物里到底有没有这个功能"变成一个需要单独测的问题**。
