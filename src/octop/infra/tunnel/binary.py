@@ -19,6 +19,7 @@ import logging
 import os
 import shutil
 import stat
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -114,24 +115,21 @@ def binary_path(key: str | None = None) -> Path:
     return tunnel_dir() / "bin" / name
 
 
-def _marker_path(dest: Path) -> Path:
-    """Sidecar holding the digest we verified. ``with_suffix`` cannot express
-    ``.exe.verified``, hence the plain name concat."""
-    return dest.parent / (dest.name + ".verified")
-
-
 def is_ready(key: str | None = None) -> bool:
-    """True when a verified binary for this platform is already on disk."""
+    """True when a cloudflared matching the pinned digest is on disk.
+
+    The digest is always recomputed from the file. Two reasons, both learned the
+    hard way here: the download-failure message tells an air-gapped operator to
+    place the binary in this directory by hand, so a file we merely downloaded
+    must not be the only accepted provenance; and a sidecar "verified" marker
+    would vouch for tampered bytes (the first version of this did exactly that).
+    Hashing 53 MB costs ~0.2 s, which is not worth a cache that can lie.
+    """
     art = artifact_for(key)
     if art is None:
         return False
     dest = binary_path(key)
-    marker = _marker_path(dest)
-    return (
-        dest.exists()
-        and marker.exists()
-        and marker.read_text(encoding="utf-8").strip() == art.sha256
-    )
+    return dest.exists() and sha256_of(dest) == art.sha256
 
 
 def ensure_binary(timeout: int = 300) -> Path:
@@ -148,12 +146,20 @@ def ensure_binary(timeout: int = 300) -> Path:
 
     dest = binary_path(key)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    marker = _marker_path(dest)
 
     if is_ready(key):
+        # The Apache-2.0 notice has to travel with the binary whoever put it
+        # there -- an operator who pre-staged it must not end up with an
+        # unattributed copy on the customer's machine.
+        notice = tunnel_dir() / "LICENSE.cloudflared.txt"
+        if not notice.exists():
+            notice.write_text(NOTICE, encoding="utf-8")
         return dest
 
-    tmp = dest.parent / (dest.name + ".download")
+    # Unique per attempt: two concurrent starts (a double-click, or the UI
+    # retrying while the first download is still running) otherwise collide on
+    # one temp file and the loser dies with WinError 32 on Windows.
+    tmp = dest.parent / f"{dest.name}.{os.getpid()}.{int(time.time())}.download"
     try:
         _download(art.url, tmp, art.bytes, timeout)
         digest = sha256_of(tmp)
@@ -167,7 +173,6 @@ def ensure_binary(timeout: int = 300) -> Path:
         shutil.move(str(tmp), str(dest))
         if os.name == "posix":
             dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        marker.write_text(art.sha256, encoding="utf-8")
         (tunnel_dir() / "LICENSE.cloudflared.txt").write_text(NOTICE, encoding="utf-8")
     except RuntimeError:
         raise

@@ -2,7 +2,117 @@
 
 智策 Windows 客户端的实测记录。每次改动产物时追加一节，不覆盖历史。
 
+## 1.0.2b6+z12 · 2026-10-20（主题：公网访问 / Cloudflare 隧道）
+
+功能本身与门槛的设计写在 `CHANGELOG.md` 的 z12 一节与 `docs/public-access.md`。
+本节记发版后的产物验收，以及**这一版第一次把"交付物里到底有没有这个功能"变成一个需要单独测的问题**。
+
+### CI 与产物
+
+tag `v1.0.2b6-z12` → Desktop Package run `39408749951` 与 Frontend 门禁 `39408749892` 全 success
+（`Select platforms` / `Build dashboard` / `windows-amd64` / `Attach zips to GitHub Release` /
+`Dashboard gates` 逐个绿）。
+
+| 文件 | 字节 | SHA256 |
+|---|---|---|
+| `zcagent-desktop-windows-amd64-1.0.2b6+z12.exe` | 228,329,078 | `ff550c2a…fa4cd3` |
+| `zcagent-portable-windows-amd64-1.0.2b6+z12.zip` | 233,990,800 | `d2ae53a0…39a842` |
+
+相对 z11 涨 14,992 B / 22,447 B——与"新增一个设置页 + 五个 Python 模块"相符。
+
+### 先问了一句"它会不会根本没被打进包里"
+
+z12 是第一次往 `src/octop/infra/` 下加**新子包**（`infra/tunnel/`）。读 `pyproject.toml`
+能看到 `[tool.hatch.build] include` 里有 `src/octop/**/*.py`，推断它会被带上——但
+z03 那次的教训正是"代码在产物里，却因为另一环到不了用户手上"，所以直接建了一次 wheel 数文件：
+
+```
+tunnel modules in wheel: 5
+   octop/api/middleware/tunnel_guard.py
+   octop/api/routers/tunnel.py
+   octop/infra/tunnel/__init__.py
+   octop/infra/tunnel/binary.py
+   octop/infra/tunnel/manager.py
+chunks carrying tunnel-switch: ['octop/dashboard/assets/index.DNWBSfeK.js']
+```
+
+### 下载页线上核验
+
+`curl https://zcagent-download-igdker4k5y4.qoder.website/` → HTTP 200：
+`1.0.2b6+z12` 7 次、`1.0.2b6+z11` 1 次（"上一版"那行）、`1.0.2b6+z10` 0 次，
+`228,329,078` / `233,990,800` / `ff550c2a` / `d2ae53a0` 各自都在。
+
+（Qoder 站点内容变了必须换 actionId，沿用旧的会把**旧草稿**重新发布一次并回 `succeeded`。
+本轮 actionId `ce0b17ae-8a75-4127-a3cf-f7035a4bca3a`，`descriptorStatus` 从 `pending`
+重试到 `written` 才 publish。）
+
+### 装机升级（`client_release.py --stage all`）
+
+```
+installed: C:\Program Files\zcagent\zcagent.exe (245527040 bytes), registry 1.0.2b6+z12
+unpacked runtime: 1.0.2b6+z11 -> 1.0.2b6+z12
+  1.0.2b6+z11 carries 'modelsCountEnabled': /assets/zh.Ck1yls5i.js
+  1.0.2b6+z12 carries 'tunnel-switch': /assets/index.DnuYi6TH.js
+bundled node: v22.20.0 / npm 10.9.3 / VERSION.txt node=22.20.0
+ALL ASSERTIONS HELD
+```
+
+升级前先取了一次对照：**z11 上 `GET /api/admin/tunnel` 返回 404**，升级后 200。
+没有这个对照，"chunk 里有 tunnel-switch" 也可能只是缓存或别的东西。
+
+### 交付物上真开了一次隧道——并当场抓到两个 bug
+
+装好的客户端被**口令强度门正确拒绝**了：这台机器的管理员口令是负责人指定的
+`18596950010`，全数字，`validate_password_policy` 不放行（`PASSWORD_TOO_WEAK`）。
+这是设计生效，不是故障——但也意味着"公网访问在这台机器上到底能不能跑起来"
+没法在装机实例上回答。于是改用**便携版 zip 本身**（它就是交付物）在独立数据目录上，
+用它自带的 `start.bat` 起服务，走完真实的向导口令第一跳（`octop-login.txt` →
+`/setup/verify-password`，开发实例是设 `OCTOP_REQUIRE_SETUP_PASSWORD=0` 绕过去的，
+这条路只有交付物会走），再开真隧道：
+
+```
+preflight -> 200 ready=True (accounts/captcha/api_docs/platform/safe_mode 全 ok)
+all-digit password -> HTTP 400 PASSWORD_TOO_WEAK      ← 负向对照
+POST /api/admin/tunnel -> 200
+status=live url=https://ingredients-…-cuisine.trycloudflare.com
+public /api/health -> 200
+filesystem: tunnel=403 local=200
+chat data reachable over the tunnel -> 200
+cloudflared 落在 D:\otp\.z12-data\tunnel\bin\，同目录有 LICENSE.cloudflared.txt
+DELETE -> 200；status=off，url 清空
+verdict: OK（12/12）
+```
+
+**抓到的两个 bug（都不在 dev-tree 探针的覆盖范围内，只有拿交付物跑才暴露）：**
+
+1. **`is_ready()` 只认自己写的 `.verified` 边车。** 下载失败的提示语让内网实施人员
+   "把文件手动放到 `<home>\tunnel\bin\`"——照做了**并不被接受**。等于产品写了一条
+   自己做不到的指令。改成**永远按钉住的 SHA-256 重算文件本身**（53 MB 实测 0.07 秒），
+   边车整个删掉：第一版修复还留着"边车匹配就跳过重算"的快路径，测试当场把它判成失败——
+   那种边车会给被篡改的字节背书。
+2. **两次并发"开启"会撞同一个 `.download` 临时文件**，第二个直接
+   `WinError 32 另一个程序正在使用此文件`。触发方式很平常：双击、或界面在下载没完成时重试。
+   修成临时文件带 PID+时间戳，且 `_starting` 期间重复 start 直接返回当前状态。
+
+两条都补了单测（`test_a_bare_file_never_counts_as_verified`、
+`test_a_hand_placed_binary_is_accepted_by_its_own_digest`），
+连同原有的 `test_download_that_does_not_match_the_release_is_rejected` 一起，
+`tests/unit/infra/tunnel` 29 项全过。
+
+> 这两个修复**不在已发布的 z12 产物里**（产物字节已经固定）。z12 的发布说明与
+> 离线指南按"手动放置可用"来写，所以在修好版本放出之前，那条内网离线路径实际不通。
+
+### 已知未做
+
+landing 仍停在 z10，原因与 z11 相同：`site/landing/` 有 18 个未提交文件，
+干净检出构建不出来（模板要的五个 token 与四张截图都只在未提交的工作区）。
+详见 `site/landing/DEPLOY.md` 末节。
+
+---
+
 ## 1.0.2b6+z11 · 2026-10-20（主题：模型配好了却说"没有可用模型"）
+
+
 
 改动来龙去脉写在 `CHANGELOG.md` 的 z11 一节。本节只记发版后的产物验收，
 以及**这一轮被验收工具自己绊到的两次**。

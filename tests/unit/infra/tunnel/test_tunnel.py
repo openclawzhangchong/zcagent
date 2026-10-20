@@ -7,7 +7,9 @@ because CI runs on networks that cannot. The live end-to-end proof is
 
 from __future__ import annotations
 
+import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -99,22 +101,21 @@ def test_platform_without_a_digest_is_reported_unsupported() -> None:
     assert not binary.is_ready("plan9-mips")
 
 
-def test_is_ready_requires_the_verified_marker(
+def test_a_bare_file_never_counts_as_verified(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """No sidecar, no marker: only the file's own digest can vouch for it."""
     monkeypatch.setattr(binary, "tunnel_dir", lambda: tmp_path)
     art = binary.artifact_for("windows-amd64")
     assert art is not None
     dest = tmp_path / "bin" / art.filename
     dest.parent.mkdir(parents=True)
     dest.write_bytes(b"not really cloudflared")
-    assert not binary.is_ready("windows-amd64"), "a bare file must never count as verified"
+    assert not binary.is_ready("windows-amd64")
 
-    binary._marker_path(dest).write_text("0" * 64, encoding="utf-8")
-    assert not binary.is_ready("windows-amd64"), "a stale digest must force a re-download"
-
-    binary._marker_path(dest).write_text(art.sha256, encoding="utf-8")
-    assert binary.is_ready("windows-amd64")
+    marker = dest.parent / (art.filename + ".verified")
+    marker.write_text(art.sha256, encoding="utf-8")
+    assert not binary.is_ready("windows-amd64"), "a marker file must not vouch for bytes"
 
 
 def test_download_that_does_not_match_the_release_is_rejected(
@@ -155,6 +156,30 @@ def test_quick_tunnel_does_not_auto_resume_after_a_restart() -> None:
     # and it is persisted, so a second boot reads the same honest state
     assert services.settings_repo.get(SETTINGS_KEY) is not None
     assert json.loads(services.settings_repo.get(SETTINGS_KEY) or "{}")["status"] == "stopped"
+
+
+def test_a_hand_placed_binary_is_accepted_by_its_own_digest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The download-failure message tells air-gapped operators to place the file
+    here by hand, so placing it must be enough -- trusting only our own sidecar
+    made that instruction a lie."""
+    monkeypatch.setattr(binary, "tunnel_dir", lambda: tmp_path)
+    art = binary.artifact_for("windows-amd64")
+    assert art is not None
+    dest = tmp_path / "bin" / art.filename
+    dest.parent.mkdir(parents=True)
+    payload = b"the real cloudflared bytes"
+    digest = hashlib.sha256(payload).hexdigest()
+    dest.write_bytes(payload)
+    monkeypatch.setattr(
+        binary, "_PLATFORM_ARTIFACTS", {"windows-amd64": replace(art, sha256=digest)}
+    )
+
+    assert binary.is_ready("windows-amd64"), "a correct hand-placed file must count"
+
+    dest.write_bytes(b"tampered")
+    assert not binary.is_ready("windows-amd64"), "changed bytes must never be vouched for"
 
 
 def test_binding_twice_does_not_kill_a_live_tunnel() -> None:

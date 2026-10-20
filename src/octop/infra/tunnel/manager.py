@@ -95,6 +95,7 @@ class TunnelManager:
         self._services: Any = None
         self._port = 8088
         self._stopping = False
+        self._starting = False
         self._bound = False
 
     # ── persistence ────────────────────────────────────────────────────────
@@ -176,8 +177,11 @@ class TunnelManager:
     async def start(self, *, safe_mode: bool = True, consent_ack: bool = False) -> TunnelState:
         """Open the tunnel. Idempotent: a second call while live is a no-op."""
         async with self._lock:
-            if self.running:
+            if self.running or self._starting:
+                # A second click while the first is still fetching the component
+                # must not start a second download or a second child.
                 return self._state
+            self._starting = True
             self._stopping = False
             self._state.enabled = True
             self._state.safe_mode = safe_mode
@@ -194,9 +198,13 @@ class TunnelManager:
             path = await asyncio.get_running_loop().run_in_executor(None, binary.ensure_binary)
         except Exception as exc:  # noqa: BLE001 - surfaced to the UI verbatim
             await self._fail(str(exc), permanent=True)
+            async with self._lock:
+                self._starting = False
             return self._state
 
         await self._spawn(path)
+        async with self._lock:
+            self._starting = False
         return self._state
 
     async def _spawn(self, path: Path) -> None:
