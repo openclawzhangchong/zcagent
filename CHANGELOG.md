@@ -32,6 +32,113 @@ OCTOP_UPDATE_SIMPLE_URL=http://devpi.internal:3111/zcagent/prod/+simple/  # 装�
 
 ---
 
+## [1.0.2b6+z14] — 2026-10-20
+
+### 对话开着时装的技能，模型永远看不见
+
+用户反馈：从内置插件市场装了 `beatra`，技能列表里 `enabled: true`，对话里也用
+`/beatra` 点名了，模型却只报出 `/daily-hot-news`，像根本没装。
+
+**不是市场安装的 bug，也不是 `SKILL.md` 的 bug。** 装机实例的 checkpoint 是直接证据：
+四条会话的最新状态里 `skills_metadata` 全是**同一份 26 条的 blob**，包括 22:06 那一轮
+——比 22:03 的安装晚三分钟。回合照跑，池子一字节没变。用真正的解析器
+`_parse_skill_metadata` 跑 `beatra/SKILL.md`（22,418 B、LF、无 BOM、`name` 与目录名一致）
+也解析通过，静默丢弃这条路排除。
+
+根因在上游 `deepagents`：
+
+```python
+def before_agent(self, state, runtime, config):
+    if "skills_metadata" in state:
+        return None          # ← 通道已存在就什么都不做
+```
+
+而这个通道会被 LangGraph checkpoint 持久化，`octop_memory` 甚至把它当作"稳定通道"
+内容寻址外置存储（`CHANNELS = ("skills_metadata", "memory_contents")`）——设计上就假定
+它在一个会话的生命周期里不变。于是**会话第一回合看到的池子，就是它永远看到的池子**。
+最小复现：
+
+```
+turn 1 skills: ['alpha']
+（对话开着的时候装上 beta）
+turn 2 returned: None (re-scan skipped)   -> beta visible to the model: False
+new-thread skills: ['alpha', 'beta']      -> 新会话能看见
+```
+
+### 顺带查到第二条：禁用技能同样到不了提示词
+
+`SkillFilterMiddleware` 的 docstring 自称"把被禁用的技能从 `skills_metadata` 里去掉，
+因此不会出现在系统提示词中"。按真实中间件顺序合成一遍、打印到达模型调用时的系统消息：
+
+```
+pool: ['alpha', 'beta']
+skills the model was actually shown:
+    - **alpha**: skill alpha
+    - **beta**: skill beta
+=> disabling a skill is INVISIBLE to the prompt
+```
+
+`create_deep_agent` 把 `SkillsMiddleware` 放栈底第一位，而
+`factory._chain_model_call_handlers` 明确 "first in list becomes outermost"，
+所以技能段落早在 filter 覆盖 state 之前就渲染完了。它的 `wrap_tool_call`
+（拦住对 `skills/<slug>` 的文件与命令访问）是生效的——只有提示词这一路没用。
+
+两条都在我们不拥有的包里（`octop-harness`、`deepagents`），**不指望追版修好**。
+
+### 修法：把真相写回通道
+
+既然提示词只认通道里的内容，过滤就得发生在通道上，而不是发生在 filter 里。
+新模块 `src/octop/infra/skills/thread_state.py`：
+
+1. 用 agent 自己的 `backend` 与 `workspace.skill_paths(extra=config.skills_dir)` 构造一次
+   `SkillsMiddleware`，拿**空 state** 调 `abefore_agent`——空 state 是唯一会触发真扫描的
+   输入，因此产出的形状与路径拼法和新建会话时完全一致；
+2. 按 `config.skills_disabled` 过滤（用上游自己的 `skill_identity_keys`）；
+3. 取签名（name/description/path + 加载错误，排序后哈希），与该会话上次写入的比较；
+4. 只有签名变了才 `graph.aupdate_state(...)` 覆盖这一条线程的通道。
+
+调用点在 `AgentManager.stream()` 里，紧贴既有的 `_apply_pending_bootstrap_graph_refresh`，
+并且**在会话执行锁内**——那把锁存在的理由就是"同一线程并发会交错写 checkpoint"，
+我们的写入必须遵守它。失败只降级为"本轮不够新"，绝不让对话报错。
+
+两个设计上的巧合值得记下来：
+
+- **冻结反过来帮我们**：写完通道后 `before_agent` 会跳过，所以不会有回合中途再扫描
+  把我们写的盖掉；
+- **签名算的是过滤后的列表**，所以启用/禁用与装卸一起都触发。若哪天上游修好了中间件
+  顺序，我们这份过滤变成"对子集再减一次"，幂等，不怕合并。
+
+代价实测：27 个技能全量扫描 **32.7 ms**（`download_files` + YAML 解析），相对一次模型
+调用可以忽略；checkpoint 只在签名变化时多写一行。进程重启后每条会话首轮各重写一次，
+是故意的自愈——上一次进程里留下的陈旧会话因此也会被治好。
+
+### 界面补一句生效时机
+
+`个人化 → 技能` 在标签栏下方新增一行说明：装卸与开关**下一轮对话开始就生效，
+不用重开当前会话**。用的是这个页面 stylesheet 里已有的 `.description`（14 px / 三级
+文字色），没有新造样式；zh、en 两套 locale 同步。
+
+### 验收
+
+`scripts/verify/skill_turn_probe.py`：自带 scratch 控制面（独立 `OCTOP_HOME`、备用端口），
+真模型跑两回合。前门口令 `PROMPT-<rand>` **只**写进 frontmatter `description`（系统提示词
+唯一携带的部分），后门口令 `BODY-<rand>` 只写进正文——于是"它靠提示词答的"和
+"它自己翻文件翻了"不会混为一谈；后者会被判 INCONCLUSIVE 而不是算通过。
+
+| | 修复前 `--expect broken` | 修复后 `--expect fixed` |
+|---|---|---|
+| 模型回答 | 「没有」 | 「存在。口令：PROMPT-73211F」 |
+| 通道内技能数 | 25 → 25（纹丝不动） | 25 → 26 |
+| 结论 | verdict: OK | verdict: OK |
+
+A/B 两半都实跑过，回退修复能复现故障，所以这组断言不是白写的。
+单测 12 条（`tests/unit/skills/test_thread_state.py`）：禁用项不进池、toggle 触发重写、
+无 `thread_id` / 无可写 graph 时不写、签名只看内容不看顺序、memo 有界。
+
+根因数据与全部实测记在 `docs/PLAN-skill-pool-refresh.md`。
+
+---
+
 ## [1.0.2b6+z13] — 2026-10-20
 
 ### 修掉 z12 的公网访问：三个只有拿交付物跑才暴露的缺陷

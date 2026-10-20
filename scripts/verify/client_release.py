@@ -61,6 +61,9 @@ BUNDLE_MARKERS = {
     # The public-access switch: a data-testid, so it survives CSS-module hashing
     # and can only be present if the Network page actually shipped in this chunk.
     "1.0.2b6+z12": ("tunnel-switch",),
+    # The skill-effect hint is an i18n key used by SkillsTabs, so it lands in both
+    # the component chunk and the bundled locale JSON -- a stale chunk cannot pass.
+    "1.0.2b6+z14": ("effectHint",),
 }
 # Releases from which the login page carries the account hint and self-service reset.
 RECOVERY_UI_FROM = "1.0.2b6+z06"

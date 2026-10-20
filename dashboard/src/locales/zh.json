@@ -1966,6 +1966,7 @@
   "skills": {
     "title": "技能",
     "description": "管理智能体技能和能力。",
+    "effectHint": "装卸技能、开关启用状态，下一轮对话开始就生效，不用重开当前会话。",
     "customizedSkills": "已安装技能",
     "customizedSkillsDesc": "你自己创建、可编辑的技能",
     "builtinSkills": "内置技能",

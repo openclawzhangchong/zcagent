@@ -1966,6 +1966,7 @@
   "skills": {
     "title": "Skills",
     "description": "Manage agent skills and capabilities.",
+    "effectHint": "Installing, removing or toggling a skill takes effect on the next turn — no need to reopen this conversation.",
     "customizedSkills": "Installed Skills",
     "customizedSkillsDesc": "Skills you created and can edit",
     "builtinSkills": "Built-in Skills",

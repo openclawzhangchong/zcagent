@@ -73,6 +73,8 @@ export default function SkillsTabs({ agentId }: SkillsTabsProps) {
     <div className={styles.skillsTabs}>
       <TabBar tabs={tabs} activeKey={resolvedTab} onChange={setActiveTab} />
 
+      <div className={styles.description}>{t("skills.effectHint")}</div>
+
       <div className={styles.skillsTabsContent}>
         {resolvedTab === "custom" || resolvedTab === "builtin" ? (
           agentId ? (
