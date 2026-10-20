@@ -13,6 +13,7 @@ import { ollamaModelApi } from "../../../../../api/modules/ollamaModel";
 import { onnxModelApi } from "../../../../../api/modules/onnxModel";
 import { isOllamaProviderRow, isOnnxProviderRow } from "../../presetUtils";
 import type { ProviderRow } from "../../useProviders";
+import { isEmbeddingModel } from "../../useProviders";
 import { ProviderConfigModal } from "../modals/ProviderConfigModal";
 import {
   getProviderLogo,
@@ -154,6 +155,13 @@ export function ProviderCard({
     getProviderLogo(nameSlug) ??
     customProviderLogo;
   const models = provider.models ?? [];
+  // Auto-fetched models land disabled until the admin curates the chat pool, so
+  // a bare "20 个模型" reads as "ready". Embedding rows are excluded because they
+  // are selected by the knowledge-base picker, never by this switch.
+  const chatModels = models.filter((m) => !isEmbeddingModel(m));
+  const enabledChatModels = chatModels.filter((m) => m.enabled !== false);
+  const modelsPartiallyEnabled =
+    chatModels.length > 0 && enabledChatModels.length < chatModels.length;
 
   useEffect(() => {
     if (!isLocalRuntime) return;
@@ -279,7 +287,12 @@ export function ProviderCard({
               <span className={styles.infoLabel}>{t("models.model")}:</span>
               {models.length > 0 ? (
                 <span className={styles.infoValue}>
-                  {t("models.modelsCount", { count: models.length })}
+                  {modelsPartiallyEnabled
+                    ? t("models.modelsCountEnabled", {
+                        enabled: enabledChatModels.length,
+                        total: chatModels.length,
+                      })
+                    : t("models.modelsCount", { count: models.length })}
                 </span>
               ) : (
                 <span className={styles.infoEmpty}>{t("models.noModels")}</span>

@@ -123,6 +123,31 @@ export function ModelListEditor({
     );
   };
 
+  // "获取模型列表" stores every row disabled, so a 20-model fetch otherwise costs
+  // 20 switch clicks. Embedding rows and not-yet-downloaded local models stay out
+  // of the bulk set — they are not chat-pool entries and cannot be enabled.
+  const enableableModels = useMemo(
+    () =>
+      models.filter(
+        (m) =>
+          !isEmbeddingModel(m) &&
+          !(requireDownload && downloadedSet && !downloadedSet.has(m.id)),
+      ),
+    [models, requireDownload, downloadedSet],
+  );
+  const disabledEnableableCount = enableableModels.filter(
+    (m) => m.enabled === false,
+  ).length;
+
+  const handleEnableAll = () => {
+    const ids = new Set(enableableModels.map((m) => m.id));
+    onModelsChange(
+      models.map((m) =>
+        ids.has(m.id) && m.enabled === false ? { ...m, enabled: true } : m,
+      ),
+    );
+  };
+
   const handleRemoveModel = (modelId: string, modelName: string) => {
     modal.confirm({
       title: t("models.removeModel"),
@@ -381,14 +406,28 @@ export function ModelListEditor({
   return (
     <div>
       {models.length > 0 && (
-        <Input
-          allowClear
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          prefix={<Search size={14} />}
-          placeholder={t("models.searchModelsPlaceholder")}
-          style={{ marginTop: 12 }}
-        />
+        <div className={styles.modelListToolbar}>
+          <div className={styles.modelListToolbarField}>
+            <Input
+              allowClear
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              prefix={<Search size={14} />}
+              placeholder={t("models.searchModelsPlaceholder")}
+            />
+          </div>
+          {disabledEnableableCount > 0 && (
+            <Button
+              size="small"
+              icon={<Check size={14} />}
+              onClick={handleEnableAll}
+            >
+              {t("models.enableAllModels", {
+                count: disabledEnableableCount,
+              })}
+            </Button>
+          )}
+        </div>
       )}
       <div className={styles.modelList}>
         {models.length === 0 ? (

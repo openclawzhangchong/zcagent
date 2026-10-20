@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { request } from "../../../../../api/request";
 import { preferencesApi } from "../../../../../api/modules/preferences";
 import type { ProviderRow, ResolvedModel } from "../../useProviders";
+import { isEmbeddingModel } from "../../useProviders";
 import { ModelMetaTags } from "../../modelMeta";
 import { modelOptionLabel } from "../../../../../utils/modelOptions";
 import styles from "../../index.module.less";
@@ -61,6 +62,22 @@ export function ActiveModelPool({
     }
     return map;
   }, [providers]);
+
+  // Fetched models are stored disabled until the admin opts each one in, so an
+  // empty pool is usually "switch them on", not "no provider". Saying "请先授权"
+  // there sends people to the wrong control.
+  const providersWithDisabledModels = useMemo(
+    () =>
+      providers.filter(
+        (p) =>
+          p.enabled &&
+          !!p.api_key &&
+          (p.models ?? []).some(
+            (m) => m.enabled === false && !isEmbeddingModel(m),
+          ),
+      ),
+    [providers],
+  );
 
   const grouped = useMemo<GroupedModels[]>(() => {
     const map = new Map<string, GroupedModels>();
@@ -268,7 +285,13 @@ export function ActiveModelPool({
         </div>
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t("models.noModelsAvailable")}
+          description={
+            providersWithDisabledModels.length > 0
+              ? t("models.noModelsNotEnabled", {
+                  names: providersWithDisabledModels.map((p) => p.name),
+                })
+              : t("models.noModelsAvailable")
+          }
         />
       </div>
     );

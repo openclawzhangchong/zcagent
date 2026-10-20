@@ -539,6 +539,21 @@
 
 /* ---- Model Management (ModelListEditor) ---- */
 
+.modelListToolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* The search field takes the leftover width. Wrapping it beats targeting the
+   affix wrapper by class: the app sets antd's prefixCls to "octop", so an
+   "ant-*" selector here would silently match nothing. */
+.modelListToolbarField {
+  flex: 1;
+  min-width: 0;
+}
+
 .modelList {
   max-height: 360px;
   overflow-y: auto;
